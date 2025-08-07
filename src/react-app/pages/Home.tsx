@@ -29,7 +29,7 @@ export default function Home() {
           <img
             src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
             alt="Oliveira Veículos"
-            className="h-24 w-auto"
+            className="h-32 w-auto"
           />
           <div>
             <h1 className="text-3xl font-bold">Sistema Oliveira Veículos</h1>
