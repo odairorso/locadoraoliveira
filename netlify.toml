@@ -5,6 +5,43 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# API redirects - must come before the catch-all
+[[redirects]]
+  from = "/api/dashboard"
+  to = "/.netlify/functions/dashboard"
+  status = 200
+
+[[redirects]]
+  from = "/api/clientes"
+  to = "/.netlify/functions/clientes"
+  status = 200
+
+[[redirects]]
+  from = "/api/clientes/*"
+  to = "/.netlify/functions/clientes/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/veiculos"
+  to = "/.netlify/functions/veiculos"
+  status = 200
+
+[[redirects]]
+  from = "/api/veiculos/*"
+  to = "/.netlify/functions/veiculos/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/locacoes"
+  to = "/.netlify/functions/locacoes"
+  status = 200
+
+[[redirects]]
+  from = "/api/locacoes/*"
+  to = "/.netlify/functions/locacoes/:splat"
+  status = 200
+
+# SPA redirect - must come last
 [[redirects]]
   from = "/*"
   to = "/index.html"

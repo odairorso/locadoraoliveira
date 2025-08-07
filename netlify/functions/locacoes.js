@@ -1,87 +1,193 @@
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+const supabaseUrl = 'https://uvqyxpwlgltnskjdbwzt.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 exports.handler = async (event, context) => {
-  // Parse query parameters
-  const queryParams = event.queryStringParameters || {};
-  const status = queryParams.status || '';
-  const cliente_id = queryParams.cliente_id || '';
-  
-  // Mock data for rentals
-  let locacoes = [
-    {
-      id: 1,
-      cliente_id: 1,
-      cliente_nome: "Cliente Teste 1",
-      veiculo_id: 2,
-      veiculo_info: "Honda Civic 2021 - DEF-5678",
-      data_inicio: "2024-01-15",
-      data_fim: "2024-01-20",
-      data_devolucao: null,
-      valor_diaria: 130.00,
-      valor_total: 650.00,
-      status: "ativa",
-      observacoes: "Locação para viagem de negócios",
-      created_at: "2024-01-15T10:00:00Z",
-      updated_at: "2024-01-15T10:00:00Z"
-    },
-    {
-      id: 2,
-      cliente_id: 2,
-      cliente_nome: "Cliente Teste 2",
-      veiculo_id: 1,
-      veiculo_info: "Toyota Corolla 2022 - ABC-1234",
-      data_inicio: "2024-01-10",
-      data_fim: "2024-01-12",
-      data_devolucao: "2024-01-12",
-      valor_diaria: 120.00,
-      valor_total: 240.00,
-      status: "finalizada",
-      observacoes: "Devolução sem problemas",
-      created_at: "2024-01-10T09:00:00Z",
-      updated_at: "2024-01-12T16:00:00Z"
-    },
-    {
-      id: 3,
-      cliente_id: 1,
-      cliente_nome: "Cliente Teste 1",
-      veiculo_id: 4,
-      veiculo_info: "Ford EcoSport 2023 - JKL-3456",
-      data_inicio: "2024-01-22",
-      data_fim: "2024-01-25",
-      data_devolucao: null,
-      valor_diaria: 110.00,
-      valor_total: 330.00,
-      status: "reservada",
-      observacoes: "Reserva para final de semana",
-      created_at: "2024-01-20T14:00:00Z",
-      updated_at: "2024-01-20T14:00:00Z"
+  try {
+    const method = event.httpMethod;
+    
+    if (method === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        }
+      };
     }
-  ];
-  
-  // Filter by status if provided
-  if (status) {
-    locacoes = locacoes.filter(l => l.status === status);
-  }
-  
-  // Filter by cliente_id if provided
-  if (cliente_id) {
-    const clienteIdInt = parseInt(cliente_id);
-    if (!isNaN(clienteIdInt)) {
-      locacoes = locacoes.filter(l => l.cliente_id === clienteIdInt);
+
+    if (method === 'GET') {
+      // Parse query parameters
+      const queryParams = event.queryStringParameters || {};
+      const search = queryParams.search || '';
+      const status = queryParams.status || '';
+      
+      let query = supabase.from('locacoes').select(`
+        *,
+        cliente:clientes ( nome ),
+        veiculo:veiculos ( marca, modelo, placa )
+      `);
+      
+      if (status) {
+        query = query.eq('status', status);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedData = data.map(l => ({
+        ...l,
+        cliente_nome: l.cliente?.nome,
+        veiculo_info: `${l.veiculo?.marca} ${l.veiculo?.modelo} - ${l.veiculo?.placa}`,
+      }));
+      
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: formattedData,
+          error: null
+        })
+      };
     }
+
+    if (method === 'POST') {
+      const data = JSON.parse(event.body);
+      
+      // Check if vehicle is available
+      const { data: veiculo, error: veiculoError } = await supabase
+        .from('veiculos')
+        .select('status')
+        .eq('id', data.veiculo_id)
+        .single();
+
+      if (veiculoError) throw veiculoError;
+      if (!veiculo || veiculo.status !== 'disponivel') {
+        return {
+          statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+          },
+          body: JSON.stringify({
+            success: false,
+            error: "Veículo não está disponível"
+          })
+        };
+      }
+      
+      // Check for overlapping rentals
+      const { data: overlap, error: overlapError } = await supabase
+        .from('locacoes')
+        .select('id')
+        .eq('veiculo_id', data.veiculo_id)
+        .eq('status', 'ativa')
+        .or(`data_locacao.lte.${data.data_entrega},data_entrega.gte.${data.data_locacao}`)
+        .single();
+
+      if (overlapError && overlapError.code !== 'PGRST116') throw overlapError;
+      if (overlap) {
+        return {
+          statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+          },
+          body: JSON.stringify({
+            success: false,
+            error: "Veículo já possui locação no período informado"
+          })
+        };
+      }
+      
+      // Create rental
+      const { data: newLocacao, error } = await supabase
+        .from('locacoes')
+        .insert([
+          {
+            cliente_id: data.cliente_id,
+            veiculo_id: data.veiculo_id,
+            data_locacao: data.data_locacao,
+            data_entrega: data.data_entrega,
+            valor_diaria: data.valor_diaria,
+            valor_total: data.valor_total,
+            valor_caucao: data.valor_caucao || 0,
+            status: data.status || 'ativa',
+            observacoes: data.observacoes || null
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update vehicle status to 'locado'
+      const { error: updateError } = await supabase
+        .from('veiculos')
+        .update({ status: 'locado' })
+        .eq('id', data.veiculo_id);
+
+      if (updateError) throw updateError;
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: newLocacao,
+          error: null
+        })
+      };
+    }
+
+    return {
+      statusCode: 405,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+      },
+      body: JSON.stringify({
+        success: false,
+        error: "Method not allowed"
+      })
+    };
+
+  } catch (error) {
+    console.error("Erro na função locações:", error);
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+      },
+      body: JSON.stringify({
+        success: false,
+        error: "Erro interno do servidor"
+      })
+    };
   }
-  
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
-    },
-    body: JSON.stringify({
-      success: true,
-      data: locacoes,
-      total: locacoes.length,
-      error: null
-    })
-  };
 };

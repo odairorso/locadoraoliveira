@@ -1,84 +1,83 @@
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+const supabaseUrl = 'https://uvqyxpwlgltnskjdbwzt.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 exports.handler = async (event, context) => {
-  // Mock dashboard data
-  const dashboardData = {
-    resumo: {
-      total_clientes: 3,
-      total_veiculos: 5,
-      veiculos_disponiveis: 3,
-      veiculos_locados: 1,
-      veiculos_manutencao: 1,
-      locacoes_ativas: 1,
-      locacoes_reservadas: 1,
-      receita_mensal: 1220.00,
-      receita_total: 15680.00
-    },
-    locacoes_recentes: [
-      {
-        id: 1,
-        cliente_nome: "Cliente Teste 1",
-        veiculo_info: "Honda Civic 2021",
-        data_inicio: "2024-01-15",
-        data_fim: "2024-01-20",
-        valor_total: 650.00,
-        status: "ativa"
+  try {
+    // Count active rentals
+    const { count: activeRentals, error: activeRentalsError } = await supabase
+      .from('locacoes')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'ativa');
+
+    if (activeRentalsError) throw activeRentalsError;
+
+    // Count available vehicles
+    const { count: availableVehicles, error: availableVehiclesError } = await supabase
+      .from('veiculos')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'disponivel');
+
+    if (availableVehiclesError) throw availableVehiclesError;
+
+    // Count rented vehicles
+    const { count: rentedVehicles, error: rentedVehiclesError } = await supabase
+      .from('veiculos')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'locado');
+      
+    if (rentedVehiclesError) throw rentedVehiclesError;
+
+    // Calculate current month revenue
+    const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
+    const { data: revenue, error: revenueError } = await supabase
+      .from('locacoes')
+      .select('valor_total')
+      .like('created_at', `${currentMonth}%`)
+      .not('status', 'eq', 'cancelada');
+
+    if (revenueError) throw revenueError;
+
+    const totalRevenue = revenue.reduce((acc, item) => acc + item.valor_total, 0);
+
+    const stats = {
+      locacoesAtivas: activeRentals || 0,
+      veiculosDisponiveis: availableVehicles || 0,
+      veiculosLocados: rentedVehicles || 0,
+      receitaMes: totalRevenue || 0
+    };
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
       },
-      {
-        id: 3,
-        cliente_nome: "Cliente Teste 1",
-        veiculo_info: "Ford EcoSport 2023",
-        data_inicio: "2024-01-22",
-        data_fim: "2024-01-25",
-        valor_total: 330.00,
-        status: "reservada"
-      }
-    ],
-    veiculos_status: {
-      disponivel: [
-        {id: 1, modelo: "Toyota Corolla", placa: "ABC-1234"},
-        {id: 3, modelo: "Volkswagen Gol", placa: "GHI-9012"},
-        {id: 4, modelo: "Ford EcoSport", placa: "JKL-3456"}
-      ],
-      locado: [
-        {id: 2, modelo: "Honda Civic", placa: "DEF-5678"}
-      ],
-      manutencao: [
-        {id: 5, modelo: "Chevrolet Onix", placa: "MNO-7890"}
-      ]
-    },
-    receita_mensal: {
-      janeiro: 1220.00,
-      dezembro: 980.00,
-      novembro: 1450.00,
-      outubro: 1100.00,
-      setembro: 1350.00,
-      agosto: 1200.00
-    },
-    alertas: [
-      {
-        tipo: "vencimento",
-        mensagem: "Locação #1 vence em 2 dias",
-        prioridade: "media"
+      body: JSON.stringify({
+        success: true,
+        data: stats,
+        error: null
+      })
+    };
+  } catch (error) {
+    console.error("Erro no dashboard:", error);
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
       },
-      {
-        tipo: "manutencao",
-        mensagem: "Chevrolet Onix precisa de revisão",
-        prioridade: "alta"
-      }
-    ]
-  };
-  
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
-    },
-    body: JSON.stringify({
-      success: true,
-      data: dashboardData,
-      error: null
-    })
-  };
+      body: JSON.stringify({
+        success: false,
+        error: "Erro ao carregar dashboard"
+      })
+    };
+  }
 };

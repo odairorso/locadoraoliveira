@@ -1,95 +1,153 @@
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+const supabaseUrl = 'https://uvqyxpwlgltnskjdbwzt.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 exports.handler = async (event, context) => {
-  // Parse query parameters
-  const queryParams = event.queryStringParameters || {};
-  const status = queryParams.status || '';
-  
-  // Mock data for vehicles
-  let veiculos = [
-    {
-      id: 1,
-      marca: "Toyota",
-      modelo: "Corolla",
-      ano: 2022,
-      placa: "ABC-1234",
-      cor: "Branco",
-      status: "disponivel",
-      valor_diaria: 120.00,
-      categoria: "Sedan",
-      combustivel: "Flex",
-      km: 15000
-    },
-    {
-      id: 2,
-      marca: "Honda",
-      modelo: "Civic",
-      ano: 2021,
-      placa: "DEF-5678",
-      cor: "Preto",
-      status: "locado",
-      valor_diaria: 130.00,
-      categoria: "Sedan",
-      combustivel: "Flex",
-      km: 22000
-    },
-    {
-      id: 3,
-      marca: "Volkswagen",
-      modelo: "Gol",
-      ano: 2020,
-      placa: "GHI-9012",
-      cor: "Prata",
-      status: "disponivel",
-      valor_diaria: 80.00,
-      categoria: "Hatch",
-      combustivel: "Flex",
-      km: 35000
-    },
-    {
-      id: 4,
-      marca: "Ford",
-      modelo: "EcoSport",
-      ano: 2023,
-      placa: "JKL-3456",
-      cor: "Azul",
-      status: "disponivel",
-      valor_diaria: 110.00,
-      categoria: "SUV",
-      combustivel: "Flex",
-      km: 8000
-    },
-    {
-      id: 5,
-      marca: "Chevrolet",
-      modelo: "Onix",
-      ano: 2022,
-      placa: "MNO-7890",
-      cor: "Vermelho",
-      status: "manutencao",
-      valor_diaria: 90.00,
-      categoria: "Hatch",
-      combustivel: "Flex",
-      km: 18000
+  try {
+    const method = event.httpMethod;
+    
+    if (method === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        }
+      };
     }
-  ];
-  
-  // Filter by status if provided
-  if (status) {
-    veiculos = veiculos.filter(v => v.status === status);
+
+    if (method === 'GET') {
+      // Parse query parameters
+      const queryParams = event.queryStringParameters || {};
+      const search = queryParams.search || '';
+      const status = queryParams.status || '';
+      
+      let query = supabase.from('veiculos').select('*');
+      
+      if (search) {
+        query = query.or(`modelo.ilike.%${search}%,marca.ilike.%${search}%,placa.ilike.%${search}%`);
+      }
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+      
+      const { data, error } = await query.order('marca', { ascending: true }).order('modelo', { ascending: true });
+
+      if (error) throw error;
+      
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: data,
+          error: null
+        })
+      };
+    }
+
+    if (method === 'POST') {
+      const data = JSON.parse(event.body);
+      
+      // Check if placa or renavam already exists
+      const { data: existing, error: existingError } = await supabase
+        .from('veiculos')
+        .select('id')
+        .or(`placa.eq.${data.placa},renavam.eq.${data.renavam}`)
+        .single();
+
+      if (existingError && existingError.code !== 'PGRST116') throw existingError;
+      if (existing) {
+        return {
+          statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+          },
+          body: JSON.stringify({
+            success: false,
+            error: "Placa ou Renavam já cadastrados"
+          })
+        };
+      }
+      
+      const { data: newVeiculo, error } = await supabase
+        .from('veiculos')
+        .insert([
+          {
+            modelo: data.modelo,
+            marca: data.marca,
+            ano: data.ano,
+            placa: data.placa,
+            renavam: data.renavam,
+            cor: data.cor,
+            valor_diaria: data.valor_diaria || null,
+            valor_veiculo: data.valor_veiculo,
+            tipo_operacao: data.tipo_operacao,
+            status: data.status || 'disponivel'
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: newVeiculo,
+          error: null
+        })
+      };
+    }
+
+    return {
+      statusCode: 405,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+      },
+      body: JSON.stringify({
+        success: false,
+        error: "Method not allowed"
+      })
+    };
+
+  } catch (error) {
+    console.error("Erro na função veículos:", error);
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+      },
+      body: JSON.stringify({
+        success: false,
+        error: "Erro interno do servidor"
+      })
+    };
   }
-  
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
-    },
-    body: JSON.stringify({
-      success: true,
-      data: veiculos,
-      total: veiculos.length,
-      error: null
-    })
-  };
 };
