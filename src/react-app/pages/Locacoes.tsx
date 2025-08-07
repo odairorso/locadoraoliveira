@@ -679,7 +679,7 @@ export default function LocacoesPage() {
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
 
                 <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>.</p>
+                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>. O valor total da locação é de <strong>{contractData?.valor_total_formatted || '[Valor Total]'}</strong> para o período estabelecido.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. O LOCATÁRIO deverá efetuar o pagamento do valor acordado, por meio de pix, utilizando a chave 17909442000158, ou em espécie, ou cartão.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Em caso de atraso no pagamento do aluguel, será aplicada multa de 5% (cinco por cento), sobre o valor devido, bem como juros de mora de 3% (três por cento) ao mês, mais correção monetária, apurada conforme variação do IGP-M no período.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. O LOCATÁRIO, não vindo a efetuar o pagamento do aluguel por um período de atraso superior à 7 (sete) dias, fica sujeito a ter a posse do veículo configurada como Apropriação Indébita, implicando também a possibilidade de adoção de medidas judiciais, inclusive a Busca e Apreensão do veículo e/ou lavratura de Boletim de Ocorrência, cabendo ao LOCATÁRIO ressarcir a LOCADORA das despesas oriundas da retenção indevida do bem, arcando ainda com as despesas judiciais e/ou extrajudiciais que a LOCADORA venha a ter para efetuar a busca, apreensão e efetiva reintegração da posse do veículo.</p>
@@ -773,7 +773,7 @@ export default function LocacoesPage() {
                 )}
 
                 <div style={{ marginTop: '50px' }}>
-                  <p style={{ margin: '10px 0' }}>Naviraí, {contractData.data_atual}</p>
+                  <p style={{ margin: '10px 0' }}>Naviraí, {contractData?.data_atual_formatted || '[Data Atual]'}</p>
                   
                   <div style={{ marginTop: '60px' }}>
                     <div style={{ textAlign: 'center', marginBottom: '60px' }}>
