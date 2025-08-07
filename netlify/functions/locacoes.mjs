@@ -92,13 +92,17 @@ export const handler = async (event, context) => {
           veiculo_modelo: locacao.veiculo.modelo,
           veiculo_ano: locacao.veiculo.ano,
           veiculo_placa: locacao.veiculo.placa,
-          valor_veiculo_formatted: formatCurrency(locacao.veiculo.valor),
+          valor_veiculo_formatted: formatCurrency(locacao.veiculo.valor_veiculo),
           valor_diaria_formatted: formatCurrency(locacao.valor_diaria),
           valor_total_formatted: formatCurrency(locacao.valor_total),
           valor_caucao_formatted: formatCurrency(locacao.valor_caucao),
           data_locacao_formatted: formatDate(locacao.data_locacao),
           data_entrega_formatted: formatDate(locacao.data_entrega),
-          data_atual_formatted: new Date().toLocaleDateString('pt-BR')
+          data_atual_formatted: new Date().toLocaleDateString('pt-BR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          })
         };
 
         return {
