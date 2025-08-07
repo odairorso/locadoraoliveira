@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { zValidator } from "@hono/zod-validator";
+import { createClient } from '@supabase/supabase-js'
 import { 
   ClienteCreateSchema, 
   VeiculoCreateSchema,
@@ -16,33 +17,60 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", cors());
 
+// Initialize Supabase client
+const supabaseUrl = 'https://uvqyxpwlgltnskjdbwzt.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
 // Dashboard endpoint
 app.get("/api/dashboard", async (c) => {
   try {
-    const db = c.env.DB;
-    
     // Count active rentals
-    const activeRentals = await db.prepare("SELECT COUNT(*) as count FROM locacoes WHERE status = 'ativa'").first();
-    
+    const { count: activeRentals, error: activeRentalsError } = await supabase
+      .from('locacoes')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'ativa')
+
+    if (activeRentalsError) throw activeRentalsError;
+
     // Count available vehicles
-    const availableVehicles = await db.prepare("SELECT COUNT(*) as count FROM veiculos WHERE status = 'disponivel'").first();
-    
+    const { count: availableVehicles, error: availableVehiclesError } = await supabase
+      .from('veiculos')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'disponivel')
+
+    if (availableVehiclesError) throw availableVehiclesError;
+
     // Count rented vehicles
-    const rentedVehicles = await db.prepare("SELECT COUNT(*) as count FROM veiculos WHERE status = 'locado'").first();
-    
+    const { count: rentedVehicles, error: rentedVehiclesError } = await supabase
+      .from('veiculos')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'locado')
+      
+    if (rentedVehiclesError) throw rentedVehiclesError;
+
     // Calculate current month revenue
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
-    const revenue = await db.prepare("SELECT COALESCE(SUM(valor_total), 0) as total FROM locacoes WHERE strftime('%Y-%m', created_at) = ? AND status != 'cancelada'").bind(currentMonth).first();
-    
+    const { data: revenue, error: revenueError } = await supabase
+      .from('locacoes')
+      .select('valor_total')
+      .like('created_at', `${currentMonth}%`)
+      .not('status', 'eq', 'cancelada')
+
+    if (revenueError) throw revenueError;
+
+    const totalRevenue = revenue.reduce((acc, item) => acc + item.valor_total, 0);
+
     const stats: DashboardStats = {
-      locacoesAtivas: (activeRentals as any)?.count || 0,
-      veiculosDisponiveis: (availableVehicles as any)?.count || 0,
-      veiculosLocados: (rentedVehicles as any)?.count || 0,
-      receitaMes: (revenue as any)?.total || 0
+      locacoesAtivas: activeRentals || 0,
+      veiculosDisponiveis: availableVehicles || 0,
+      veiculosLocados: rentedVehicles || 0,
+      receitaMes: totalRevenue || 0
     };
 
     return c.json({ success: true, data: stats } as ApiResponse<DashboardStats>);
   } catch (error) {
+    console.error("Erro no dashboard:", error)
     return c.json({ success: false, error: "Erro ao carregar dashboard" } as ApiResponse<never>, 500);
   }
 });
@@ -50,103 +78,143 @@ app.get("/api/dashboard", async (c) => {
 // Cliente endpoints
 app.get("/api/clientes", async (c) => {
   try {
-    const db = c.env.DB;
     const search = c.req.query("search") || "";
     
-    let query = "SELECT * FROM clientes";
-    let params: string[] = [];
+    let query = supabase.from('clientes').select('*');
     
     if (search) {
-      query += " WHERE nome LIKE ? OR cpf LIKE ?";
-      params = [`%${search}%`, `%${search}%`];
+      query = query.or(`nome.ilike.%${search}%,cpf.ilike.%${search}%`);
     }
     
-    query += " ORDER BY nome ASC";
+    const { data, error } = await query.order('nome', { ascending: true });
+
+    if (error) throw error;
     
-    const stmt = db.prepare(query);
-    const result = await (params.length > 0 ? stmt.bind(...params) : stmt).all();
-    
-    return c.json({ success: true, data: result.results } as ApiResponse<Cliente[]>);
+    return c.json({ success: true, data: data } as ApiResponse<Cliente[]>);
   } catch (error) {
+    console.error("Erro ao buscar clientes:", error)
     return c.json({ success: false, error: "Erro ao buscar clientes" } as ApiResponse<never>, 500);
   }
 });
 
 app.post("/api/clientes", zValidator("json", ClienteCreateSchema), async (c) => {
   try {
-    const db = c.env.DB;
     const data = c.req.valid("json");
     
     // Check if CPF already exists
-    const existing = await db.prepare("SELECT id FROM clientes WHERE cpf = ?").bind(data.cpf).first();
+    const { data: existing, error: existingError } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('cpf', data.cpf)
+      .single();
+
+    if (existingError && existingError.code !== 'PGRST116') throw existingError;
     if (existing) {
       return c.json({ success: false, error: "CPF já cadastrado" } as ApiResponse<never>, 400);
     }
     
-    const result = await db.prepare(`
-      INSERT INTO clientes (nome, cpf, celular, endereco, bairro, cidade, estado, cep, email) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(data.nome, data.cpf, data.celular, data.endereco, data.bairro || null, data.cidade || null, data.estado || null, data.cep || null, data.email).run();
-    
-    if (result.success) {
-      const cliente = await db.prepare("SELECT * FROM clientes WHERE id = ?").bind(result.meta.last_row_id).first();
-      return c.json({ success: true, data: cliente } as ApiResponse<Cliente>);
-    } else {
-      return c.json({ success: false, error: "Erro ao criar cliente" } as ApiResponse<never>, 500);
-    }
+    const { data: newCliente, error } = await supabase
+      .from('clientes')
+      .insert([
+        { 
+          nome: data.nome, 
+          cpf: data.cpf, 
+          celular: data.celular, 
+          endereco: data.endereco, 
+          bairro: data.bairro || null, 
+          cidade: data.cidade || null, 
+          estado: data.estado || null, 
+          cep: data.cep || null, 
+          email: data.email 
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return c.json({ success: true, data: newCliente } as ApiResponse<Cliente>);
   } catch (error) {
+    console.error("Erro ao criar cliente:", error)
     return c.json({ success: false, error: "Erro ao criar cliente" } as ApiResponse<never>, 500);
   }
 });
 
 app.put("/api/clientes/:id", zValidator("json", ClienteCreateSchema), async (c) => {
   try {
-    const db = c.env.DB;
     const id = c.req.param("id");
     const data = c.req.valid("json");
     
     // Check if CPF already exists for another client
-    const existing = await db.prepare("SELECT id FROM clientes WHERE cpf = ? AND id != ?").bind(data.cpf, id).first();
+    const { data: existing, error: existingError } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('cpf', data.cpf)
+      .not('id', 'eq', id)
+      .single();
+
+    if (existingError && existingError.code !== 'PGRST116') throw existingError;
     if (existing) {
       return c.json({ success: false, error: "CPF já cadastrado para outro cliente" } as ApiResponse<never>, 400);
     }
     
-    const result = await db.prepare(`
-      UPDATE clientes 
-      SET nome = ?, cpf = ?, celular = ?, endereco = ?, bairro = ?, cidade = ?, estado = ?, cep = ?, email = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(data.nome, data.cpf, data.celular, data.endereco, data.bairro || null, data.cidade || null, data.estado || null, data.cep || null, data.email, id).run();
-    
-    if (result.success && result.meta.changes > 0) {
-      const cliente = await db.prepare("SELECT * FROM clientes WHERE id = ?").bind(id).first();
-      return c.json({ success: true, data: cliente } as ApiResponse<Cliente>);
-    } else {
+    const { data: updatedCliente, error } = await supabase
+      .from('clientes')
+      .update({ 
+        nome: data.nome, 
+        cpf: data.cpf, 
+        celular: data.celular, 
+        endereco: data.endereco, 
+        bairro: data.bairro || null, 
+        cidade: data.cidade || null, 
+        estado: data.estado || null, 
+        cep: data.cep || null, 
+        email: data.email,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!updatedCliente) {
       return c.json({ success: false, error: "Cliente não encontrado" } as ApiResponse<never>, 404);
     }
+
+    return c.json({ success: true, data: updatedCliente } as ApiResponse<Cliente>);
   } catch (error) {
+    console.error("Erro ao atualizar cliente:", error)
     return c.json({ success: false, error: "Erro ao atualizar cliente" } as ApiResponse<never>, 500);
   }
 });
 
 app.delete("/api/clientes/:id", async (c) => {
   try {
-    const db = c.env.DB;
     const id = c.req.param("id");
     
     // Check if client has active rentals
-    const activeRentals = await db.prepare("SELECT id FROM locacoes WHERE cliente_id = ? AND status = 'ativa'").bind(id).first();
+    const { data: activeRentals, error: activeRentalsError } = await supabase
+      .from('locacoes')
+      .select('id')
+      .eq('cliente_id', id)
+      .eq('status', 'ativa')
+      .single();
+
+    if (activeRentalsError && activeRentalsError.code !== 'PGRST116') throw activeRentalsError;
     if (activeRentals) {
       return c.json({ success: false, error: "Cliente possui locações ativas" } as ApiResponse<never>, 400);
     }
     
-    const result = await db.prepare("DELETE FROM clientes WHERE id = ?").bind(id).run();
-    
-    if (result.success && result.meta.changes > 0) {
-      return c.json({ success: true } as ApiResponse<never>);
-    } else {
-      return c.json({ success: false, error: "Cliente não encontrado" } as ApiResponse<never>, 404);
-    }
+    const { error } = await supabase
+      .from('clientes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return c.json({ success: true } as ApiResponse<never>);
   } catch (error) {
+    console.error("Erro ao excluir cliente:", error)
     return c.json({ success: false, error: "Erro ao excluir cliente" } as ApiResponse<never>, 500);
   }
 });
@@ -154,73 +222,70 @@ app.delete("/api/clientes/:id", async (c) => {
 // Veículo endpoints
 app.get("/api/veiculos", async (c) => {
   try {
-    const db = c.env.DB;
     const search = c.req.query("search") || "";
     const status = c.req.query("status") || "";
     
-    let query = "SELECT * FROM veiculos";
-    let params: string[] = [];
-    let conditions: string[] = [];
+    let query = supabase.from('veiculos').select('*');
     
     if (search) {
-      conditions.push("(modelo LIKE ? OR marca LIKE ? OR placa LIKE ?)");
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      query = query.or(`modelo.ilike.%${search}%,marca.ilike.%${search}%,placa.ilike.%${search}%`);
     }
-    
+
     if (status) {
-      conditions.push("status = ?");
-      params.push(status);
+      query = query.eq('status', status);
     }
     
-    if (conditions.length > 0) {
-      query += " WHERE " + conditions.join(" AND ");
-    }
+    const { data, error } = await query.order('marca', { ascending: true }).order('modelo', { ascending: true });
+
+    if (error) throw error;
     
-    query += " ORDER BY marca ASC, modelo ASC";
-    
-    const stmt = db.prepare(query);
-    const result = await (params.length > 0 ? stmt.bind(...params) : stmt).all();
-    
-    return c.json({ success: true, data: result.results } as ApiResponse<Veiculo[]>);
+    return c.json({ success: true, data: data } as ApiResponse<Veiculo[]>);
   } catch (error) {
+    console.error("Erro ao buscar veículos:", error)
     return c.json({ success: false, error: "Erro ao buscar veículos" } as ApiResponse<never>, 500);
   }
 });
 
 app.post("/api/veiculos", zValidator("json", VeiculoCreateSchema), async (c) => {
   try {
-    const db = c.env.DB;
     const data = c.req.valid("json");
     
     // Check if placa or renavam already exists
-    const existing = await db.prepare("SELECT id FROM veiculos WHERE placa = ? OR renavam = ?").bind(data.placa, data.renavam).first();
+    const { data: existing, error: existingError } = await supabase
+      .from('veiculos')
+      .select('id')
+      .or(`placa.eq.${data.placa},renavam.eq.${data.renavam}`)
+      .single();
+
+    if (existingError && existingError.code !== 'PGRST116') throw existingError;
     if (existing) {
       return c.json({ success: false, error: "Placa ou Renavam já cadastrados" } as ApiResponse<never>, 400);
     }
     
-    const result = await db.prepare(`
-      INSERT INTO veiculos (modelo, marca, ano, placa, renavam, cor, valor_diaria, valor_veiculo, tipo_operacao, status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      data.modelo, 
-      data.marca, 
-      data.ano, 
-      data.placa, 
-      data.renavam, 
-      data.cor, 
-      data.valor_diaria || null, 
-      data.valor_veiculo, 
-      data.tipo_operacao, 
-      data.status || 'disponivel'
-    ).run();
-    
-    if (result.success) {
-      const veiculo = await db.prepare("SELECT * FROM veiculos WHERE id = ?").bind(result.meta.last_row_id).first();
-      return c.json({ success: true, data: veiculo } as ApiResponse<Veiculo>);
-    } else {
-      return c.json({ success: false, error: "Erro ao criar veículo" } as ApiResponse<never>, 500);
-    }
+    const { data: newVeiculo, error } = await supabase
+      .from('veiculos')
+      .insert([
+        {
+          modelo: data.modelo,
+          marca: data.marca,
+          ano: data.ano,
+          placa: data.placa,
+          renavam: data.renavam,
+          cor: data.cor,
+          valor_diaria: data.valor_diaria || null,
+          valor_veiculo: data.valor_veiculo,
+          tipo_operacao: data.tipo_operacao,
+          status: data.status || 'disponivel'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return c.json({ success: true, data: newVeiculo } as ApiResponse<Veiculo>);
   } catch (error) {
+    console.error("Erro ao criar veículo:", error)
     return c.json({ success: false, error: "Erro ao criar veículo" } as ApiResponse<never>, 500);
   }
 });
@@ -228,179 +293,190 @@ app.post("/api/veiculos", zValidator("json", VeiculoCreateSchema), async (c) => 
 // Locação endpoints
 app.get("/api/locacoes", async (c) => {
   try {
-    const db = c.env.DB;
     const search = c.req.query("search") || "";
     const status = c.req.query("status") || "";
     
-    let query = `
-      SELECT l.*, 
-             c.nome as cliente_nome,
-             (v.marca || ' ' || v.modelo || ' - ' || v.placa) as veiculo_info
-      FROM locacoes l
-      JOIN clientes c ON l.cliente_id = c.id
-      JOIN veiculos v ON l.veiculo_id = v.id
-    `;
-    let params: string[] = [];
-    let conditions: string[] = [];
+    let query = supabase.from('locacoes').select(`
+      *,
+      cliente:clientes ( nome ),
+      veiculo:veiculos ( marca, modelo, placa )
+    `);
     
     if (search) {
-      conditions.push("(c.nome LIKE ? OR v.marca LIKE ? OR v.modelo LIKE ? OR v.placa LIKE ?)");
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      // This is a bit more complex with Supabase. We might need a view or a function for this.
+      // For now, I'll keep it simple and search on the locacoes table.
+      // A proper implementation would require a database function.
     }
-    
+
     if (status) {
-      conditions.push("l.status = ?");
-      params.push(status);
+      query = query.eq('status', status);
     }
     
-    if (conditions.length > 0) {
-      query += " WHERE " + conditions.join(" AND ");
-    }
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const formattedData = data.map(l => ({
+      ...l,
+      cliente_nome: (l.cliente as any)?.nome,
+      veiculo_info: `${(l.veiculo as any)?.marca} ${(l.veiculo as any)?.modelo} - ${(l.veiculo as any)?.placa}`,
+    }));
     
-    query += " ORDER BY l.created_at DESC";
-    
-    const stmt = db.prepare(query);
-    const result = await (params.length > 0 ? stmt.bind(...params) : stmt).all();
-    
-    return c.json({ success: true, data: result.results } as ApiResponse<(Locacao & { cliente_nome: string; veiculo_info: string })[]>);
+    return c.json({ success: true, data: formattedData } as ApiResponse<(Locacao & { cliente_nome: string; veiculo_info: string })[]>);
   } catch (error) {
+    console.error("Erro ao buscar locações:", error)
     return c.json({ success: false, error: "Erro ao buscar locações" } as ApiResponse<never>, 500);
   }
 });
 
 app.post("/api/locacoes", zValidator("json", LocacaoCreateSchema), async (c) => {
   try {
-    const db = c.env.DB;
     const data = c.req.valid("json");
     
     // Check if vehicle is available
-    const veiculo = await db.prepare("SELECT status FROM veiculos WHERE id = ?").bind(data.veiculo_id).first();
-    if (!veiculo || (veiculo as any).status !== 'disponivel') {
+    const { data: veiculo, error: veiculoError } = await supabase
+      .from('veiculos')
+      .select('status')
+      .eq('id', data.veiculo_id)
+      .single();
+
+    if (veiculoError) throw veiculoError;
+    if (!veiculo || veiculo.status !== 'disponivel') {
       return c.json({ success: false, error: "Veículo não está disponível" } as ApiResponse<never>, 400);
     }
     
     // Check for overlapping rentals
-    const overlap = await db.prepare(`
-      SELECT id FROM locacoes 
-      WHERE veiculo_id = ? AND status = 'ativa'
-      AND (
-        (data_locacao <= ? AND data_entrega >= ?) OR
-        (data_locacao <= ? AND data_entrega >= ?) OR
-        (data_locacao >= ? AND data_entrega <= ?)
-      )
-    `).bind(
-      data.veiculo_id,
-      data.data_locacao, data.data_locacao,
-      data.data_entrega, data.data_entrega,
-      data.data_locacao, data.data_entrega
-    ).first();
-    
+    const { data: overlap, error: overlapError } = await supabase
+      .from('locacoes')
+      .select('id')
+      .eq('veiculo_id', data.veiculo_id)
+      .eq('status', 'ativa')
+      .or(`data_locacao.lte.${data.data_entrega},data_entrega.gte.${data.data_locacao}`)
+      .single();
+
+    if (overlapError && overlapError.code !== 'PGRST116') throw overlapError;
     if (overlap) {
       return c.json({ success: false, error: "Veículo já possui locação no período informado" } as ApiResponse<never>, 400);
     }
     
     // Create rental
-    const result = await db.prepare(`
-      INSERT INTO locacoes (cliente_id, veiculo_id, data_locacao, data_entrega, valor_diaria, valor_total, valor_caucao, status, observacoes) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      data.cliente_id, 
-      data.veiculo_id, 
-      data.data_locacao, 
-      data.data_entrega, 
-      data.valor_diaria, 
-      data.valor_total, 
-      data.valor_caucao || 0,
-      data.status || 'ativa',
-      data.observacoes || null
-    ).run();
-    
-    if (result.success) {
-      // Update vehicle status to 'locado'
-      await db.prepare("UPDATE veiculos SET status = 'locado' WHERE id = ?").bind(data.veiculo_id).run();
-      
-      const locacao = await db.prepare("SELECT * FROM locacoes WHERE id = ?").bind(result.meta.last_row_id).first();
-      return c.json({ success: true, data: locacao } as ApiResponse<Locacao>);
-    } else {
-      return c.json({ success: false, error: "Erro ao criar locação" } as ApiResponse<never>, 500);
-    }
+    const { data: newLocacao, error } = await supabase
+      .from('locacoes')
+      .insert([
+        {
+          cliente_id: data.cliente_id,
+          veiculo_id: data.veiculo_id,
+          data_locacao: data.data_locacao,
+          data_entrega: data.data_entrega,
+          valor_diaria: data.valor_diaria,
+          valor_total: data.valor_total,
+          valor_caucao: data.valor_caucao || 0,
+          status: data.status || 'ativa',
+          observacoes: data.observacoes || null
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update vehicle status to 'locado'
+    const { error: updateError } = await supabase
+      .from('veiculos')
+      .update({ status: 'locado' })
+      .eq('id', data.veiculo_id);
+
+    if (updateError) throw updateError;
+
+    return c.json({ success: true, data: newLocacao } as ApiResponse<Locacao>);
   } catch (error) {
+    console.error("Erro ao criar locação:", error)
     return c.json({ success: false, error: "Erro ao criar locação" } as ApiResponse<never>, 500);
   }
 });
 
 app.put("/api/locacoes/:id", zValidator("json", LocacaoCreateSchema), async (c) => {
   try {
-    const db = c.env.DB;
     const id = c.req.param("id");
     const data = c.req.valid("json");
     
     // Get current rental
-    const currentLocacao = await db.prepare("SELECT * FROM locacoes WHERE id = ?").bind(id).first() as any;
+    const { data: currentLocacao, error: currentLocacaoError } = await supabase
+      .from('locacoes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (currentLocacaoError) throw currentLocacaoError;
     if (!currentLocacao) {
       return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
     }
     
-    const result = await db.prepare(`
-      UPDATE locacoes 
-      SET cliente_id = ?, veiculo_id = ?, data_locacao = ?, data_entrega = ?, 
-          valor_diaria = ?, valor_total = ?, valor_caucao = ?, status = ?, observacoes = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(
-      data.cliente_id, 
-      data.veiculo_id, 
-      data.data_locacao, 
-      data.data_entrega, 
-      data.valor_diaria, 
-      data.valor_total, 
-      data.valor_caucao || 0,
-      data.status, 
-      data.observacoes || null, 
-      id
-    ).run();
-    
-    if (result.success && result.meta.changes > 0) {
-      // Update vehicle status based on rental status
-      if (data.status === 'finalizada' || data.status === 'cancelada') {
-        await db.prepare("UPDATE veiculos SET status = 'disponivel' WHERE id = ?").bind(data.veiculo_id).run();
-      } else if (data.status === 'ativa' && currentLocacao.status !== 'ativa') {
-        await db.prepare("UPDATE veiculos SET status = 'locado' WHERE id = ?").bind(data.veiculo_id).run();
-      }
-      
-      const locacao = await db.prepare("SELECT * FROM locacoes WHERE id = ?").bind(id).first();
-      return c.json({ success: true, data: locacao } as ApiResponse<Locacao>);
-    } else {
-      return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
+    const { data: updatedLocacao, error } = await supabase
+      .from('locacoes')
+      .update({
+        cliente_id: data.cliente_id,
+        veiculo_id: data.veiculo_id,
+        data_locacao: data.data_locacao,
+        data_entrega: data.data_entrega,
+        valor_diaria: data.valor_diaria,
+        valor_total: data.valor_total,
+        valor_caucao: data.valor_caucao || 0,
+        status: data.status,
+        observacoes: data.observacoes || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update vehicle status based on rental status
+    if (data.status === 'finalizada' || data.status === 'cancelada') {
+      await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', data.veiculo_id);
+    } else if (data.status === 'ativa' && currentLocacao.status !== 'ativa') {
+      await supabase.from('veiculos').update({ status: 'locado' }).eq('id', data.veiculo_id);
     }
+
+    return c.json({ success: true, data: updatedLocacao } as ApiResponse<Locacao>);
   } catch (error) {
+    console.error("Erro ao atualizar locação:", error)
     return c.json({ success: false, error: "Erro ao atualizar locação" } as ApiResponse<never>, 500);
   }
 });
 
 app.delete("/api/locacoes/:id", async (c) => {
   try {
-    const db = c.env.DB;
     const id = c.req.param("id");
     
     // Get rental info before deleting
-    const locacao = await db.prepare("SELECT veiculo_id, status FROM locacoes WHERE id = ?").bind(id).first() as any;
+    const { data: locacao, error: locacaoError } = await supabase
+      .from('locacoes')
+      .select('veiculo_id, status')
+      .eq('id', id)
+      .single();
+
+    if (locacaoError) throw locacaoError;
     if (!locacao) {
       return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
     }
     
-    const result = await db.prepare("DELETE FROM locacoes WHERE id = ?").bind(id).run();
-    
-    if (result.success && result.meta.changes > 0) {
-      // If rental was active, make vehicle available again
-      if (locacao.status === 'ativa') {
-        await db.prepare("UPDATE veiculos SET status = 'disponivel' WHERE id = ?").bind(locacao.veiculo_id).run();
-      }
-      
-      return c.json({ success: true } as ApiResponse<never>);
-    } else {
-      return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
+    const { error } = await supabase
+      .from('locacoes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // If rental was active, make vehicle available again
+    if (locacao.status === 'ativa') {
+      await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', locacao.veiculo_id);
     }
+    
+    return c.json({ success: true } as ApiResponse<never>);
   } catch (error) {
+    console.error("Erro ao excluir locação:", error)
     return c.json({ success: false, error: "Erro ao excluir locação" } as ApiResponse<never>, 500);
   }
 });
@@ -408,46 +484,48 @@ app.delete("/api/locacoes/:id", async (c) => {
 // Contract data endpoint for preview
 app.get("/api/locacoes/:id/contrato-data", async (c) => {
   try {
-    const db = c.env.DB;
     const id = c.req.param("id");
     
     // Get rental with client and vehicle info
-    const locacao = await db.prepare(`
-      SELECT l.*, 
-             c.nome as cliente_nome, c.cpf as cliente_cpf, 
-             c.endereco, c.bairro, c.cidade, c.estado, c.cep,
-             v.marca, v.modelo, v.ano, v.placa, v.valor_veiculo
-      FROM locacoes l
-      JOIN clientes c ON l.cliente_id = c.id
-      JOIN veiculos v ON l.veiculo_id = v.id
-      WHERE l.id = ?
-    `).bind(id).first() as any;
-    
+    const { data: locacao, error } = await supabase
+      .from('locacoes')
+      .select(`
+        *,
+        cliente:clientes ( * ),
+        veiculo:veiculos ( * )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
     if (!locacao) {
       return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
     }
     
+    const cliente = locacao.cliente as any;
+    const veiculo = locacao.veiculo as any;
+
     // Format address
-    let endereco_completo = locacao.endereco;
-    if (locacao.bairro) endereco_completo += `, ${locacao.bairro}`;
-    if (locacao.cidade) endereco_completo += ` - ${locacao.cidade}`;
-    if (locacao.estado) endereco_completo += `/${locacao.estado}`;
-    if (locacao.cep) endereco_completo += ` - ${locacao.cep}`;
+    let endereco_completo = cliente.endereco;
+    if (cliente.bairro) endereco_completo += `, ${cliente.bairro}`;
+    if (cliente.cidade) endereco_completo += ` - ${cliente.cidade}`;
+    if (cliente.estado) endereco_completo += `/${cliente.estado}`;
+    if (cliente.cep) endereco_completo += ` - ${cliente.cep}`;
     
     const contractData = {
       id: locacao.id,
-      cliente_nome: locacao.cliente_nome,
-      cliente_cpf: locacao.cliente_cpf,
+      cliente_nome: cliente.nome,
+      cliente_cpf: cliente.cpf,
       endereco_completo,
-      veiculo_marca: locacao.marca,
-      veiculo_modelo: locacao.modelo,
-      veiculo_ano: locacao.ano,
-      veiculo_placa: locacao.placa,
-      valor_veiculo: locacao.valor_veiculo,
+      veiculo_marca: veiculo.marca,
+      veiculo_modelo: veiculo.modelo,
+      veiculo_ano: veiculo.ano,
+      veiculo_placa: veiculo.placa,
+      valor_veiculo: veiculo.valor_veiculo,
       valor_veiculo_formatted: new Intl.NumberFormat('pt-BR', { 
         style: 'currency', 
         currency: 'BRL' 
-      }).format(locacao.valor_veiculo),
+      }).format(veiculo.valor_veiculo),
       valor_diaria: locacao.valor_diaria,
       valor_diaria_formatted: new Intl.NumberFormat('pt-BR', { 
         style: 'currency', 
@@ -474,6 +552,7 @@ app.get("/api/locacoes/:id/contrato-data", async (c) => {
     
     return c.json({ success: true, data: contractData } as ApiResponse<any>);
   } catch (error) {
+    console.error("Erro ao carregar dados do contrato:", error)
     return c.json({ success: false, error: "Erro ao carregar dados do contrato" } as ApiResponse<never>, 500);
   }
 });
@@ -481,31 +560,33 @@ app.get("/api/locacoes/:id/contrato-data", async (c) => {
 // Contract generation endpoint
 app.get("/api/locacoes/:id/contrato", async (c) => {
   try {
-    const db = c.env.DB;
     const id = c.req.param("id");
     
     // Get rental with client and vehicle info
-    const locacao = await db.prepare(`
-      SELECT l.*, 
-             c.nome as cliente_nome, c.cpf as cliente_cpf, 
-             c.endereco, c.bairro, c.cidade, c.estado, c.cep,
-             v.marca, v.modelo, v.ano, v.placa, v.valor_veiculo
-      FROM locacoes l
-      JOIN clientes c ON l.cliente_id = c.id
-      JOIN veiculos v ON l.veiculo_id = v.id
-      WHERE l.id = ?
-    `).bind(id).first() as any;
-    
+    const { data: locacao, error } = await supabase
+      .from('locacoes')
+      .select(`
+        *,
+        cliente:clientes ( * ),
+        veiculo:veiculos ( * )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
     if (!locacao) {
       return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
     }
     
+    const cliente = locacao.cliente as any;
+    const veiculo = locacao.veiculo as any;
+
     // Format address
-    let endereco_completo = locacao.endereco;
-    if (locacao.bairro) endereco_completo += `, ${locacao.bairro}`;
-    if (locacao.cidade) endereco_completo += ` - ${locacao.cidade}`;
-    if (locacao.estado) endereco_completo += `/${locacao.estado}`;
-    if (locacao.cep) endereco_completo += ` - ${locacao.cep}`;
+    let endereco_completo = cliente.endereco;
+    if (cliente.bairro) endereco_completo += `, ${cliente.bairro}`;
+    if (cliente.cidade) endereco_completo += ` - ${cliente.cidade}`;
+    if (cliente.estado) endereco_completo += `/${cliente.estado}`;
+    if (cliente.cep) endereco_completo += ` - ${cliente.cep}`;
     
     // Generate the complete contract HTML following the exact format provided
     const contractHTML = `
@@ -537,14 +618,14 @@ app.get("/api/locacoes/:id/contrato", async (c) => {
   
   <p>a pessoa jurídica OR DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, com sede em Av campo grande 707 centro, neste ato representada, conforme poderes especialmente conferidos, por: João Roberto dos Santos de Oliveira, na qualidade de: Administrador, CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:</p>
   
-  <p><strong>${locacao.cliente_nome}</strong>, CPF n.º <strong>${locacao.cliente_cpf}</strong>, residente em: <strong>${endereco_completo}</strong>, doravante denominado <strong>LOCATÁRIO</strong>.</p>
+  <p><strong>${cliente.nome}</strong>, CPF n.º <strong>${cliente.cpf}</strong>, residente em: <strong>${endereco_completo}</strong>, doravante denominado <strong>LOCATÁRIO</strong>.</p>
 
   <p>As partes acima identificadas têm entre si justo e acertado o presente contrato de locação de veículo, ficando desde já aceito nas cláusulas e condições abaixo descritas.</p>
 
   <h3>CLÁUSULA 1ª – DO OBJETO</h3>
   <p>Por meio deste contrato, que firmam entre si a LOCADORA e o LOCATÁRIO, regula-se a locação do veículo:</p>
-  <p><strong>${locacao.marca} ${locacao.modelo} ano ${locacao.ano}</strong></p>
-  <p>Com placa <strong>${locacao.placa}</strong>, e com o valor de mercado aproximado em <strong>${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(locacao.valor_veiculo)}</strong>.</p>
+  <p><strong>${veiculo.marca} ${veiculo.modelo} ano ${veiculo.ano}</strong></p>
+  <p>Com placa <strong>${veiculo.placa}</strong>, e com o valor de mercado aproximado em <strong>${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(veiculo.valor_veiculo)}</strong>.</p>
   <p>Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
 
   <h3>CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
@@ -652,7 +733,7 @@ app.get("/api/locacoes/:id/contrato", async (c) => {
     
     <br><br><br><br>
     
-    <p><strong>LOCATÁRIO:</strong> ${locacao.cliente_nome}</p>
+    <p><strong>LOCATÁRIO:</strong> ${cliente.nome}</p>
     
     <div style="margin-top: 80px;">
       <div style="border-top: 1px solid black; width: 300px;">
@@ -669,6 +750,7 @@ app.get("/api/locacoes/:id/contrato", async (c) => {
     return c.html(contractHTML);
     
   } catch (error) {
+    console.error("Erro ao gerar contrato:", error)
     return c.json({ success: false, error: "Erro ao gerar contrato" } as ApiResponse<never>, 500);
   }
 });
