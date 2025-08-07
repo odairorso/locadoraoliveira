@@ -18,9 +18,12 @@ export function useApi<T>(
     setError(null);
     
     try {
+      const supabaseToken = localStorage.getItem('supabase.auth.token');
+
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
+          ...(supabaseToken && { Authorization: `Bearer ${supabaseToken}` }),
         },
         ...fetchOptions,
       });
