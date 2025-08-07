@@ -160,6 +160,107 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (method === 'PUT') {
+      const pathParts = event.path.split('/');
+      const id = pathParts[pathParts.length - 1];
+      const data = JSON.parse(event.body);
+      
+      // Get current rental to check if vehicle changed
+      const { data: currentLocacao, error: currentError } = await supabase
+        .from('locacoes')
+        .select('veiculo_id')
+        .eq('id', id)
+        .single();
+
+      if (currentError) throw currentError;
+
+      // Update rental
+      const { data: updatedLocacao, error } = await supabase
+        .from('locacoes')
+        .update({
+          cliente_id: data.cliente_id,
+          veiculo_id: data.veiculo_id,
+          data_locacao: data.data_locacao,
+          data_entrega: data.data_entrega,
+          valor_diaria: data.valor_diaria,
+          valor_total: data.valor_total,
+          valor_caucao: data.valor_caucao || 0,
+          status: data.status,
+          observacoes: data.observacoes || null
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update vehicle status if needed
+      if (data.status === 'finalizada' || data.status === 'cancelada') {
+        await supabase
+          .from('veiculos')
+          .update({ status: 'disponivel' })
+          .eq('id', currentLocacao.veiculo_id);
+      }
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: updatedLocacao,
+          error: null
+        })
+      };
+    }
+
+    if (method === 'DELETE') {
+      const pathParts = event.path.split('/');
+      const id = pathParts[pathParts.length - 1];
+      
+      // Get rental to update vehicle status
+      const { data: locacao, error: locacaoError } = await supabase
+        .from('locacoes')
+        .select('veiculo_id')
+        .eq('id', id)
+        .single();
+
+      if (locacaoError) throw locacaoError;
+
+      // Delete rental
+      const { error } = await supabase
+        .from('locacoes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update vehicle status to available
+      await supabase
+        .from('veiculos')
+        .update({ status: 'disponivel' })
+        .eq('id', locacao.veiculo_id);
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: null,
+          error: null
+        })
+      };
+    }
+
     return {
       statusCode: 405,
       headers: {

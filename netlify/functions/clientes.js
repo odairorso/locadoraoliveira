@@ -114,6 +114,73 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (method === 'PUT') {
+      const pathParts = event.path.split('/');
+      const id = pathParts[pathParts.length - 1];
+      const data = JSON.parse(event.body);
+      
+      const { data: updatedCliente, error } = await supabase
+        .from('clientes')
+        .update({
+          nome: data.nome,
+          cpf: data.cpf,
+          celular: data.celular,
+          endereco: data.endereco,
+          bairro: data.bairro || null,
+          cidade: data.cidade || null,
+          estado: data.estado || null,
+          cep: data.cep || null,
+          email: data.email
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: updatedCliente,
+          error: null
+        })
+      };
+    }
+
+    if (method === 'DELETE') {
+      const pathParts = event.path.split('/');
+      const id = pathParts[pathParts.length - 1];
+      
+      const { error } = await supabase
+        .from('clientes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: null,
+          error: null
+        })
+      };
+    }
+
     return {
       statusCode: 405,
       headers: {

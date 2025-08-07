@@ -120,6 +120,74 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (method === 'PUT') {
+      const pathParts = event.path.split('/');
+      const id = pathParts[pathParts.length - 1];
+      const data = JSON.parse(event.body);
+      
+      const { data: updatedVeiculo, error } = await supabase
+        .from('veiculos')
+        .update({
+          modelo: data.modelo,
+          marca: data.marca,
+          ano: data.ano,
+          placa: data.placa,
+          renavam: data.renavam,
+          cor: data.cor,
+          valor_diaria: data.valor_diaria || null,
+          valor_veiculo: data.valor_veiculo,
+          tipo_operacao: data.tipo_operacao,
+          status: data.status
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: updatedVeiculo,
+          error: null
+        })
+      };
+    }
+
+    if (method === 'DELETE') {
+      const pathParts = event.path.split('/');
+      const id = pathParts[pathParts.length - 1];
+      
+      const { error } = await supabase
+        .from('veiculos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        body: JSON.stringify({
+          success: true,
+          data: null,
+          error: null
+        })
+      };
+    }
+
     return {
       statusCode: 405,
       headers: {
