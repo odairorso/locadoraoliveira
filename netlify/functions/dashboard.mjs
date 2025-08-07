@@ -1,9 +1,13 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
 
 export const handler = async (event, context) => {
   try {
-    const supabaseUrl = "https://uvqyxpwlgltnskjdbwzt.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRidzciLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcxNzE4Mjk1MiwiZXhwIjoyMDMyNzU4OTUyfQ.o-f-cczSVbYq_i3JjO2J4i_Jb2H3y_t2aYgB5g5f5aY";
+    // Usar variáveis de ambiente ou fallback para desenvolvimento local
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://uvqyxpwlgltnskjdbwzt.supabase.co";
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0";
+
+    console.log('Dashboard - Supabase URL:', supabaseUrl);
+    console.log('Dashboard - Usando chave:', supabaseKey ? 'Configurada' : 'Não configurada');
 
     if (!supabaseUrl || !supabaseKey) {
       return {
@@ -11,7 +15,7 @@ export const handler = async (event, context) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           success: false,
-          error: "As variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY não foram configuradas no Netlify para o backend.",
+          error: "As variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY não foram configuradas.",
         })
       };
     }

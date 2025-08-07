@@ -1,8 +1,12 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
 
 export const handler = async (event, context) => {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  // Usar variáveis de ambiente ou fallback para desenvolvimento local
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://uvqyxpwlgltnskjdbwzt.supabase.co";
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0";
+
+  console.log('Locacoes - Supabase URL:', supabaseUrl);
+  console.log('Locacoes - Usando chave:', supabaseKey ? 'Configurada' : 'Não configurada');
 
   if (!supabaseUrl || !supabaseKey) {
     return {

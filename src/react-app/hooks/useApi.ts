@@ -19,13 +19,10 @@ export function useApi<T>(
     setError(null);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
+      // Temporariamente removendo autenticação pois RLS está desabilitado
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
         },
         ...fetchOptions,
       });
@@ -95,14 +92,11 @@ export function useMutation<TData, TVariables = any>() {
     setError(null);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
+      // Temporariamente removendo autenticação pois RLS está desabilitado
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: method !== 'DELETE' ? JSON.stringify(variables) : undefined,
       });
