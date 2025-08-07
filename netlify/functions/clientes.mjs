@@ -1,11 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 export const handler = async (event, context) => {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Missing Supabase URL or Anon Key' }),
+    };
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   try {
     const method = event.httpMethod;
     
