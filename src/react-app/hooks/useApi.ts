@@ -103,7 +103,7 @@ export function useMutation<TData, TVariables = any>() {
       const result: ApiResponse<TData> = await response.json();
       
       if (result.success) {
-        return result.data || null;
+        return result.data !== undefined ? result.data : true as any;
       } else {
         setError(result.error || 'Erro desconhecido');
         return null;

@@ -111,4 +111,29 @@ export interface DashboardStats {
   veiculosDisponiveis: number;
   veiculosLocados: number;
   receitaMes: number;
+  saldoCaixa?: number;
 }
+
+// Movimentação Financeira schemas
+export const MovimentacaoFinanceiraSchema = z.object({
+  id: z.number().optional(),
+  tipo: z.enum(["entrada", "saida"], {
+    errorMap: () => ({ message: "Tipo deve ser 'entrada' ou 'saida'" })
+  }),
+  categoria: z.string().min(1, "Categoria é obrigatória"),
+  descricao: z.string().min(1, "Descrição é obrigatória"),
+  valor: z.number().positive("Valor deve ser positivo"),
+  data_movimentacao: z.string().min(1, "Data é obrigatória"),
+  locacao_id: z.number().optional().nullable(),
+  cliente_id: z.number().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
+  created_at: z.string().optional(),
+});
+
+export const MovimentacaoFinanceiraCreateSchema = MovimentacaoFinanceiraSchema.omit({ 
+  id: true, 
+  created_at: true 
+});
+
+export type MovimentacaoFinanceira = z.infer<typeof MovimentacaoFinanceiraSchema>;
+export type MovimentacaoFinanceiraCreate = z.infer<typeof MovimentacaoFinanceiraCreateSchema>;

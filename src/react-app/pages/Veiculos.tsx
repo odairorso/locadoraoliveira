@@ -76,9 +76,19 @@ export default function VeiculosPage() {
 
   const handleDelete = async (veiculo: Veiculo) => {
     if (confirm(`Tem certeza que deseja excluir o veículo ${veiculo.marca} ${veiculo.modelo}?`)) {
-      const result = await deleteVeiculo(`/api/veiculos/${veiculo.id}`, {}, 'DELETE');
-      if (result) {
-        refetch();
+      try {
+        const result = await deleteVeiculo(`/api/veiculos/${veiculo.id}`, {}, 'DELETE');
+        if (result) {
+          alert('Veículo excluído com sucesso!');
+          refetch();
+        } else {
+          // Show specific error message
+          const errorMessage = deleting.error || 'Erro ao excluir veículo. Verifique se o veículo não está sendo usado em locações ativas.';
+          alert(errorMessage);
+        }
+      } catch (error) {
+        console.error('Erro ao deletar veículo:', error);
+        alert('Erro inesperado ao excluir veículo. Tente novamente.');
       }
     }
   };
@@ -146,8 +156,8 @@ export default function VeiculosPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Veículos</h1>
-          <p className="text-gray-600 mt-1">Gerencie o cadastro de veículos</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Veículos</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Gerencie o cadastro de veículos</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -165,13 +175,13 @@ export default function VeiculosPage() {
           <input
             type="text"
             placeholder="Pesquisar por modelo, marca ou placa..."
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <select
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -185,22 +195,22 @@ export default function VeiculosPage() {
       {/* Vehicle Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+          <div className="relative top-10 mx-auto p-5 border border-gray-300 dark:border-gray-600 w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-y-auto">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                 {editingVehicle ? 'Editar Veículo' : 'Novo Veículo'}
               </h3>
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Marca *
                     </label>
                     <input
                       type="text"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.marca}
                       onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
                       placeholder="Ex: Chevrolet"
@@ -208,13 +218,13 @@ export default function VeiculosPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Modelo *
                     </label>
                     <input
                       type="text"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.modelo}
                       onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
                       placeholder="Ex: Onix"
@@ -224,7 +234,7 @@ export default function VeiculosPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Ano *
                     </label>
                     <input
@@ -232,21 +242,21 @@ export default function VeiculosPage() {
                       required
                       min="1990"
                       max={new Date().getFullYear() + 1}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.ano}
                       onChange={(e) => setFormData({ ...formData, ano: parseInt(e.target.value) })}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Placa *
                     </label>
                     <input
                       type="text"
                       required
                       maxLength={8}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.placa}
                       onChange={(e) => setFormData({ ...formData, placa: formatPlate(e.target.value) })}
                       placeholder="ABC-1234"
@@ -254,13 +264,13 @@ export default function VeiculosPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Cor *
                     </label>
                     <input
                       type="text"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.cor}
                       onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
                       placeholder="Ex: Prata"
@@ -269,13 +279,13 @@ export default function VeiculosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Renavam *
                   </label>
                   <input
                     type="text"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value={formData.renavam}
                     onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
                     placeholder="Digite o número do Renavam"
@@ -284,12 +294,12 @@ export default function VeiculosPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Tipo de Operação *
                     </label>
                     <select
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.tipo_operacao}
                       onChange={(e) => setFormData({ ...formData, tipo_operacao: e.target.value as any })}
                     >
@@ -300,11 +310,11 @@ export default function VeiculosPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Status
                     </label>
                     <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                     >
@@ -317,23 +327,23 @@ export default function VeiculosPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Valor da Diária (R$)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.valor_diaria || ''}
                       onChange={(e) => setFormData({ ...formData, valor_diaria: e.target.value ? parseFloat(e.target.value) : null })}
                       placeholder="Ex: 120.00"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Necessário para locação</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Necessário para locação</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Valor do Veículo (R$) *
                     </label>
                     <input
@@ -341,7 +351,7 @@ export default function VeiculosPage() {
                       step="0.01"
                       min="0"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.valor_veiculo}
                       onChange={(e) => setFormData({ ...formData, valor_veiculo: parseFloat(e.target.value) || 0 })}
                       placeholder="Ex: 45000.00"
@@ -353,7 +363,7 @@ export default function VeiculosPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                     disabled={isLoading}
                   >
                     Cancelar
@@ -373,29 +383,29 @@ export default function VeiculosPage() {
       )}
 
       {/* Vehicles List */}
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
         {loading ? (
           <LoadingSpinner text="Carregando veículos..." />
         ) : error ? (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800">Erro ao carregar veículos: {error}</p>
+          <div className="p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
+            <p className="text-red-800 dark:text-red-200">Erro ao carregar veículos: {error}</p>
           </div>
         ) : !veiculos || veiculos.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">Nenhum veículo encontrado</p>
-            {(search || statusFilter) && <p className="text-sm text-gray-400 mt-1">Tente filtros diferentes</p>}
+            <p className="text-gray-500 dark:text-gray-400">Nenhum veículo encontrado</p>
+            {(search || statusFilter) && <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Tente filtros diferentes</p>}
           </div>
         ) : (
           <div className="grid gap-4 p-4">
             {veiculos.map((veiculo) => (
               <div
                 key={veiculo.id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-700"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {veiculo.marca} {veiculo.modelo} ({veiculo.ano})
                       </h3>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(veiculo.status)}`}>
@@ -403,7 +413,7 @@ export default function VeiculosPage() {
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-300">
                       <div className="flex items-center space-x-2">
                         <Car className="h-4 w-4" />
                         <span>{veiculo.placa}</span>
@@ -432,14 +442,14 @@ export default function VeiculosPage() {
                   <div className="flex space-x-2 ml-4">
                     <button
                       onClick={() => handleEdit(veiculo)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-md transition-colors"
                       disabled={isLoading}
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(veiculo)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-md transition-colors"
                       disabled={isLoading}
                     >
                       <Trash2 className="h-4 w-4" />

@@ -49,6 +49,20 @@ CREATE TABLE IF NOT EXISTS locacoes (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Criar tabela de movimentações financeiras (caixa)
+CREATE TABLE IF NOT EXISTS movimentacoes_financeiras (
+    id SERIAL PRIMARY KEY,
+    tipo VARCHAR(20) CHECK (tipo IN ('entrada', 'saida')) NOT NULL,
+    categoria VARCHAR(50) NOT NULL, -- 'locacao', 'venda', 'despesa', etc.
+    descricao VARCHAR(255) NOT NULL,
+    valor DECIMAL(10, 2) NOT NULL,
+    data_movimentacao DATE NOT NULL,
+    locacao_id INTEGER REFERENCES locacoes(id),
+    cliente_id INTEGER REFERENCES clientes(id),
+    observacoes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Criar índices para melhorar performance
 CREATE INDEX IF NOT EXISTS idx_clientes_cpf ON clientes(cpf);
 CREATE INDEX IF NOT EXISTS idx_clientes_nome ON clientes(nome);
@@ -57,11 +71,16 @@ CREATE INDEX IF NOT EXISTS idx_veiculos_status ON veiculos(status);
 CREATE INDEX IF NOT EXISTS idx_locacoes_cliente_id ON locacoes(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_locacoes_veiculo_id ON locacoes(veiculo_id);
 CREATE INDEX IF NOT EXISTS idx_locacoes_status ON locacoes(status);
+CREATE INDEX IF NOT EXISTS idx_movimentacoes_tipo ON movimentacoes_financeiras(tipo);
+CREATE INDEX IF NOT EXISTS idx_movimentacoes_categoria ON movimentacoes_financeiras(categoria);
+CREATE INDEX IF NOT EXISTS idx_movimentacoes_data ON movimentacoes_financeiras(data_movimentacao);
+CREATE INDEX IF NOT EXISTS idx_movimentacoes_locacao_id ON movimentacoes_financeiras(locacao_id);
 
 -- DESABILITAR RLS TEMPORARIAMENTE PARA FUNCIONAR SEM AUTENTICAÇÃO
 ALTER TABLE clientes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE veiculos DISABLE ROW LEVEL SECURITY;
 ALTER TABLE locacoes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE movimentacoes_financeiras DISABLE ROW LEVEL SECURITY;
 
 -- Criar função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()

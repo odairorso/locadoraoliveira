@@ -174,6 +174,31 @@ export const handler = async (event, context) => {
       const pathParts = event.path.split('/');
       const id = pathParts[pathParts.length - 1];
       
+      // Check if vehicle is being used in active rentals
+      const { data: activeRentals, error: rentalError } = await supabase
+        .from('locacoes')
+        .select('id')
+        .eq('veiculo_id', id)
+        .eq('status', 'ativa');
+
+      if (rentalError) throw rentalError;
+      
+      if (activeRentals && activeRentals.length > 0) {
+        return {
+          statusCode: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+          },
+          body: JSON.stringify({
+            success: false,
+            error: "Não é possível excluir um veículo que está sendo usado em locações ativas"
+          })
+        };
+      }
+      
       const { error } = await supabase
         .from('veiculos')
         .delete()

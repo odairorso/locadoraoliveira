@@ -6,9 +6,11 @@ import {
   ClienteCreateSchema, 
   VeiculoCreateSchema,
   LocacaoCreateSchema,
+  MovimentacaoFinanceiraCreateSchema,
   type Cliente, 
   type Veiculo,
   type Locacao,
+  type MovimentacaoFinanceira,
   type ApiResponse,
   type DashboardStats 
 } from "@/shared/types";
@@ -61,11 +63,24 @@ app.get("/api/dashboard", async (c) => {
 
     const totalRevenue = revenue.reduce((acc, item) => acc + item.valor_total, 0);
 
+    // Calculate cash balance from financial movements
+    const { data: movimentacoes, error: movimentacoesError } = await supabase
+      .from('movimentacoes_financeiras')
+      .select('tipo, valor');
+
+    let saldoCaixa = 0;
+    if (!movimentacoesError && movimentacoes) {
+      saldoCaixa = movimentacoes.reduce((acc, mov) => {
+        return mov.tipo === 'entrada' ? acc + mov.valor : acc - mov.valor;
+      }, 0);
+    }
+
     const stats: DashboardStats = {
       locacoesAtivas: activeRentals || 0,
       veiculosDisponiveis: availableVehicles || 0,
       veiculosLocados: rentedVehicles || 0,
-      receitaMes: totalRevenue || 0
+      receitaMes: totalRevenue || 0,
+      saldoCaixa: saldoCaixa
     };
 
     return c.json({ success: true, data: stats } as ApiResponse<DashboardStats>);
@@ -435,6 +450,28 @@ app.put("/api/locacoes/:id", zValidator("json", LocacaoCreateSchema), async (c) 
     // Update vehicle status based on rental status
     if (data.status === 'finalizada' || data.status === 'cancelada') {
       await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', data.veiculo_id);
+      
+      // If rental is being finalized (not cancelled), register payment in cash register
+      if (data.status === 'finalizada' && currentLocacao.status !== 'finalizada') {
+        // Get client info for description
+        const { data: cliente } = await supabase
+          .from('clientes')
+          .select('nome')
+          .eq('id', data.cliente_id)
+          .single();
+        
+        // Register payment in cash register
+        await supabase.from('movimentacoes_financeiras').insert({
+          tipo: 'entrada',
+          categoria: 'locacao',
+          descricao: `Pagamento de locação - ${cliente?.nome || 'Cliente'}`,
+          valor: data.valor_total,
+          data_movimentacao: new Date().toISOString().split('T')[0],
+          locacao_id: parseInt(id),
+          cliente_id: data.cliente_id,
+          observacoes: `Locação finalizada - ID: ${id}`
+        });
+      }
     } else if (data.status === 'ativa' && currentLocacao.status !== 'ativa') {
       await supabase.from('veiculos').update({ status: 'locado' }).eq('id', data.veiculo_id);
     }
@@ -749,6 +786,46 @@ app.get("/api/locacoes/:id/contrato", async (c) => {
   } catch (error) {
     console.error("Erro ao gerar contrato:", error)
     return c.json({ success: false, error: "Erro ao gerar contrato" } as ApiResponse<never>, 500);
+  }
+});
+
+// Movimentações Financeiras endpoints
+app.get("/api/movimentacoes", async (c) => {
+  try {
+    const { data: movimentacoes, error } = await supabase
+      .from('movimentacoes_financeiras')
+      .select(`
+        *,
+        cliente:clientes(nome),
+        locacao:locacoes(id)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return c.json({ success: true, data: movimentacoes } as ApiResponse<MovimentacaoFinanceira[]>);
+  } catch (error) {
+    console.error("Erro ao buscar movimentações:", error)
+    return c.json({ success: false, error: "Erro ao buscar movimentações" } as ApiResponse<never>, 500);
+  }
+});
+
+app.post("/api/movimentacoes", zValidator("json", MovimentacaoFinanceiraCreateSchema), async (c) => {
+  try {
+    const data = c.req.valid("json");
+    
+    const { data: newMovimentacao, error } = await supabase
+      .from('movimentacoes_financeiras')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return c.json({ success: true, data: newMovimentacao } as ApiResponse<MovimentacaoFinanceira>);
+  } catch (error) {
+    console.error("Erro ao criar movimentação:", error)
+    return c.json({ success: false, error: "Erro ao criar movimentação" } as ApiResponse<never>, 500);
   }
 });
 

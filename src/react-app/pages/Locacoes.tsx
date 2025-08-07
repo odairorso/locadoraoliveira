@@ -107,21 +107,38 @@ export default function LocacoesPage() {
 
   const handleDelete = async (locacao: Locacao) => {
     if (confirm(`Tem certeza que deseja excluir esta locação?`)) {
+      console.log('Tentando excluir locação:', locacao.id);
       const result = await deleteLocacao(`/api/locacoes/${locacao.id}`, {}, 'DELETE');
-      if (result !== null) {
+      console.log('Resultado da exclusão:', result);
+      if (result) {
+        console.log('Exclusão bem-sucedida, atualizando lista...');
         refetch();
+      } else {
+        console.error('Falha na exclusão');
       }
     }
   };
 
   const handleFinishLocacao = async (locacao: Locacao) => {
     if (confirm('Tem certeza que deseja finalizar esta locação?')) {
+      console.log('Tentando finalizar locação:', locacao.id);
       const result = await updateLocacao(`/api/locacoes/${locacao.id}`, {
-        ...locacao,
-        status: 'finalizada'
+        cliente_id: locacao.cliente_id,
+        veiculo_id: locacao.veiculo_id,
+        data_locacao: locacao.data_locacao,
+        data_entrega: locacao.data_entrega,
+        valor_diaria: locacao.valor_diaria,
+        valor_total: locacao.valor_total,
+        valor_caucao: locacao.valor_caucao || 0,
+        status: 'finalizada',
+        observacoes: locacao.observacoes || ''
       }, 'PUT');
+      console.log('Resultado da finalização:', result);
       if (result) {
+        console.log('Finalização bem-sucedida, atualizando lista...');
         refetch();
+      } else {
+        console.error('Falha na finalização');
       }
     }
   };
@@ -145,13 +162,13 @@ export default function LocacoesPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ativa':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200';
       case 'finalizada':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200';
       case 'cancelada':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -297,19 +314,19 @@ export default function LocacoesPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
             placeholder="Pesquisar por cliente ou veículo..."
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="pl-10 pr-4 py-3 sm:py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base sm:text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <select
-          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          className="px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base sm:text-sm min-w-[140px]"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -323,22 +340,22 @@ export default function LocacoesPage() {
       {/* Rental Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border border-gray-200 dark:border-gray-600 w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-y-auto">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <div className="relative top-2 sm:top-10 mx-auto p-3 sm:p-5 border border-gray-200 dark:border-gray-600 w-full sm:w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-none sm:rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-y-auto">
+            <div className="mt-1 sm:mt-3">
+              <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white mb-4">
                 {editingLocacao ? 'Editar Locação' : 'Nova Locação'}
               </h3>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Cliente *
                     </label>
                     <select
                       required
                       disabled={loadingClientes}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.cliente_id}
                       onChange={(e) => setFormData({ ...formData, cliente_id: parseInt(e.target.value) })}
                     >
@@ -352,13 +369,13 @@ export default function LocacoesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Veículo *
                     </label>
                     <select
                       required
                       disabled={loadingVeiculos || editingLocacao !== null}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.veiculo_id}
                       onChange={(e) => handleVeiculoChange(parseInt(e.target.value))}
                     >
@@ -374,36 +391,36 @@ export default function LocacoesPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Data de Locação *
                     </label>
                     <input
                       type="date"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.data_locacao}
                       onChange={(e) => setFormData({ ...formData, data_locacao: e.target.value })}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Data de Entrega *
                     </label>
                     <input
                       type="date"
                       required
                       min={formData.data_locacao}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.data_entrega}
                       onChange={(e) => setFormData({ ...formData, data_entrega: e.target.value })}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Valor da Diária (R$) *
                     </label>
                     <input
@@ -411,20 +428,20 @@ export default function LocacoesPage() {
                       step="0.01"
                       min="0"
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.valor_diaria}
                       onChange={(e) => setFormData({ ...formData, valor_diaria: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Dias
                     </label>
                     <input
                       type="text"
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.data_locacao && formData.data_entrega 
                         ? Math.ceil((new Date(formData.data_entrega).getTime() - new Date(formData.data_locacao).getTime()) / (1000 * 60 * 60 * 24))
                         : 0
@@ -433,26 +450,26 @@ export default function LocacoesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Valor Total (R$)
                     </label>
                     <input
                       type="text"
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-600 font-bold text-green-600 dark:text-green-400"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-600 font-bold text-green-600 dark:text-green-400 text-base sm:text-sm"
                       value={formatCurrency(formData.valor_total)}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Valor da Caução (R$)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.valor_caucao || ''}
                       onChange={(e) => setFormData({ ...formData, valor_caucao: parseFloat(e.target.value) || 0 })}
                       placeholder="Ex: 500.00"
@@ -463,11 +480,11 @@ export default function LocacoesPage() {
 
                 {editingLocacao && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Status
                     </label>
                     <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                     >
@@ -479,30 +496,30 @@ export default function LocacoesPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Observações
                   </label>
                   <textarea
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                     value={formData.observacoes || ''}
                     onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
                     placeholder="Observações adicionais sobre a locação..."
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    className="w-full sm:w-auto px-4 py-3 sm:py-2 text-base sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 min-h-[44px]"
                     disabled={isLoading}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-md hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="w-full sm:w-auto px-4 py-3 sm:py-2 text-base sm:text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-md hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 min-h-[44px]"
                     disabled={isLoading || formData.valor_total <= 0}
                   >
                     {isLoading ? 'Salvando...' : editingLocacao ? 'Atualizar' : 'Criar Locação'}
@@ -519,8 +536,8 @@ export default function LocacoesPage() {
         {loading ? (
           <LoadingSpinner text="Carregando locações..." />
         ) : error ? (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800">Erro ao carregar locações: {error}</p>
+          <div className="p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
+            <p className="text-red-800 dark:text-red-200">Erro ao carregar locações: {error}</p>
           </div>
         ) : !locacoes || locacoes.length === 0 ? (
           <div className="text-center py-12">
@@ -531,84 +548,86 @@ export default function LocacoesPage() {
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {locacoes.map((locacao) => (
-              <div key={locacao.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <div className="flex justify-between items-start">
+              <div key={locacao.id} className="p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-3 sm:space-y-0">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         Locação #{locacao.id}
                       </h3>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(locacao.status)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium self-start ${getStatusColor(locacao.status)}`}>
                         {getStatusIcon(locacao.status)}
                         <span className="ml-1">{getStatusText(locacao.status)}</span>
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center space-x-2">
-                        <User className="h-4 w-4 text-blue-500" />
-                        <span>{locacao.cliente_nome}</span>
+                        <User className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                        <span className="truncate">{locacao.cliente_nome}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Car className="h-4 w-4 text-green-500" />
-                        <span>{locacao.veiculo_info}</span>
+                        <Car className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="truncate">{locacao.veiculo_info}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-purple-500" />
-                        <span>{formatDate(locacao.data_locacao)} a {formatDate(locacao.data_entrega)}</span>
+                        <Calendar className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm">{formatDate(locacao.data_locacao)} a {formatDate(locacao.data_entrega)}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <DollarSign className="h-4 w-4 text-yellow-500" />
+                        <DollarSign className="h-4 w-4 text-yellow-500 flex-shrink-0" />
                         <span className="font-semibold">{formatCurrency(locacao.valor_total)}</span>
                       </div>
                     </div>
 
                     {locacao.observacoes && (
                       <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                        <strong>Observações:</strong> {locacao.observacoes}
+                        <strong>Observações:</strong> <span className="break-words">{locacao.observacoes}</span>
                       </div>
                     )}
                   </div>
                   
-                  <div className="flex flex-col space-y-2 ml-4">
+                  <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 sm:ml-4 overflow-x-auto sm:overflow-x-visible">
                     <button
                       onClick={() => viewContract(locacao)}
-                      className="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="inline-flex items-center px-2 sm:px-3 py-2 sm:py-1.5 border border-blue-300 dark:border-blue-600 text-xs font-medium rounded text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-800 hover:bg-blue-100 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0 whitespace-nowrap"
                     >
-                      <FileText className="h-3 w-3 mr-1" />
-                      Ver Contrato
+                      <FileText className="h-3 w-3 mr-1 flex-shrink-0" />
+                      <span className="hidden sm:inline">Ver Contrato</span>
+                      <span className="sm:hidden">Ver</span>
                     </button>
                     
                     <button
                       onClick={() => downloadContract(locacao)}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="inline-flex items-center px-2 sm:px-3 py-2 sm:py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0 whitespace-nowrap"
                     >
-                      <FileText className="h-3 w-3 mr-1" />
-                      Baixar
+                      <FileText className="h-3 w-3 mr-1 flex-shrink-0" />
+                      <span className="hidden sm:inline">Baixar</span>
+                      <span className="sm:hidden">PDF</span>
                     </button>
                     
                     {locacao.status === 'ativa' && (
                       <button
                         onClick={() => handleFinishLocacao(locacao)}
-                        className="inline-flex items-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        disabled={isLoading}
+                        className="inline-flex items-center px-2 sm:px-3 py-2 sm:py-1.5 border border-green-300 dark:border-green-600 text-xs font-medium rounded text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-800 hover:bg-green-100 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 min-h-[44px] sm:min-h-0 whitespace-nowrap"
                       >
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Finalizar
+                        <CheckCircle className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="hidden sm:inline">Finalizar</span>
+                        <span className="sm:hidden">Fim</span>
                       </button>
                     )}
                     
                     <div className="flex space-x-1">
                       <button
                         onClick={() => handleEdit(locacao)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition-colors"
                         disabled={isLoading}
                       >
                         <Edit className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => handleDelete(locacao)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors"
                         disabled={isLoading}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -625,60 +644,60 @@ export default function LocacoesPage() {
       {/* Contract Preview Modal */}
       {showContractPreview && contractData && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-5 mx-auto p-5 border border-gray-200 dark:border-gray-600 w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Visualizar Contrato</h3>
-              <div className="flex space-x-2">
+          <div className="relative top-2 sm:top-5 mx-auto p-2 sm:p-5 border border-gray-200 dark:border-gray-600 w-full sm:w-11/12 max-w-4xl shadow-lg rounded-none sm:rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-y-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Visualizar Contrato</h3>
+              <div className="flex space-x-2 w-full sm:w-auto">
                 <button
                   onClick={printContract}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                 >
                   Imprimir
                 </button>
                 <button
                   onClick={() => setShowContractPreview(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
                 >
                   Fechar
                 </button>
               </div>
             </div>
             
-            <div id="contract-content" className="bg-white text-black p-8" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.6', fontSize: '12px' }}>
-              <div className="text-center mb-8">
+            <div id="contract-content" className="bg-white text-black p-2 sm:p-4 md:p-8" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.4', fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
+              <div className="text-center mb-4 sm:mb-8">
                 <img
                   src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
                   alt="Oliveira Veículos"
-                  className="h-20 mx-auto mb-4"
+                  className="h-12 sm:h-16 md:h-20 mx-auto mb-2 sm:mb-4"
                 />
-                <h1 className="text-2xl font-bold mb-4">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
               </div>
 
-              <div style={{ color: '#000', fontSize: '12px', lineHeight: '1.6' }}>
-                <p style={{ margin: '10px 0' }}><strong>Entre:</strong></p>
+              <div style={{ color: '#000', fontSize: window.innerWidth < 640 ? '10px' : '12px', lineHeight: '1.4' }}>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0' }}><strong>Entre:</strong></p>
                 
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
                   a pessoa jurídica OR DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, 
                   com sede em Av campo grande 707 centro, neste ato representada, conforme poderes especialmente 
                   conferidos, por: João Roberto dos Santos de Oliveira, na qualidade de: Administrador, 
                   CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:
                 </p>
                 
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
                   <strong>{contractData?.cliente_nome || '[Nome do Cliente]'}</strong>, CPF n.º <strong>{contractData?.cliente_cpf || '[CPF]'}</strong>, 
                   residente em: <strong>{contractData?.endereco_completo || '[Endereço]'}</strong>,
                   doravante denominado <strong>LOCATÁRIO</strong>.
                 </p>
 
-                <p style={{ margin: '10px 0' }}>As partes acima identificadas têm entre si justo e acertado o presente contrato de locação de veículo, ficando desde já aceito nas cláusulas e condições abaixo descritas.</p>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0' }}>As partes acima identificadas têm entre si justo e acertado o presente contrato de locação de veículo, ficando desde já aceito nas cláusulas e condições abaixo descritas.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 1ª – DO OBJETO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Por meio deste contrato, que firmam entre si a LOCADORA e o LOCATÁRIO, regula-se a locação do veículo:</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}><strong>{contractData?.veiculo_marca || '[Marca]'} {contractData?.veiculo_modelo || '[Modelo]'} ano {contractData?.veiculo_ano || '[Ano]'}</strong></p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Com placa <strong>{contractData?.veiculo_placa || '[Placa]'}</strong>, e com o valor de mercado aproximado em <strong>{contractData?.valor_veiculo_formatted || '[Valor]'}</strong>.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
+                <h3 style={{ margin: window.innerWidth < 640 ? '15px 0 8px 0' : '20px 0 10px 0', fontWeight: 'bold', fontSize: window.innerWidth < 640 ? '11px' : '12px' }}>CLÁUSULA 1ª – DO OBJETO</h3>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Por meio deste contrato, que firmam entre si a LOCADORA e o LOCATÁRIO, regula-se a locação do veículo:</p>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}><strong>{contractData?.veiculo_marca || '[Marca]'} {contractData?.veiculo_modelo || '[Modelo]'} ano {contractData?.veiculo_ano || '[Ano]'}</strong></p>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Com placa <strong>{contractData?.veiculo_placa || '[Placa]'}</strong>, e com o valor de mercado aproximado em <strong>{contractData?.valor_veiculo_formatted || '[Valor]'}</strong>.</p>
+                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
+                <h3 style={{ margin: window.innerWidth < 640 ? '15px 0 8px 0' : '20px 0 10px 0', fontWeight: 'bold', fontSize: window.innerWidth < 640 ? '11px' : '12px' }}>CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>. O valor total da locação é de <strong>{contractData?.valor_total_formatted || '[Valor Total]'}</strong> para o período estabelecido.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. O LOCATÁRIO deverá efetuar o pagamento do valor acordado, por meio de pix, utilizando a chave 17909442000158, ou em espécie, ou cartão.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Em caso de atraso no pagamento do aluguel, será aplicada multa de 5% (cinco por cento), sobre o valor devido, bem como juros de mora de 3% (três por cento) ao mês, mais correção monetária, apurada conforme variação do IGP-M no período.</p>

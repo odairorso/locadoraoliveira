@@ -41,6 +41,16 @@
   to = "/.netlify/functions/locacoes"
   status = 200
 
+[[redirects]]
+  from = "/api/movimentacoes"
+  to = "/.netlify/functions/movimentacoes"
+  status = 200
+
+[[redirects]]
+  from = "/api/movimentacoes/*"
+  to = "/.netlify/functions/movimentacoes"
+  status = 200
+
 # SPA redirect - must come last
 [[redirects]]
   from = "/*"

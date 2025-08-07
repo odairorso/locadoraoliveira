@@ -57,11 +57,20 @@ export const handler = async (event, context) => {
 
     const totalRevenue = revenue ? revenue.reduce((acc, item) => acc + (item.valor_total || 0), 0) : 0;
 
+    // Calculate cash balance from real rental data
+    const { data: allRentals } = await supabase
+      .from('locacoes')
+      .select('valor_total, status')
+      .in('status', ['ativa', 'finalizada']);
+
+    const saldoCaixa = allRentals ? allRentals.reduce((acc, rental) => acc + (rental.valor_total || 0), 0) : 0;
+
     const stats = {
       locacoesAtivas: activeRentals || 0,
       veiculosDisponiveis: availableVehicles || 0,
       veiculosLocados: rentedVehicles || 0,
-      receitaMes: totalRevenue || 0
+      receitaMes: totalRevenue || 0,
+      saldoCaixa: saldoCaixa || 0
     };
 
     return {
