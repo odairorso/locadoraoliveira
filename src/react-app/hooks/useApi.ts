@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/react-app/supabase';
 import type { ApiResponse } from '@/shared/types';
 
 interface UseApiOptions {
