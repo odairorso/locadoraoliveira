@@ -32,6 +32,92 @@ export const handler = async (event, context) => {
     }
 
     if (method === 'GET') {
+      // Verificar se é uma requisição para contrato-data
+      const pathParts = event.path.split('/');
+      if (pathParts.includes('contrato-data')) {
+        const id = pathParts[pathParts.length - 2]; // ID está antes de 'contrato-data'
+        
+        // Buscar dados da locação com relacionamentos
+        const { data: locacao, error: locacaoError } = await supabase
+          .from('locacoes')
+          .select(`
+            *,
+            cliente:clientes (*),
+            veiculo:veiculos (*)
+          `)
+          .eq('id', id)
+          .single();
+
+        if (locacaoError) {
+          return {
+            statusCode: 404,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Headers": "Content-Type",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+            },
+            body: JSON.stringify({
+              success: false,
+              error: "Locação não encontrada"
+            })
+          };
+        }
+
+        // Formatar endereço completo
+        const enderecoCompleto = `${locacao.cliente.endereco || ''}, ${locacao.cliente.numero || ''}, ${locacao.cliente.bairro || ''}, ${locacao.cliente.cidade || ''} - ${locacao.cliente.estado || ''}, CEP: ${locacao.cliente.cep || ''}`;
+
+        // Formatar valores monetários
+        const formatCurrency = (value) => {
+          if (!value) return 'R$ 0,00';
+          return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(parseFloat(value));
+        };
+
+        // Formatar datas
+        const formatDate = (dateString) => {
+          if (!dateString) return '';
+          return new Date(dateString).toLocaleDateString('pt-BR');
+        };
+
+        // Construir objeto de dados do contrato
+        const contractData = {
+          id: locacao.id,
+          cliente_nome: locacao.cliente.nome,
+          cliente_cpf: locacao.cliente.cpf,
+          endereco_completo: enderecoCompleto,
+          veiculo_marca: locacao.veiculo.marca,
+          veiculo_modelo: locacao.veiculo.modelo,
+          veiculo_ano: locacao.veiculo.ano,
+          veiculo_placa: locacao.veiculo.placa,
+          valor_veiculo_formatted: formatCurrency(locacao.veiculo.valor),
+          valor_diaria_formatted: formatCurrency(locacao.valor_diaria),
+          valor_total_formatted: formatCurrency(locacao.valor_total),
+          valor_caucao_formatted: formatCurrency(locacao.valor_caucao),
+          data_locacao_formatted: formatDate(locacao.data_locacao),
+          data_entrega_formatted: formatDate(locacao.data_entrega),
+          data_atual_formatted: new Date().toLocaleDateString('pt-BR')
+        };
+
+        return {
+          statusCode: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+          },
+          body: JSON.stringify({
+            success: true,
+            data: contractData,
+            error: null
+          })
+        };
+      }
+      
+      // Requisição normal para listar locações
       const queryParams = event.queryStringParameters || {};
       const search = queryParams.search || '';
       const status = queryParams.status || '';
