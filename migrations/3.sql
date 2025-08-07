@@ -1,0 +1,1 @@
+ALTER TABLE locacoes ADD COLUMN valor_caucao REAL DEFAULT 0;

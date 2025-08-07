@@ -1,0 +1,1 @@
+ALTER TABLE locacoes DROP COLUMN valor_caucao;
