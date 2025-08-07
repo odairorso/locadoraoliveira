@@ -1,19 +1,36 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 export const handler = async (event, context) => {
+  // --- DIAGNOSTIC LOGS ---
+  console.log("--- DASHBOARD FUNCTION LOGS ---");
+  console.log("SUPABASE_URL is set:", !!process.env.SUPABASE_URL);
+  console.log("SUPABASE_ANON_KEY is set:", !!process.env.SUPABASE_ANON_KEY);
+  // ------------------------
+
   try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      return {
+        statusCode: 500,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          success: false,
+          error: "As variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY não foram configuradas no Netlify para o backend.",
+        })
+      };
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     // Handle OPTIONS request for CORS
     if (event.httpMethod === 'OPTIONS') {
       return {
         statusCode: 200,
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
         }
       };
@@ -58,9 +75,7 @@ export const handler = async (event, context) => {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        "Access-Control-Allow-Origin": "*"
       },
       body: JSON.stringify({
         success: true,
@@ -75,9 +90,7 @@ export const handler = async (event, context) => {
       statusCode: 500,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        "Access-Control-Allow-Origin": "*"
       },
       body: JSON.stringify({
         success: false,
