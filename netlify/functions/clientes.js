@@ -1,6 +1,6 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const { createClient } = require('@supabase/supabase-js');
 
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
@@ -30,27 +30,16 @@ export const handler = async (event, context) => {
     if (method === 'GET') {
       const queryParams = event.queryStringParameters || {};
       const search = queryParams.search || '';
-      const status = queryParams.status || '';
       
-      let query = supabase.from('locacoes').select(`
-        *,
-        cliente:clientes ( nome ),
-        veiculo:veiculos ( marca, modelo, placa )
-      `);
+      let query = supabase.from('clientes').select('*');
       
-      if (status) {
-        query = query.eq('status', status);
+      if (search) {
+        query = query.or(`nome.ilike.%${search}%,cpf.ilike.%${search}%`);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query.order('nome', { ascending: true });
 
       if (error) throw error;
-
-      const formattedData = data.map(l => ({
-        ...l,
-        cliente_nome: l.cliente?.nome,
-        veiculo_info: `${l.veiculo?.marca} ${l.veiculo?.modelo} - ${l.veiculo?.placa}`,
-      }));
       
       return {
         statusCode: 200,
@@ -62,7 +51,7 @@ export const handler = async (event, context) => {
         },
         body: JSON.stringify({
           success: true,
-          data: formattedData,
+          data: data,
           error: null
         })
       };
@@ -71,39 +60,14 @@ export const handler = async (event, context) => {
     if (method === 'POST') {
       const data = JSON.parse(event.body);
       
-      const { data: veiculo, error: veiculoError } = await supabase
-        .from('veiculos')
-        .select('status')
-        .eq('id', data.veiculo_id)
-        .single();
-
-      if (veiculoError) throw veiculoError;
-      if (!veiculo || veiculo.status !== 'disponivel') {
-        return {
-          statusCode: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
-          },
-          body: JSON.stringify({
-            success: false,
-            error: "Veículo não está disponível"
-          })
-        };
-      }
-      
-      const { data: overlap, error: overlapError } = await supabase
-        .from('locacoes')
+      const { data: existing, error: existingError } = await supabase
+        .from('clientes')
         .select('id')
-        .eq('veiculo_id', data.veiculo_id)
-        .eq('status', 'ativa')
-        .or(`data_locacao.lte.${data.data_entrega},data_entrega.gte.${data.data_locacao}`)
+        .eq('cpf', data.cpf)
         .single();
 
-      if (overlapError && overlapError.code !== 'PGRST116') throw overlapError;
-      if (overlap) {
+      if (existingError && existingError.code !== 'PGRST116') throw existingError;
+      if (existing) {
         return {
           statusCode: 400,
           headers: {
@@ -114,35 +78,30 @@ export const handler = async (event, context) => {
           },
           body: JSON.stringify({
             success: false,
-            error: "Veículo já possui locação no período informado"
+            error: "CPF já cadastrado"
           })
         };
       }
       
-      const { data: newLocacao, error } = await supabase
-        .from('locacoes')
+      const { data: newCliente, error } = await supabase
+        .from('clientes')
         .insert([
-          {
-            cliente_id: data.cliente_id,
-            veiculo_id: data.veiculo_id,
-            data_locacao: data.data_locacao,
-            data_entrega: data.data_entrega,
-            valor_diaria: data.valor_diaria,
-            valor_total: data.valor_total,
-            valor_caucao: data.valor_caucao || 0,
-            status: data.status || 'ativa',
-            observacoes: data.observacoes || null
+          { 
+            nome: data.nome, 
+            cpf: data.cpf, 
+            celular: data.celular, 
+            endereco: data.endereco, 
+            bairro: data.bairro || null, 
+            cidade: data.cidade || null, 
+            estado: data.estado || null, 
+            cep: data.cep || null, 
+            email: data.email 
           }
         ])
         .select()
         .single();
 
       if (error) throw error;
-
-      await supabase
-        .from('veiculos')
-        .update({ status: 'locado' })
-        .eq('id', data.veiculo_id);
 
       return {
         statusCode: 200,
@@ -154,7 +113,7 @@ export const handler = async (event, context) => {
         },
         body: JSON.stringify({
           success: true,
-          data: newLocacao,
+          data: newCliente,
           error: null
         })
       };
@@ -165,39 +124,24 @@ export const handler = async (event, context) => {
       const id = pathParts[pathParts.length - 1];
       const data = JSON.parse(event.body);
       
-      const { data: currentLocacao, error: currentError } = await supabase
-        .from('locacoes')
-        .select('veiculo_id')
-        .eq('id', id)
-        .single();
-
-      if (currentError) throw currentError;
-
-      const { data: updatedLocacao, error } = await supabase
-        .from('locacoes')
+      const { data: updatedCliente, error } = await supabase
+        .from('clientes')
         .update({
-          cliente_id: data.cliente_id,
-          veiculo_id: data.veiculo_id,
-          data_locacao: data.data_locacao,
-          data_entrega: data.data_entrega,
-          valor_diaria: data.valor_diaria,
-          valor_total: data.valor_total,
-          valor_caucao: data.valor_caucao || 0,
-          status: data.status,
-          observacoes: data.observacoes || null
+          nome: data.nome,
+          cpf: data.cpf,
+          celular: data.celular,
+          endereco: data.endereco,
+          bairro: data.bairro || null,
+          cidade: data.cidade || null,
+          estado: data.estado || null,
+          cep: data.cep || null,
+          email: data.email
         })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-
-      if (data.status === 'finalizada' || data.status === 'cancelada') {
-        await supabase
-          .from('veiculos')
-          .update({ status: 'disponivel' })
-          .eq('id', currentLocacao.veiculo_id);
-      }
 
       return {
         statusCode: 200,
@@ -209,7 +153,7 @@ export const handler = async (event, context) => {
         },
         body: JSON.stringify({
           success: true,
-          data: updatedLocacao,
+          data: updatedCliente,
           error: null
         })
       };
@@ -219,23 +163,12 @@ export const handler = async (event, context) => {
       const pathParts = event.path.split('/');
       const id = pathParts[pathParts.length - 1];
       
-      const { data: locacao, error: locacaoError } = await supabase
-        .from('locacoes')
-        .select('veiculo_id')
-        .eq('id', id)
-        .single();
-
-      if (locacaoError) throw locacaoError;
-
-      await supabase
-        .from('locacoes')
+      const { error } = await supabase
+        .from('clientes')
         .delete()
         .eq('id', id);
 
-      await supabase
-        .from('veiculos')
-        .update({ status: 'disponivel' })
-        .eq('id', locacao.veiculo_id);
+      if (error) throw error;
 
       return {
         statusCode: 200,
@@ -268,7 +201,7 @@ export const handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error("Erro na função locações:", error);
+    console.error("Erro na função clientes:", error);
     return {
       statusCode: 500,
       headers: {
