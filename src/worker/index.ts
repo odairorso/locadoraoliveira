@@ -43,7 +43,6 @@ app.get("/api/dashboard", async (c) => {
 
     return c.json({ success: true, data: stats } as ApiResponse<DashboardStats>);
   } catch (error) {
-    console.error("Dashboard error:", error);
     return c.json({ success: false, error: "Erro ao carregar dashboard" } as ApiResponse<never>, 500);
   }
 });
@@ -69,7 +68,6 @@ app.get("/api/clientes", async (c) => {
     
     return c.json({ success: true, data: result.results } as ApiResponse<Cliente[]>);
   } catch (error) {
-    console.error("Get clientes error:", error);
     return c.json({ success: false, error: "Erro ao buscar clientes" } as ApiResponse<never>, 500);
   }
 });
@@ -97,7 +95,6 @@ app.post("/api/clientes", zValidator("json", ClienteCreateSchema), async (c) => 
       return c.json({ success: false, error: "Erro ao criar cliente" } as ApiResponse<never>, 500);
     }
   } catch (error) {
-    console.error("Create cliente error:", error);
     return c.json({ success: false, error: "Erro ao criar cliente" } as ApiResponse<never>, 500);
   }
 });
@@ -127,7 +124,6 @@ app.put("/api/clientes/:id", zValidator("json", ClienteCreateSchema), async (c) 
       return c.json({ success: false, error: "Cliente não encontrado" } as ApiResponse<never>, 404);
     }
   } catch (error) {
-    console.error("Update cliente error:", error);
     return c.json({ success: false, error: "Erro ao atualizar cliente" } as ApiResponse<never>, 500);
   }
 });
@@ -151,7 +147,6 @@ app.delete("/api/clientes/:id", async (c) => {
       return c.json({ success: false, error: "Cliente não encontrado" } as ApiResponse<never>, 404);
     }
   } catch (error) {
-    console.error("Delete cliente error:", error);
     return c.json({ success: false, error: "Erro ao excluir cliente" } as ApiResponse<never>, 500);
   }
 });
@@ -188,7 +183,6 @@ app.get("/api/veiculos", async (c) => {
     
     return c.json({ success: true, data: result.results } as ApiResponse<Veiculo[]>);
   } catch (error) {
-    console.error("Get veiculos error:", error);
     return c.json({ success: false, error: "Erro ao buscar veículos" } as ApiResponse<never>, 500);
   }
 });
@@ -227,7 +221,6 @@ app.post("/api/veiculos", zValidator("json", VeiculoCreateSchema), async (c) => 
       return c.json({ success: false, error: "Erro ao criar veículo" } as ApiResponse<never>, 500);
     }
   } catch (error) {
-    console.error("Create veiculo error:", error);
     return c.json({ success: false, error: "Erro ao criar veículo" } as ApiResponse<never>, 500);
   }
 });
@@ -271,7 +264,6 @@ app.get("/api/locacoes", async (c) => {
     
     return c.json({ success: true, data: result.results } as ApiResponse<(Locacao & { cliente_nome: string; veiculo_info: string })[]>);
   } catch (error) {
-    console.error("Get locacoes error:", error);
     return c.json({ success: false, error: "Erro ao buscar locações" } as ApiResponse<never>, 500);
   }
 });
@@ -333,7 +325,6 @@ app.post("/api/locacoes", zValidator("json", LocacaoCreateSchema), async (c) => 
       return c.json({ success: false, error: "Erro ao criar locação" } as ApiResponse<never>, 500);
     }
   } catch (error) {
-    console.error("Create locacao error:", error);
     return c.json({ success: false, error: "Erro ao criar locação" } as ApiResponse<never>, 500);
   }
 });
@@ -382,7 +373,6 @@ app.put("/api/locacoes/:id", zValidator("json", LocacaoCreateSchema), async (c) 
       return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
     }
   } catch (error) {
-    console.error("Update locacao error:", error);
     return c.json({ success: false, error: "Erro ao atualizar locação" } as ApiResponse<never>, 500);
   }
 });
@@ -411,7 +401,6 @@ app.delete("/api/locacoes/:id", async (c) => {
       return c.json({ success: false, error: "Locação não encontrada" } as ApiResponse<never>, 404);
     }
   } catch (error) {
-    console.error("Delete locacao error:", error);
     return c.json({ success: false, error: "Erro ao excluir locação" } as ApiResponse<never>, 500);
   }
 });
@@ -485,7 +474,6 @@ app.get("/api/locacoes/:id/contrato-data", async (c) => {
     
     return c.json({ success: true, data: contractData } as ApiResponse<any>);
   } catch (error) {
-    console.error("Get contract data error:", error);
     return c.json({ success: false, error: "Erro ao carregar dados do contrato" } as ApiResponse<never>, 500);
   }
 });
@@ -681,7 +669,6 @@ app.get("/api/locacoes/:id/contrato", async (c) => {
     return c.html(contractHTML);
     
   } catch (error) {
-    console.error("Generate contract error:", error);
     return c.json({ success: false, error: "Erro ao gerar contrato" } as ApiResponse<never>, 500);
   }
 });
