@@ -1,11 +1,11 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://uvqyxpwlgltnskjdbwzt.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   try {
     const method = event.httpMethod;
     
@@ -21,7 +21,6 @@ exports.handler = async (event, context) => {
     }
 
     if (method === 'GET') {
-      // Parse query parameters
       const queryParams = event.queryStringParameters || {};
       const search = queryParams.search || '';
       const status = queryParams.status || '';
@@ -59,7 +58,6 @@ exports.handler = async (event, context) => {
     if (method === 'POST') {
       const data = JSON.parse(event.body);
       
-      // Check if placa or renavam already exists
       const { data: existing, error: existingError } = await supabase
         .from('veiculos')
         .select('id')
@@ -214,7 +212,8 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         success: false,
-        error: "Erro interno do servidor"
+        error: "Erro interno do servidor.",
+        details: error.message
       })
     };
   }

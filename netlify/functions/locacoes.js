@@ -1,11 +1,11 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://uvqyxpwlgltnskjdbwzt.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   try {
     const method = event.httpMethod;
     
@@ -21,7 +21,6 @@ exports.handler = async (event, context) => {
     }
 
     if (method === 'GET') {
-      // Parse query parameters
       const queryParams = event.queryStringParameters || {};
       const search = queryParams.search || '';
       const status = queryParams.status || '';
@@ -65,7 +64,6 @@ exports.handler = async (event, context) => {
     if (method === 'POST') {
       const data = JSON.parse(event.body);
       
-      // Check if vehicle is available
       const { data: veiculo, error: veiculoError } = await supabase
         .from('veiculos')
         .select('status')
@@ -89,7 +87,6 @@ exports.handler = async (event, context) => {
         };
       }
       
-      // Check for overlapping rentals
       const { data: overlap, error: overlapError } = await supabase
         .from('locacoes')
         .select('id')
@@ -115,7 +112,6 @@ exports.handler = async (event, context) => {
         };
       }
       
-      // Create rental
       const { data: newLocacao, error } = await supabase
         .from('locacoes')
         .insert([
@@ -136,13 +132,10 @@ exports.handler = async (event, context) => {
 
       if (error) throw error;
 
-      // Update vehicle status to 'locado'
-      const { error: updateError } = await supabase
+      await supabase
         .from('veiculos')
         .update({ status: 'locado' })
         .eq('id', data.veiculo_id);
-
-      if (updateError) throw updateError;
 
       return {
         statusCode: 200,
@@ -165,7 +158,6 @@ exports.handler = async (event, context) => {
       const id = pathParts[pathParts.length - 1];
       const data = JSON.parse(event.body);
       
-      // Get current rental to check if vehicle changed
       const { data: currentLocacao, error: currentError } = await supabase
         .from('locacoes')
         .select('veiculo_id')
@@ -174,7 +166,6 @@ exports.handler = async (event, context) => {
 
       if (currentError) throw currentError;
 
-      // Update rental
       const { data: updatedLocacao, error } = await supabase
         .from('locacoes')
         .update({
@@ -194,7 +185,6 @@ exports.handler = async (event, context) => {
 
       if (error) throw error;
 
-      // Update vehicle status if needed
       if (data.status === 'finalizada' || data.status === 'cancelada') {
         await supabase
           .from('veiculos')
@@ -222,7 +212,6 @@ exports.handler = async (event, context) => {
       const pathParts = event.path.split('/');
       const id = pathParts[pathParts.length - 1];
       
-      // Get rental to update vehicle status
       const { data: locacao, error: locacaoError } = await supabase
         .from('locacoes')
         .select('veiculo_id')
@@ -231,15 +220,11 @@ exports.handler = async (event, context) => {
 
       if (locacaoError) throw locacaoError;
 
-      // Delete rental
-      const { error } = await supabase
+      await supabase
         .from('locacoes')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
-
-      // Update vehicle status to available
       await supabase
         .from('veiculos')
         .update({ status: 'disponivel' })
@@ -287,7 +272,8 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         success: false,
-        error: "Erro interno do servidor"
+        error: "Erro interno do servidor.",
+        details: error.message
       })
     };
   }

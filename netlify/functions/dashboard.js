@@ -1,11 +1,11 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://uvqyxpwlgltnskjdbwzt.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   try {
     // Handle OPTIONS request for CORS
     if (event.httpMethod === 'OPTIONS') {
@@ -71,16 +71,8 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error("Erro no dashboard:", error);
     
-    // Se houver erro, retorna dados zerados mas com success true
-    const emptyStats = {
-      locacoesAtivas: 0,
-      veiculosDisponiveis: 0,
-      veiculosLocados: 0,
-      receitaMes: 0
-    };
-
     return {
-      statusCode: 200,
+      statusCode: 500,
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
@@ -88,9 +80,9 @@ exports.handler = async (event, context) => {
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
       },
       body: JSON.stringify({
-        success: true,
-        data: emptyStats,
-        error: null
+        success: false,
+        error: "Erro interno do servidor ao carregar o dashboard.",
+        details: error.message
       })
     };
   }
