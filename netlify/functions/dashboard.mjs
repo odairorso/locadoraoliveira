@@ -2,8 +2,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 export const handler = async (event, context) => {
   try {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    const supabaseUrl = "https://uvqyxpwlgltnskjdbwzt.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRidzciLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcxNzE4Mjk1MiwiZXhwIjoyMDMyNzU4OTUyfQ.o-f-cczSVbYq_i3JjO2J4i_Jb2H3y_t2aYgB5g5f5aY";
 
     if (!supabaseUrl || !supabaseKey) {
       return {
