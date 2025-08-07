@@ -720,24 +720,21 @@ app.get("/api/locacoes/:id/contrato", async (c) => {
   <div class="signature-section">
     <p>Naviraí, ${new Date().toLocaleDateString('pt-BR')}.</p>
     
-    <br><br><br>
-    
-    <p><strong>LOCADORA:</strong> João Roberto dos Santos de Oliveira<br>
-    neste ato representando a pessoa jurídica Or dos Santos de Oliveira</p>
-    
-    <div style="margin-top: 80px;">
-      <div style="border-top: 1px solid black; width: 300px;">
-        <!-- Linha de assinatura da LOCADORA -->
+    <div style="margin-top: 60px;">
+      <div style="text-align: center; margin-bottom: 60px;">
+        <div style="border-top: 1px solid black; padding-top: 5px; margin-top: 30px; display: inline-block; min-width: 300px;">
+          <strong>LOCADORA</strong><br>
+          João Roberto dos Santos de Oliveira<br>
+          neste ato representando a pessoa jurídica<br>
+          Or dos Santos de Oliveira
+        </div>
       </div>
-    </div>
-    
-    <br><br><br><br>
-    
-    <p><strong>LOCATÁRIO:</strong> ${cliente.nome}</p>
-    
-    <div style="margin-top: 80px;">
-      <div style="border-top: 1px solid black; width: 300px;">
-        <!-- Linha de assinatura do LOCATÁRIO -->
+      
+      <div style="text-align: center;">
+        <div style="border-top: 1px solid black; padding-top: 5px; margin-top: 30px; display: inline-block; min-width: 300px;">
+          <strong>LOCATÁRIO</strong><br>
+          ${cliente.nome}
+        </div>
       </div>
     </div>
   </div>

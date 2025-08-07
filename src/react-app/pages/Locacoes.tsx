@@ -771,9 +771,9 @@ export default function LocacoesPage() {
                 <div style={{ marginTop: '50px' }}>
                   <p style={{ margin: '10px 0' }}>Naviraí, {contractData.data_atual}</p>
                   
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px' }}>
-                    <div style={{ textAlign: 'center', width: '200px' }}>
-                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '30px' }}>
+                  <div style={{ marginTop: '60px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '30px', display: 'inline-block', minWidth: '300px' }}>
                         <strong>LOCADORA</strong><br />
                         João Roberto dos Santos de Oliveira<br />
                         neste ato representando a pessoa jurídica<br />
@@ -781,8 +781,8 @@ export default function LocacoesPage() {
                       </div>
                     </div>
                     
-                    <div style={{ textAlign: 'center', width: '200px' }}>
-                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '30px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '30px', display: 'inline-block', minWidth: '300px' }}>
                         <strong>LOCATÁRIO</strong><br />
                         {contractData.cliente_nome}
                       </div>
