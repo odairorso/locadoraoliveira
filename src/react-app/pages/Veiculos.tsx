@@ -83,8 +83,7 @@ export default function VeiculosPage() {
           refetch();
         } else {
           // Show specific error message
-          const errorMessage = deleting.error || 'Erro ao excluir veículo. Verifique se o veículo não está sendo usado em locações ativas.';
-          alert(errorMessage);
+          alert('Erro ao excluir veículo. Verifique se o veículo não está sendo usado em locações ativas.');
         }
       } catch (error) {
         console.error('Erro ao deletar veículo:', error);
