@@ -197,12 +197,16 @@ export default function LocacoesPage() {
 
   const viewContract = async (locacao: Locacao) => {
     try {
+      console.log('Carregando contrato para locação:', locacao.id);
       const response = await fetch(`/api/locacoes/${locacao.id}/contrato-data`);
       const data = await response.json();
+      console.log('Dados recebidos do contrato:', data);
       if (data.success) {
+        console.log('Dados do contrato:', data.data);
         setContractData(data.data);
         setShowContractPreview(true);
       } else {
+        console.error('Erro na resposta:', data.error);
         alert('Erro ao carregar dados do contrato');
       }
     } catch (error) {
@@ -661,8 +665,8 @@ export default function LocacoesPage() {
                 </p>
                 
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>
-                  <strong>{contractData.cliente_nome}</strong>, CPF n.º <strong>{contractData.cliente_cpf}</strong>, 
-                  residente em: <strong>{contractData.endereco_completo}</strong>,
+                  <strong>{contractData?.cliente_nome || '[Nome do Cliente]'}</strong>, CPF n.º <strong>{contractData?.cliente_cpf || '[CPF]'}</strong>, 
+                  residente em: <strong>{contractData?.endereco_completo || '[Endereço]'}</strong>,
                   doravante denominado <strong>LOCATÁRIO</strong>.
                 </p>
 
@@ -670,12 +674,12 @@ export default function LocacoesPage() {
 
                 <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 1ª – DO OBJETO</h3>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>Por meio deste contrato, que firmam entre si a LOCADORA e o LOCATÁRIO, regula-se a locação do veículo:</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}><strong>{contractData.veiculo_marca} {contractData.veiculo_modelo} ano {contractData.veiculo_ano}</strong></p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Com placa <strong>{contractData.veiculo_placa}</strong>, e com o valor de mercado aproximado em <strong>{contractData.valor_veiculo_formatted}</strong>.</p>
+                <p style={{ margin: '10px 0', textAlign: 'justify' }}><strong>{contractData?.veiculo_marca || '[Marca]'} {contractData?.veiculo_modelo || '[Modelo]'} ano {contractData?.veiculo_ano || '[Ano]'}</strong></p>
+                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Com placa <strong>{contractData?.veiculo_placa || '[Placa]'}</strong>, e com o valor de mercado aproximado em <strong>{contractData?.valor_veiculo_formatted || '[Valor]'}</strong>.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
 
                 <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>{contractData.valor_diaria_formatted}</strong>.</p>
+                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. O LOCATÁRIO deverá efetuar o pagamento do valor acordado, por meio de pix, utilizando a chave 17909442000158, ou em espécie, ou cartão.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Em caso de atraso no pagamento do aluguel, será aplicada multa de 5% (cinco por cento), sobre o valor devido, bem como juros de mora de 3% (três por cento) ao mês, mais correção monetária, apurada conforme variação do IGP-M no período.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. O LOCATÁRIO, não vindo a efetuar o pagamento do aluguel por um período de atraso superior à 7 (sete) dias, fica sujeito a ter a posse do veículo configurada como Apropriação Indébita, implicando também a possibilidade de adoção de medidas judiciais, inclusive a Busca e Apreensão do veículo e/ou lavratura de Boletim de Ocorrência, cabendo ao LOCATÁRIO ressarcir a LOCADORA das despesas oriundas da retenção indevida do bem, arcando ainda com as despesas judiciais e/ou extrajudiciais que a LOCADORA venha a ter para efetuar a busca, apreensão e efetiva reintegração da posse do veículo.</p>
@@ -683,9 +687,9 @@ export default function LocacoesPage() {
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 5º. O valor do aluguel firmado neste contrato será reajustado a cada 12 (doze) meses, tendo como base o índice IGP. Em caso de falta deste índice, o reajuste do valor da locação terá por base a média da variação dos índices inflacionários do ano corrente ao da execução da locação.</p>
 
                 <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 3ª – DO PRAZO DO ALUGUEL</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O prazo de locação do referido veículo é de <strong>{contractData.data_locacao_formatted} a {contractData.data_entrega_formatted}</strong>.</p>
+                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O prazo de locação do referido veículo é de <strong>{contractData?.data_locacao_formatted || '[Data Início]'} a {contractData?.data_entrega_formatted || '[Data Fim]'}</strong>.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Ao final do prazo estipulado, caso as partes permaneçam inertes, a locação prorrogar-se-á automaticamente por tempo indeterminado.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso a LOCADORA não queira prorrogar a locação ao terminar o prazo estipulado neste contrato, e o referido veículo não for devolvido, será cobrado o valor do aluguel proporcional aos dias de atraso acumulado de multa diária de <strong>{contractData.valor_diaria_formatted}</strong>.</p>
+                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso a LOCADORA não queira prorrogar a locação ao terminar o prazo estipulado neste contrato, e o referido veículo não for devolvido, será cobrado o valor do aluguel proporcional aos dias de atraso acumulado de multa diária de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>.</p>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. Finda a locação, o LOCATÁRIO deverá devolver o veículo nas mesmas condições em que recebeu, salvo os desgastes decorrentes do uso normal, sob pena de indenização por perdas e danos a ser apurada.</p>
 
                 <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 4ª – DO COMBUSTÍVEL</h3>
