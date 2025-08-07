@@ -70,7 +70,7 @@ export default function ClientesPage() {
   const handleDelete = async (cliente: Cliente) => {
     if (confirm(`Tem certeza que deseja excluir o cliente ${cliente.nome}?`)) {
       const result = await deleteCliente(`/api/clientes/${cliente.id}`, {}, 'DELETE');
-      if (result !== null) {
+      if (result) {
         refetch();
       }
     }

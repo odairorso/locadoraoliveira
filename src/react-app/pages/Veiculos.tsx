@@ -77,7 +77,7 @@ export default function VeiculosPage() {
   const handleDelete = async (veiculo: Veiculo) => {
     if (confirm(`Tem certeza que deseja excluir o veículo ${veiculo.marca} ${veiculo.modelo}?`)) {
       const result = await deleteVeiculo(`/api/veiculos/${veiculo.id}`, {}, 'DELETE');
-      if (result !== null) {
+      if (result) {
         refetch();
       }
     }
