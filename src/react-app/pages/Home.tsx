@@ -1,4 +1,5 @@
 import { Car, Users, FileText, DollarSign } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import DashboardCard from '@/react-app/components/DashboardCard';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import { useApi } from '@/react-app/hooks/useApi';
@@ -6,6 +7,7 @@ import type { DashboardStats } from '@/shared/types';
 
 export default function Home() {
   const { data: stats, loading, error } = useApi<DashboardStats>('/api/dashboard');
+  const navigate = useNavigate();
 
   if (loading) {
     return <LoadingSpinner text="Carregando dashboard..." />;
@@ -27,7 +29,7 @@ export default function Home() {
           <img
             src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
             alt="Oliveira Veículos"
-            className="h-16 w-auto"
+            className="h-24 w-auto"
           />
           <div>
             <h1 className="text-3xl font-bold">Sistema Oliveira Veículos</h1>
@@ -77,7 +79,10 @@ export default function Home() {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Ações Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-colors border border-blue-200">
+          <button 
+            onClick={() => navigate('/clientes')}
+            className="flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-colors border border-blue-200"
+          >
             <Users className="h-8 w-8 text-blue-600 mr-3" />
             <div className="text-left">
               <p className="font-semibold text-blue-900">Novo Cliente</p>
@@ -85,7 +90,10 @@ export default function Home() {
             </div>
           </button>
           
-          <button className="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg hover:from-green-100 hover:to-green-200 transition-colors border border-green-200">
+          <button 
+            onClick={() => navigate('/veiculos')}
+            className="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg hover:from-green-100 hover:to-green-200 transition-colors border border-green-200"
+          >
             <Car className="h-8 w-8 text-green-600 mr-3" />
             <div className="text-left">
               <p className="font-semibold text-green-900">Novo Veículo</p>
@@ -93,7 +101,10 @@ export default function Home() {
             </div>
           </button>
           
-          <button className="flex items-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg hover:from-purple-100 hover:to-purple-200 transition-colors border border-purple-200">
+          <button 
+            onClick={() => navigate('/locacoes')}
+            className="flex items-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg hover:from-purple-100 hover:to-purple-200 transition-colors border border-purple-200"
+          >
             <FileText className="h-8 w-8 text-purple-600 mr-3" />
             <div className="text-left">
               <p className="font-semibold text-purple-900">Nova Locação</p>
