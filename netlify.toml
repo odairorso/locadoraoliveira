@@ -8,37 +8,37 @@
 # API redirects - must come before the catch-all
 [[redirects]]
   from = "/api/dashboard"
-  to = "/.netlify/functions/dashboard"
+  to = "/.netlify/functions/dashboard.mjs"
   status = 200
 
 [[redirects]]
   from = "/api/clientes"
-  to = "/.netlify/functions/clientes"
+  to = "/.netlify/functions/clientes.mjs"
   status = 200
 
 [[redirects]]
   from = "/api/clientes/*"
-  to = "/.netlify/functions/clientes/:splat"
+  to = "/.netlify/functions/clientes.mjs/:splat"
   status = 200
 
 [[redirects]]
   from = "/api/veiculos"
-  to = "/.netlify/functions/veiculos"
+  to = "/.netlify/functions/veiculos.mjs"
   status = 200
 
 [[redirects]]
   from = "/api/veiculos/*"
-  to = "/.netlify/functions/veiculos/:splat"
+  to = "/.netlify/functions/veiculos.mjs/:splat"
   status = 200
 
 [[redirects]]
   from = "/api/locacoes"
-  to = "/.netlify/functions/locacoes"
+  to = "/.netlify/functions/locacoes.mjs"
   status = 200
 
 [[redirects]]
   from = "/api/locacoes/*"
-  to = "/.netlify/functions/locacoes/:splat"
+  to = "/.netlify/functions/locacoes.mjs/:splat"
   status = 200
 
 # SPA redirect - must come last
