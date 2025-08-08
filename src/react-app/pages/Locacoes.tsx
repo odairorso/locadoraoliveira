@@ -211,6 +211,8 @@ export default function LocacoesPage() {
 
   const formatDateForInput = (dateString: string) => {
     if (!dateString) return '';
+    // If already in dd/mm/yyyy format, return as is
+    if (dateString.includes('/')) return dateString;
     // Convert from yyyy-mm-dd to dd/mm/yyyy for display
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
@@ -423,10 +425,8 @@ export default function LocacoesPage() {
                           const formattedDate = formatDateFromInput(formattedValue);
                           setFormData({ ...formData, data_locacao: formattedDate });
                         } else {
-                          setFormData({ ...formData, data_locacao: '' });
+                          setFormData({ ...formData, data_locacao: formattedValue });
                         }
-                        
-                        e.target.value = formattedValue;
                       }}
                     />
                   </div>
@@ -450,10 +450,8 @@ export default function LocacoesPage() {
                           const formattedDate = formatDateFromInput(formattedValue);
                           setFormData({ ...formData, data_entrega: formattedDate });
                         } else {
-                          setFormData({ ...formData, data_entrega: '' });
+                          setFormData({ ...formData, data_entrega: formattedValue });
                         }
-                        
-                        e.target.value = formattedValue;
                       }}
                     />
                   </div>
