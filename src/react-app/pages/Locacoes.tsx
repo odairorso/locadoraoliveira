@@ -722,12 +722,10 @@ export default function LocacoesPage() {
             
             <div id="contract-content" className="bg-white text-black p-2 sm:p-4 md:p-8" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.4', fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
               <div className="text-center mb-4 sm:mb-8">
-                <img
-                  src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
-                  alt="Oliveira Veículos"
-                  className="h-12 sm:h-16 md:h-20 mx-auto mb-2 sm:mb-4"
-                />
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
+                <h1 className="text-2xl font-bold">Oliveira Veiculos</h1>
+                <p>Av. Campo Grande, 707 - Centro, Navirai - MS, 79947-033</p>
+                <p>Tel 3461-9864  Cel-67 99622-9840 67 999913-5153</p>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 mt-4">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
               </div>
 
               <div style={{ color: '#000', fontSize: window.innerWidth < 640 ? '10px' : '12px', lineHeight: '1.4' }}>
