@@ -209,6 +209,20 @@ export default function LocacoesPage() {
     return new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR');
   };
 
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return '';
+    // Convert from yyyy-mm-dd to dd/mm/yyyy for display
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
+  const formatDateFromInput = (dateString: string) => {
+    if (!dateString) return '';
+    // Convert from dd/mm/yyyy to yyyy-mm-dd for input value
+    const [day, month, year] = dateString.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
+
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [contractData, setContractData] = useState<any>(null);
 
@@ -395,11 +409,21 @@ export default function LocacoesPage() {
                       Data de Locação *
                     </label>
                     <input
-                      type="date"
+                      type="text"
                       required
+                      placeholder="dd/mm/aaaa"
+                      maxLength={10}
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
-                      value={formData.data_locacao}
-                      onChange={(e) => setFormData({ ...formData, data_locacao: e.target.value })}
+                      value={formData.data_locacao ? formatDateForInput(formData.data_locacao) : ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
+                        if (value.length === 10) {
+                          const formattedDate = formatDateFromInput(value);
+                          setFormData({ ...formData, data_locacao: formattedDate });
+                        } else {
+                          e.target.value = value;
+                        }
+                      }}
                     />
                   </div>
 
@@ -408,12 +432,21 @@ export default function LocacoesPage() {
                       Data de Entrega *
                     </label>
                     <input
-                      type="date"
+                      type="text"
                       required
-                      min={formData.data_locacao}
+                      placeholder="dd/mm/aaaa"
+                      maxLength={10}
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
-                      value={formData.data_entrega}
-                      onChange={(e) => setFormData({ ...formData, data_entrega: e.target.value })}
+                      value={formData.data_entrega ? formatDateForInput(formData.data_entrega) : ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
+                        if (value.length === 10) {
+                          const formattedDate = formatDateFromInput(value);
+                          setFormData({ ...formData, data_entrega: formattedDate });
+                        } else {
+                          e.target.value = value;
+                        }
+                      }}
                     />
                   </div>
                 </div>
