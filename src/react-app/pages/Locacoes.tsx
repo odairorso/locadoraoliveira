@@ -211,11 +211,22 @@ export default function LocacoesPage() {
 
   const formatDateForInput = (dateString: string) => {
     if (!dateString) return '';
-    // If already in dd/mm/yyyy format, return as is
-    if (dateString.includes('/')) return dateString;
-    // Convert from yyyy-mm-dd to dd/mm/yyyy for display
-    const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
+    // Se contiver uma barra, é uma data dd/mm/yyyy parcial ou completa.
+    if (dateString.includes('/')) {
+      return dateString;
+    }
+    // Se contiver um hífen, provavelmente é uma data yyyy-mm-dd do estado.
+    if (dateString.includes('-')) {
+      const parts = dateString.split('-');
+      // Verifica se é uma estrutura yyyy-mm-dd válida antes de dividir.
+      if (parts.length === 3 && parts[0].length === 4) {
+        const [year, month, day] = parts;
+        return `${day}/${month}/${year}`;
+      }
+    }
+    // Caso contrário, é uma entrada parcial (por exemplo, "1", "12") que ainda não foi formatada.
+    // Retorna como está para evitar o erro "undefined/undefined/...".
+    return dateString;
   };
 
   const formatDateFromInput = (dateString: string) => {
@@ -481,10 +492,17 @@ export default function LocacoesPage() {
                       type="text"
                       disabled
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white text-base sm:text-sm"
-                      value={formData.data_locacao && formData.data_entrega 
-                        ? Math.ceil((new Date(formData.data_entrega).getTime() - new Date(formData.data_locacao).getTime()) / (1000 * 60 * 60 * 24))
-                        : 0
-                      }
+                      value={(() => {
+                        if (formData.data_locacao && formData.data_entrega) {
+                          const startDate = new Date(formData.data_locacao);
+                          const endDate = new Date(formData.data_entrega);
+                          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                            const diff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                            return diff >= 0 ? diff : 0;
+                          }
+                        }
+                        return 0;
+                      })()}
                     />
                   </div>
 
