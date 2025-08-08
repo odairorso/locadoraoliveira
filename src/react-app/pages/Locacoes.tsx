@@ -416,13 +416,17 @@ export default function LocacoesPage() {
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.data_locacao ? formatDateForInput(formData.data_locacao) : ''}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
-                        if (value.length === 10) {
-                          const formattedDate = formatDateFromInput(value);
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        const formattedValue = rawValue.replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
+                        
+                        if (rawValue.length === 8) {
+                          const formattedDate = formatDateFromInput(formattedValue);
                           setFormData({ ...formData, data_locacao: formattedDate });
                         } else {
-                          e.target.value = value;
+                          setFormData({ ...formData, data_locacao: '' });
                         }
+                        
+                        e.target.value = formattedValue;
                       }}
                     />
                   </div>
@@ -439,13 +443,17 @@ export default function LocacoesPage() {
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.data_entrega ? formatDateForInput(formData.data_entrega) : ''}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
-                        if (value.length === 10) {
-                          const formattedDate = formatDateFromInput(value);
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        const formattedValue = rawValue.replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
+                        
+                        if (rawValue.length === 8) {
+                          const formattedDate = formatDateFromInput(formattedValue);
                           setFormData({ ...formData, data_entrega: formattedDate });
                         } else {
-                          e.target.value = value;
+                          setFormData({ ...formData, data_entrega: '' });
                         }
+                        
+                        e.target.value = formattedValue;
                       }}
                     />
                   </div>
