@@ -1,0 +1,22 @@
+COMANDOS PARA GITHUB - COPIE E COLE NO TERMINAL
+
+1. Abra o terminal/prompt na pasta do projeto
+2. Cole estes comandos um por vez:
+
+git init
+git add .
+git commit -m "Sistema completo da locadora"
+git remote add origin https://github.com/odairorso/locadoraoliveira.git
+git branch -M main
+git push -u origin main
+
+Se pedir usuário e senha:
+- Usuário: odairorso
+- Senha: use um Personal Access Token do GitHub
+
+DEPOIS DE ENVIAR PARA GITHUB:
+- Vá no Netlify
+- Conecte seu repositório GitHub
+- Configure build command: npm run build
+- Configure publish directory: dist
+- Adicione as variáveis de ambiente do Supabase
