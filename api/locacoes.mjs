@@ -22,7 +22,9 @@ export default async function handler(request, response) {
 
   try {
     const { method } = request;
-    const { id, search, status } = request.query;
+    const { search, status } = request.query;
+    const idMatch = request.url.match(/\/api\/locacoes\/([^\/]+)/);
+    const id = idMatch ? idMatch[1] : request.query.id;
 
     if (method === 'GET') {
       if (request.url.includes('contrato-data')) {
