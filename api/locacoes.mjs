@@ -52,11 +52,10 @@ export default async function handler(request, response) {
     } else if (request.url.includes('contrato-data')) {
       // Fallback para URLs diretas (desenvolvimento local)
       console.log('URL completa:', request.url);
-      const urlParts = request.url.split('/').filter(part => part !== '');
-      console.log('URL parts filtradas:', urlParts);
-      
-      if (urlParts.length > 0 && urlParts[0] !== 'contrato-data') {
-        id = urlParts[0];
+      const urlParts = request.url.split('/');
+      const contratoDataIndex = urlParts.indexOf('contrato-data');
+      if (contratoDataIndex > 1) {
+        id = urlParts[contratoDataIndex - 1];
       }
       isContratoData = true;
       console.log('ID extraído da URL:', id);
