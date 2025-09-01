@@ -122,7 +122,7 @@ export default async function handler(request, response) {
         return response.status(200).json({ success: true, data: contractData });
       }
 
-      let query = supabase.from('locacoes').select(`*, cliente:clientes ( nome ), veiculo:veiculos ( marca, modelo, placa )`);
+      let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, cliente:clientes ( nome ), veiculo:veiculos ( marca, modelo, placa )');
       if (status) {
         query = query.eq('status', status);
       }
