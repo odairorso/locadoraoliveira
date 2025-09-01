@@ -41,24 +41,26 @@ export default async function handler(request, response) {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'locado');
 
-    const currentMonth = new Date().toISOString().substring(0, 7);
-    const startOfMonth = `${currentMonth}-01`;
-    const endOfMonth = `${currentMonth}-31`;
-    const { data: revenue } = await supabase
-      .from('locacoes')
-      .select('valor_total')
-      .gte('created_at', startOfMonth)
-      .lte('created_at', endOfMonth)
-      .not('status', 'eq', 'cancelada');
+    // Chamar a função de RPC para a receita do mês
+    const currentMonthStr = new Date().toISOString().substring(0, 7);
+    const { data: receitaData, error: receitaError } = await supabase
+      .rpc('get_receita_mes', { month_text: currentMonthStr })
+      .single();
+    if (receitaError) {
+      console.error('Erro ao buscar receita do mês:', receitaError);
+      throw receitaError;
+    }
+    const totalRevenue = receitaData.total || 0;
 
-    const totalRevenue = revenue ? revenue.reduce((acc, item) => acc + (item.valor_total || 0), 0) : 0;
-
-    const { data: allRentals } = await supabase
-      .from('locacoes')
-      .select('valor_total, status')
-      .in('status', ['ativa', 'finalizada']);
-
-    const saldoCaixa = allRentals ? allRentals.reduce((acc, rental) => acc + (rental.valor_total || 0), 0) : 0;
+    // Chamar a função de RPC para o saldo de caixa
+    const { data: saldoData, error: saldoError } = await supabase
+      .rpc('get_saldo_caixa')
+      .single();
+    if (saldoError) {
+      console.error('Erro ao buscar saldo de caixa:', saldoError);
+      throw saldoError;
+    }
+    const saldoCaixa = saldoData.total || 0;
 
     const stats = {
       locacoesAtivas: activeRentals || 0,
