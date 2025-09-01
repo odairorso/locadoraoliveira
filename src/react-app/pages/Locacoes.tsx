@@ -241,18 +241,30 @@ export default function LocacoesPage() {
 
   const viewContract = async (locacao: Locacao) => {
     try {
+      console.log('=== INÍCIO viewContract ===');
       console.log('Carregando contrato para locação:', locacao.id);
+      console.log('Estado atual showContractPreview:', showContractPreview);
+      console.log('Estado atual contractData:', contractData);
+      
       const response = await fetch(`/api/locacoes/${locacao.id}/contrato-data`);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       const data = await response.json();
       console.log('Dados recebidos do contrato:', data);
+      
       if (data.success) {
         console.log('Dados do contrato:', data.data);
+        console.log('Definindo contractData...');
         setContractData(data.data);
+        console.log('Definindo showContractPreview como true...');
         setShowContractPreview(true);
+        console.log('Estados definidos! Modal deveria aparecer agora.');
       } else {
         console.error('Erro na resposta:', data.error);
         alert('Erro ao carregar dados do contrato');
       }
+      console.log('=== FIM viewContract ===');
     } catch (error) {
       console.error('Erro ao carregar contrato:', error);
       alert('Erro ao carregar contrato');

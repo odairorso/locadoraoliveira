@@ -28,27 +28,42 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
   try {
     const { method } = request;
-    const { search, status } = request.query;
+    const { search, status, path } = request.query;
     
-    // Extract ID from URL for contrato-data endpoint
+    // Extract ID and endpoint from path parameter (sent by Vercel rewrite)
     let id = request.query.id;
-    if (request.url.includes('contrato-data')) {
-      // Debug: log da URL completa
-      console.log('URL completa:', request.url);
-      console.log('URL parts:', request.url.split('/'));
+    let isContratoData = false;
+    
+    if (path) {
+      console.log('Path parameter:', path);
+      // path will be something like "9/contrato-data" or "9/contrato"
+      const pathParts = path.split('/');
+      console.log('Path parts:', pathParts);
       
-      // Extrair ID da URL para contrato-data
+      if (pathParts.length >= 1) {
+        id = pathParts[0];
+        console.log('ID extraído do path:', id);
+      }
+      
+      if (pathParts.includes('contrato-data')) {
+        isContratoData = true;
+        console.log('Endpoint contrato-data detectado');
+      }
+    } else if (request.url.includes('contrato-data')) {
+      // Fallback para URLs diretas (desenvolvimento local)
+      console.log('URL completa:', request.url);
       const urlParts = request.url.split('/').filter(part => part !== '');
       console.log('URL parts filtradas:', urlParts);
-      // A URL será algo como /7/contrato-data, então o ID é o primeiro elemento
+      
       if (urlParts.length > 0 && urlParts[0] !== 'contrato-data') {
         id = urlParts[0];
       }
+      isContratoData = true;
       console.log('ID extraído da URL:', id);
     }
 
     if (method === 'GET') {
-      if (request.url.includes('contrato-data')) {
+      if (isContratoData) {
         if (!id) {
           return response.status(400).json({ success: false, error: 'ID da locação é obrigatório' });
         }
