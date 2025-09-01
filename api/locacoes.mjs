@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(request, response) {
+  // Log básico para debug
+  console.log('=== LOCACOES HANDLER ===');
+  console.log('Method:', request.method);
+  console.log('URL:', request.url);
+  console.log('========================');
+  
   // Set CORS headers
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -11,8 +17,8 @@ export default async function handler(request, response) {
     return;
   }
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return response.status(500).json({ success: false, error: 'Missing Supabase URL or Anon Key' });
@@ -22,15 +28,40 @@ export default async function handler(request, response) {
 
   try {
     const { method } = request;
-    const { id, search, status } = request.query;
+    const { search, status } = request.query;
+    
+    // Extract ID from URL for contrato-data endpoint
+    let id = request.query.id;
+    if (request.url.includes('contrato-data')) {
+      // Debug: log da URL completa
+      console.log('URL completa:', request.url);
+      console.log('URL parts:', request.url.split('/'));
+      
+      // Extrair ID da URL para contrato-data
+      const urlParts = request.url.split('/').filter(part => part !== '');
+      console.log('URL parts filtradas:', urlParts);
+      // A URL será algo como /7/contrato-data, então o ID é o primeiro elemento
+      if (urlParts.length > 0 && urlParts[0] !== 'contrato-data') {
+        id = urlParts[0];
+      }
+      console.log('ID extraído da URL:', id);
+    }
 
     if (method === 'GET') {
       if (request.url.includes('contrato-data')) {
+        if (!id) {
+          return response.status(400).json({ success: false, error: 'ID da locação é obrigatório' });
+        }
+        
+        console.log('DEBUG: Buscando locação com ID:', id);
+        
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
           .select(`*, cliente:clientes (*), veiculo:veiculos (*)`)
-          .eq('id', id)
+          .eq('id', parseInt(id))
           .single();
+        
+        console.log('DEBUG: Resultado da busca locação:', { locacao, locacaoError });
 
         if (locacaoError) {
           return response.status(404).json({ success: false, error: "Locação não encontrada" });
