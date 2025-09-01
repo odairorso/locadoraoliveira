@@ -9,6 +9,18 @@ export default defineConfig({
   plugins: [/*...mochaPlugins(process.env as any),*/ react()/*, cloudflare()*/],
   server: {
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        configure: (proxy) => {
+          // Fallback para servir arquivos .mjs como APIs
+          proxy.on('error', (err) => {
+            console.log('proxy error', err);
+          });
+        }
+      }
+    }
   },
   build: {
     chunkSizeWarningLimit: 5000,

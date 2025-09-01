@@ -14,13 +14,13 @@ export default async function handler(request, response) {
   }
 
   try {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return response.status(500).json({
         success: false,
-        error: "As variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram configuradas.",
+        error: "As variáveis de ambiente SUPABASE_URL e SUPABASE_ANON_KEY não foram configuradas.",
       });
     }
 
@@ -42,10 +42,13 @@ export default async function handler(request, response) {
       .eq('status', 'locado');
 
     const currentMonth = new Date().toISOString().substring(0, 7);
+    const startOfMonth = `${currentMonth}-01`;
+    const endOfMonth = `${currentMonth}-31`;
     const { data: revenue } = await supabase
       .from('locacoes')
       .select('valor_total')
-      .like('created_at', `${currentMonth}%`)
+      .gte('created_at', startOfMonth)
+      .lte('created_at', endOfMonth)
       .not('status', 'eq', 'cancelada');
 
     const totalRevenue = revenue ? revenue.reduce((acc, item) => acc + (item.valor_total || 0), 0) : 0;

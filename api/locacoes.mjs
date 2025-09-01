@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(request, response) {
+  // Log básico para debug
+  console.log('=== LOCACOES HANDLER ===');
+  console.log('Method:', request.method);
+  console.log('URL:', request.url);
+  console.log('========================');
+  
   // Set CORS headers
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -11,8 +17,8 @@ export default async function handler(request, response) {
     return;
   }
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return response.status(500).json({ success: false, error: 'Missing Supabase URL or Anon Key' });
@@ -22,23 +28,76 @@ export default async function handler(request, response) {
 
   try {
     const { method } = request;
-    const { search, status } = request.query;
-    const idMatch = request.url.match(/\/api\/locacoes\/([^\/]+)/);
-    const id = idMatch ? idMatch[1] : request.query.id;
+    const { search, status, path } = request.query;
+    
+    // Extract ID and endpoint from path parameter (sent by Vercel rewrite)
+    let id = request.query.id;
+    let isContratoData = false;
+    
+    if (path) {
+      console.log('Path parameter:', path);
+      // path will be something like "9/contrato-data" or "9/contrato"
+      const pathParts = path.split('/');
+      console.log('Path parts:', pathParts);
+      
+      if (pathParts.length >= 1) {
+        id = pathParts[0];
+        console.log('ID extraído do path:', id);
+      }
+      
+      if (pathParts.includes('contrato-data')) {
+        isContratoData = true;
+        console.log('Endpoint contrato-data detectado');
+      }
+    } else if (request.url.includes('contrato-data')) {
+      // Fallback para URLs diretas (desenvolvimento local)
+      console.log('URL completa:', request.url);
+      const urlParts = request.url.split('/').filter(part => part !== '');
+      console.log('URL parts filtradas:', urlParts);
+      
+      if (urlParts.length > 0 && urlParts[0] !== 'contrato-data') {
+        id = urlParts[0];
+      }
+      isContratoData = true;
+      console.log('ID extraído da URL:', id);
+    }
 
     if (method === 'GET') {
-      if (request.url.includes('contrato-data')) {
+      if (isContratoData) {
+        if (!id) {
+          return response.status(400).json({ success: false, error: 'ID da locação é obrigatório' });
+        }
+        
+        console.log('DEBUG: Buscando locação com ID:', id);
+        
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
           .select(`*, cliente:clientes (*), veiculo:veiculos (*)`)
-          .eq('id', id)
+          .eq('id', parseInt(id))
           .single();
+        
+        console.log('DEBUG: Resultado da busca locação:', { locacao, locacaoError });
 
         if (locacaoError) {
           return response.status(404).json({ success: false, error: "Locação não encontrada" });
         }
 
-        const enderecoCompleto = `${locacao.cliente.endereco || ''}, ${locacao.cliente.numero || ''}, ${locacao.cliente.bairro || ''}, ${locacao.cliente.cidade || ''} - ${locacao.cliente.estado || ''}, CEP: ${locacao.cliente.cep || ''}`;
+        // Format address properly, avoiding empty parts
+        let endereco_parts = [];
+        if (locacao.cliente.endereco) endereco_parts.push(locacao.cliente.endereco);
+        if (locacao.cliente.bairro) endereco_parts.push(locacao.cliente.bairro);
+        
+        let cidade_estado = [];
+        if (locacao.cliente.cidade) cidade_estado.push(locacao.cliente.cidade);
+        if (locacao.cliente.estado) cidade_estado.push(locacao.cliente.estado);
+        
+        let enderecoCompleto = endereco_parts.join(', ');
+        if (cidade_estado.length > 0) {
+          enderecoCompleto += ' - ' + cidade_estado.join('/');
+        }
+        if (locacao.cliente.cep) {
+          enderecoCompleto += ', CEP: ' + locacao.cliente.cep;
+        }
         const formatCurrency = (value) => value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value)) : 'R$ 0,00';
         const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('pt-BR') : '';
 
@@ -57,7 +116,8 @@ export default async function handler(request, response) {
           valor_caucao_formatted: formatCurrency(locacao.valor_caucao),
           data_locacao_formatted: formatDate(locacao.data_locacao),
           data_entrega_formatted: formatDate(locacao.data_entrega),
-          data_atual_formatted: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
+          data_atual_formatted: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }),
+          observacoes: locacao.observacoes
         };
 
         return response.status(200).json({ success: true, data: contractData });
