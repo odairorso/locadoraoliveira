@@ -1,14 +1,9 @@
 {
   "version": 2,
-  "functions": {
-    "api/locacoes.mjs": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/locacoes/(.*)",
-      "destination": "/api/locacoes.mjs?path=$1"
+      "destination": "/api/locacoes.mjs"
     },
     {
       "source": "/api/(.*)",
