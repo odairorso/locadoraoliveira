@@ -13,9 +13,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        configure: (proxy, options) => {
+        configure: (proxy) => {
           // Fallback para servir arquivos .mjs como APIs
-          proxy.on('error', (err, req, res) => {
+          proxy.on('error', (err) => {
             console.log('proxy error', err);
           });
         }
