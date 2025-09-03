@@ -121,67 +121,20 @@ export default function LocacoesPage() {
 
   const handleFinishLocacao = async (locacao: Locacao) => {
     if (confirm('Tem certeza que deseja finalizar esta locação?')) {
-      console.log('🔄 Iniciando finalização da locação:', locacao.id);
-      console.log('📊 Dados da locação:', {
-        id: locacao.id,
-        cliente_id: locacao.cliente_id,
-        veiculo_id: locacao.veiculo_id,
-        status_atual: locacao.status
-      });
-      
       try {
-        console.log('📤 Enviando requisição PUT para:', `/api/locacoes/${locacao.id}`);
-        console.log('📋 Payload da requisição:', {
-          cliente_id: locacao.cliente_id,
-          veiculo_id: locacao.veiculo_id,
-          data_locacao: locacao.data_locacao,
-          data_entrega: locacao.data_entrega,
-          valor_diaria: locacao.valor_diaria,
-          valor_total: locacao.valor_total,
-          valor_caucao: locacao.valor_caucao || 0,
-          status: 'finalizada',
-          observacoes: locacao.observacoes || ''
-        });
-        
-        const result = await updateLocacao(`/api/locacoes/${locacao.id}`, {
-          cliente_id: locacao.cliente_id,
-          veiculo_id: locacao.veiculo_id,
-          data_locacao: locacao.data_locacao,
-          data_entrega: locacao.data_entrega,
-          valor_diaria: locacao.valor_diaria,
-          valor_total: locacao.valor_total,
-          valor_caucao: locacao.valor_caucao || 0,
-          status: 'finalizada',
-          observacoes: locacao.observacoes || ''
-        }, 'PUT');
-        
-        console.log('✅ Resultado da finalização:', result);
-        console.log('📈 Tipo do resultado:', typeof result);
-        console.log('🔍 Resultado é truthy?', !!result);
+        const result = await updateLocacao(`/api/locacoes/${locacao.id}`, { status: 'finalizada' }, 'PUT');
         
         if (result) {
           console.log('✅ Finalização bem-sucedida, atualizando lista...');
           refetch();
         } else {
-          console.error('❌ Falha na finalização - resultado falsy');
-          alert('Erro: A finalização retornou um resultado inválido. Verifique o console para mais detalhes.');
+          console.error('❌ Falha na finalização - a API não retornou um resultado positivo.');
+          alert('Erro: A finalização falhou. Verifique o console para mais detalhes.');
         }
-} catch (error: any) {
-      const err: any = error;
-      console.error('Erro detalhado ao finalizar locação:', {
-        error,
-        message: err?.message,
-        response: err?.response,
-        status: err?.response?.status,
-        data: err?.response?.data,
-        stack: err?.stack
-      });
-      
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro desconhecido';
-      const errorStatus = err?.response?.status || 'N/A';
-      
-      alert(`❌ Erro ao finalizar locação:\n\nStatus: ${errorStatus}\nMensagem: ${errorMessage}\n\nVerifique o console para mais detalhes.`);
-    }
+      } catch (error: any) {
+        console.error('❌ Erro catastrófico ao finalizar locação:', error);
+        alert(`Ocorreu um erro inesperado: ${error.message}`);
+      }
     }
   };
 
