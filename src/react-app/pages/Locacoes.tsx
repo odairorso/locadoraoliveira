@@ -30,7 +30,7 @@ export default function LocacoesPage() {
   const { data: clientes, loading: loadingClientes } = useApi<Cliente[]>('/api/clientes?limit=100');
   const { data: veiculosDisponiveis, loading: loadingVeiculos } = useApi<Veiculo[]>('/api/veiculos?status=disponivel');
   const { mutate: createLocacao, loading: creating } = useMutation<Locacao, LocacaoCreate>();
-  const { mutate: updateLocacao, loading: updating } = useMutation<Locacao, LocacaoCreate>();
+  const { mutate: updateLocacao, loading: updating } = useMutation<Locacao, Partial<LocacaoCreate>>();
   const { mutate: deleteLocacao, loading: deleting } = useMutation();
 
   const isLoading = creating || updating || deleting;
