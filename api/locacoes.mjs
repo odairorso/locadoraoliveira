@@ -158,16 +158,77 @@ export default async function handler(request, response) {
     }
 
     if (method === 'PUT') {
-      if (!id) return response.status(400).json({ success: false, error: 'Missing ID' });
-      const { data: currentLocacao, error: currentError } = await supabase.from('locacoes').select('veiculo_id').eq('id', id).single();
-      if (currentError) throw currentError;
-
-      const { data: updatedLocacao, error } = await supabase.from('locacoes').update(request.body).eq('id', id).select().single();
-      if (error) throw error;
-
-      if (request.body.status === 'finalizada' || request.body.status === 'cancelada') {
-        await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', currentLocacao.veiculo_id);
+      const locacaoId = parseInt(id, 10);
+      if (!locacaoId) {
+        return response.status(400).json({ success: false, error: 'ID da locação inválido ou ausente.' });
       }
+
+      // 1. Fetch the existing location to get the veiculo_id and current status
+      const { data: currentLocacao, error: fetchError } = await supabase
+        .from('locacoes')
+        .select('veiculo_id, status')
+        .eq('id', locacaoId)
+        .single();
+
+      if (fetchError) {
+        console.error('Erro ao buscar locação para atualização:', fetchError);
+        return response.status(404).json({ success: false, error: 'Locação não encontrada.' });
+      }
+
+      // 2. Sanitize the request body to only include valid fields for update
+      const {
+        cliente_id,
+        veiculo_id,
+        data_locacao,
+        data_entrega,
+        valor_diaria,
+        valor_total,
+        valor_caucao,
+        status,
+        observacoes
+      } = request.body;
+
+      const updateData = {
+        cliente_id,
+        veiculo_id,
+        data_locacao,
+        data_entrega,
+        valor_diaria,
+        valor_total,
+        valor_caucao,
+        status,
+        observacoes
+      };
+
+      // 3. Perform the update
+      const { data: updatedLocacao, error: updateError } = await supabase
+        .from('locacoes')
+        .update(updateData)
+        .eq('id', locacaoId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Erro ao atualizar locação:', updateError);
+        return response.status(500).json({ success: false, error: 'Falha ao atualizar a locação no banco de dados.', details: updateError.message });
+      }
+
+      // 4. If status changed to 'finalizada' or 'cancelada', update vehicle status
+      const newStatus = updateData.status;
+      const oldStatus = currentLocacao.status;
+
+      if ((newStatus === 'finalizada' || newStatus === 'cancelada') && oldStatus !== newStatus) {
+        const { error: vehicleUpdateError } = await supabase
+          .from('veiculos')
+          .update({ status: 'disponivel' })
+          .eq('id', currentLocacao.veiculo_id);
+          
+        if (vehicleUpdateError) {
+            console.error('Erro ao atualizar status do veículo:', vehicleUpdateError);
+            // Don't block the response for this, but log it as a critical issue
+        }
+      }
+
       return response.status(200).json({ success: true, data: updatedLocacao });
     }
 
