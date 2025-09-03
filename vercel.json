@@ -12,6 +12,10 @@
       "destination": "/api/cron/finalize-locacoes.mjs"
     },
     {
+      "source": "/api/locacoes",
+      "destination": "/api/locacoes.mjs"
+    },
+    {
       "source": "/api/locacoes/(.*)",
       "destination": "/api/locacoes.mjs?path=$1"
     },
