@@ -13,7 +13,7 @@
     },
     {
       "source": "/api/locacoes/(.*)",
-      "destination": "/api/locacoes.mjs"
+      "destination": "/api/locacoes.mjs?path=$1"
     },
     {
       "source": "/api/(.*)",
