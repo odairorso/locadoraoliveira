@@ -78,7 +78,7 @@ export default function LocacoesPage() {
 
     let result;
     if (editingLocacao) {
-      result = await updateLocacao(`/api/locacoes/${editingLocacao.id}`, formData, 'PUT');
+      result = await updateLocacao(`/api/locacoes/${editingLocacao.id}?id=${editingLocacao.id}`, formData, 'PUT');
     } else {
       result = await createLocacao('/api/locacoes', formData);
     }
@@ -121,25 +121,67 @@ export default function LocacoesPage() {
 
   const handleFinishLocacao = async (locacao: Locacao) => {
     if (confirm('Tem certeza que deseja finalizar esta locação?')) {
-      console.log('Tentando finalizar locação:', locacao.id);
-      const result = await updateLocacao(`/api/locacoes/${locacao.id}`, {
+      console.log('🔄 Iniciando finalização da locação:', locacao.id);
+      console.log('📊 Dados da locação:', {
+        id: locacao.id,
         cliente_id: locacao.cliente_id,
         veiculo_id: locacao.veiculo_id,
-        data_locacao: locacao.data_locacao,
-        data_entrega: locacao.data_entrega,
-        valor_diaria: locacao.valor_diaria,
-        valor_total: locacao.valor_total,
-        valor_caucao: locacao.valor_caucao || 0,
-        status: 'finalizada',
-        observacoes: locacao.observacoes || ''
-      }, 'PUT');
-      console.log('Resultado da finalização:', result);
-      if (result) {
-        console.log('Finalização bem-sucedida, atualizando lista...');
-        refetch();
-      } else {
-        console.error('Falha na finalização');
-      }
+        status_atual: locacao.status
+      });
+      
+      try {
+        console.log('📤 Enviando requisição PUT para:', `/api/locacoes/${locacao.id}`);
+        console.log('📋 Payload da requisição:', {
+          cliente_id: locacao.cliente_id,
+          veiculo_id: locacao.veiculo_id,
+          data_locacao: locacao.data_locacao,
+          data_entrega: locacao.data_entrega,
+          valor_diaria: locacao.valor_diaria,
+          valor_total: locacao.valor_total,
+          valor_caucao: locacao.valor_caucao || 0,
+          status: 'finalizada',
+          observacoes: locacao.observacoes || ''
+        });
+        
+        const result = await updateLocacao(`/api/locacoes/${locacao.id}`, {
+          cliente_id: locacao.cliente_id,
+          veiculo_id: locacao.veiculo_id,
+          data_locacao: locacao.data_locacao,
+          data_entrega: locacao.data_entrega,
+          valor_diaria: locacao.valor_diaria,
+          valor_total: locacao.valor_total,
+          valor_caucao: locacao.valor_caucao || 0,
+          status: 'finalizada',
+          observacoes: locacao.observacoes || ''
+        }, 'PUT');
+        
+        console.log('✅ Resultado da finalização:', result);
+        console.log('📈 Tipo do resultado:', typeof result);
+        console.log('🔍 Resultado é truthy?', !!result);
+        
+        if (result) {
+          console.log('✅ Finalização bem-sucedida, atualizando lista...');
+          refetch();
+        } else {
+          console.error('❌ Falha na finalização - resultado falsy');
+          alert('Erro: A finalização retornou um resultado inválido. Verifique o console para mais detalhes.');
+        }
+} catch (error: any) {
+      const err: any = error;
+      console.error('Erro detalhado ao finalizar locação:', {
+        error,
+        message: err?.message,
+        response: err?.response,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        stack: err?.stack
+      });
+      
+      const errorMessage = err?.response?.data?.message || err?.message || 'Erro desconhecido';
+      const errorStatus = err?.response?.status || 'N/A';
+      
+      alert(`❌ Erro ao finalizar locação:\n\nStatus: ${errorStatus}\nMensagem: ${errorMessage}\n\nVerifique o console para mais detalhes.`);
+    }
     }
   };
 
