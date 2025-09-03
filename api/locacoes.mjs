@@ -163,7 +163,7 @@ export default async function handler(request, response) {
         return response.status(400).json({ success: false, error: 'ID da locação inválido ou ausente.' });
       }
 
-      // 1. Fetch the existing location to get the veiculo_id and current status
+      // 1. Fetch the existing location to get the veiculo_id
       const { data: currentLocacao, error: fetchError } = await supabase
         .from('locacoes')
         .select('veiculo_id, status')
@@ -175,30 +175,19 @@ export default async function handler(request, response) {
         return response.status(404).json({ success: false, error: 'Locação não encontrada.' });
       }
 
-      // 2. Sanitize the request body to only include valid fields for update
-      const {
-        cliente_id,
-        veiculo_id,
-        data_locacao,
-        data_entrega,
-        valor_diaria,
-        valor_total,
-        valor_caucao,
-        status,
-        observacoes
-      } = request.body;
+      // 2. Build the update object ONLY with fields present in the request body
+      const updateData = {};
+      const allowedFields = ['cliente_id', 'veiculo_id', 'data_locacao', 'data_entrega', 'valor_diaria', 'valor_total', 'valor_caucao', 'status', 'observacoes'];
+      
+      for (const key in request.body) {
+        if (allowedFields.includes(key)) {
+          updateData[key] = request.body[key];
+        }
+      }
 
-      const updateData = {
-        cliente_id,
-        veiculo_id,
-        data_locacao,
-        data_entrega,
-        valor_diaria,
-        valor_total,
-        valor_caucao,
-        status,
-        observacoes
-      };
+      if (Object.keys(updateData).length === 0) {
+        return response.status(400).json({ success: false, error: 'Nenhum campo válido para atualização foi fornecido.' });
+      }
 
       // 3. Perform the update
       const { data: updatedLocacao, error: updateError } = await supabase
@@ -215,9 +204,7 @@ export default async function handler(request, response) {
 
       // 4. If status changed to 'finalizada' or 'cancelada', update vehicle status
       const newStatus = updateData.status;
-      const oldStatus = currentLocacao.status;
-
-      if ((newStatus === 'finalizada' || newStatus === 'cancelada') && oldStatus !== newStatus) {
+      if (newStatus && (newStatus === 'finalizada' || newStatus === 'cancelada')) {
         const { error: vehicleUpdateError } = await supabase
           .from('veiculos')
           .update({ status: 'disponivel' })
@@ -225,7 +212,7 @@ export default async function handler(request, response) {
           
         if (vehicleUpdateError) {
             console.error('Erro ao atualizar status do veículo:', vehicleUpdateError);
-            // Don't block the response for this, but log it as a critical issue
+            // Log the error, but don't block the response
         }
       }
 
