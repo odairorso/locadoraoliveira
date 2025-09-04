@@ -811,6 +811,7 @@ export default function LocacoesPage() {
 
                 <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 11ª – DAS RESPONSABILIDADES</h3>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>O LOCATÁRIO declara estar ciente de que a locação foi feita SEM a contratação de qualquer tipo de seguro. Desta forma, assume integralmente toda e qualquer responsabilidade civil e criminal por eventuais danos materiais ou morais, perdas, furtos, roubos, destruição, sinistros ou acidentes ocorridos com o veículo durante o período de vigência deste contrato, obrigando-se a ressarcir integralmente a LOCADORA por todos os prejuízos causados, incluindo, mas não se limitando a, custos com reparos, substituição do veículo, lucros cessantes e quaisquer danos causados a terceiros.</p>
+                <p style={{ marginTop: '30px', textAlign: 'center' }}>ASS._____________________________________</p>
 
                 <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 12ª – DOS DEVERES DO LOCATÁRIO</h3>
                 <p style={{ margin: '10px 0', textAlign: 'justify' }}>Sem prejuízo de outras disposições deste contrato, constituem obrigações do LOCATÁRIO:</p>
