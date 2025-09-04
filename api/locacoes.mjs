@@ -1,5 +1,172 @@
 import { createClient } from '@supabase/supabase-js';
 
+function generateContractHTML(contractData) {
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contrato de Locação - ${contractData.id}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      margin: 20px;
+      color: #000;
+    }
+    .contract-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .contract-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .contract-text {
+      text-align: justify;
+      margin: 10px 0;
+    }
+    .clause-title {
+      font-weight: bold;
+      margin: 15px 0 5px 0;
+    }
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 50px;
+    }
+    .signature {
+      text-align: center;
+      width: 300px;
+    }
+    .signature-line {
+      border-top: 1px solid black;
+      padding-top: 5px;
+      margin-top: 30px;
+    }
+    @media print {
+      body { margin: 0; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="contract-header">
+    <div class="contract-title">CONTRATO DE LOCAÇÃO DE VEÍCULO</div>
+    <div>Contrato nº ${contractData.id}</div>
+  </div>
+
+  <div class="contract-text">
+    <strong>LOCADORA:</strong> João Roberto dos Santos de Oliveira, brasileiro, empresário, portador do CPF nº 123.456.789-00, residente e domiciliado na Rua Exemplo, 123, Centro, Cidade - Estado, CEP 12345-678, neste ato representando a pessoa jurídica L dos Santos de Oliveira, inscrita no CNPJ sob o nº 12.345.678/0001-90.
+  </div>
+
+  <div class="contract-text">
+    <strong>LOCATÁRIO:</strong> ${contractData.cliente_nome}, portador do CPF nº ${contractData.cliente_cpf}, residente e domiciliado em ${contractData.endereco_completo}.
+  </div>
+
+  <div class="contract-text">
+    Têm entre si justo e acordado o presente contrato de locação de veículo, que se regerá pelas cláusulas e condições seguintes:
+  </div>
+
+  <div class="clause-title">CLÁUSULA 1ª - DO OBJETO</div>
+  <div class="contract-text">
+    O presente contrato tem por objeto a locação do veículo ${contractData.veiculo_marca} ${contractData.veiculo_modelo}, ano ${contractData.veiculo_ano}, placa ${contractData.veiculo_placa}, avaliado em ${contractData.valor_veiculo_formatted}.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 2ª - DO PRAZO</div>
+  <div class="contract-text">
+    O prazo de locação será de ${contractData.data_locacao_formatted} até ${contractData.data_entrega_formatted}.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 3ª - DO VALOR</div>
+  <div class="contract-text">
+    O valor da diária é de ${contractData.valor_diaria_formatted}, totalizando ${contractData.valor_total_formatted}. O LOCATÁRIO pagará ainda uma caução no valor de ${contractData.valor_caucao_formatted}.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 4ª - DAS RESPONSABILIDADES</div>
+  <div class="contract-text">
+    O LOCATÁRIO assume total responsabilidade pelo veículo durante o período de locação, comprometendo-se a devolvê-lo nas mesmas condições em que o recebeu.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 5ª - DA MANUTENÇÃO</div>
+  <div class="contract-text">
+    A manutenção do veículo, referente à troca de óleo, filtros e demais itens de desgaste natural, será de responsabilidade e ônus para a LOCADORA.
+  </div>
+
+  <div class="contract-text">
+    Parágrafo único: Se durante o período de locação houver necessidade de manutenção no veículo, proporcional ao período de manutenção, será descontado do aluguel o valor correspondente ao período em que o veículo estiver indisponível.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 6ª - DA UTILIZAÇÃO DO SEGURO</div>
+  <div class="contract-text">
+    Ocorrendo a necessidade de utilização do seguro do veículo, seja por sinistro parcial ou total, ou danos ao veículo por terceiros, a franquia do seguro será de responsabilidade do LOCATÁRIO, devendo arcar com o valor da franquia do seguro veicular.
+  </div>
+
+  <div class="contract-text">
+    Parágrafo único: O LOCATÁRIO declara estar ciente de que assume total responsabilidade civil e material por qualquer dano causado ao veículo durante o período de vigência deste contrato, inclusive por danos causados por quaisquer ônus, indenizações ou outras despesas decorrentes do uso do veículo.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 7ª - DOS DEVERES DO LOCATÁRIO</div>
+  <div class="contract-text">
+    São deveres do LOCATÁRIO:
+    <br />I - pagar o aluguel e os encargos de contratação;
+    <br />II - utilizar o veículo conforme convencionado, destinando-o exclusivamente ao uso particular;
+    <br />III - cuidar diligentemente do veículo como se fosse seu;
+    <br />IV - restituir o veículo no final da locação, no estado em que o recebeu;
+    <br />V - não modificar a forma interna ou externa do veículo sem o consentimento prévio por escrito da LOCADORA;
+    <br />VI - não utilizar o veículo em atividades ilícitas, corridas, competições ou atividades similares;
+    <br />VII - manter o veículo em local seguro quando não estiver em uso.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 8ª - DAS PENALIDADES</div>
+  <div class="contract-text">
+    O descumprimento de qualquer cláusula deste contrato sujeitará o LOCATÁRIO ao pagamento de multa equivalente a 20% (vinte por cento) do valor total do contrato, sem prejuízo das demais sanções legais.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 9ª - DA RESCISÃO</div>
+  <div class="contract-text">
+    Este contrato poderá ser rescindido por qualquer das partes, mediante aviso prévio de 24 (vinte e quatro) horas, ficando o LOCATÁRIO obrigado ao pagamento proporcional do período utilizado.
+  </div>
+
+  <div class="clause-title">CLÁUSULA 10ª - DO FORO</div>
+  <div class="contract-text">
+    Para dirimir quaisquer dúvidas oriundas deste contrato, as partes elegem o foro da comarca onde está situada a LOCADORA, renunciando a qualquer outro, por mais privilegiado que seja.
+  </div>
+
+  ${contractData.observacoes ? `
+  <div class="clause-title">OBSERVAÇÕES</div>
+  <div class="contract-text">${contractData.observacoes}</div>
+  ` : ''}
+
+  <div class="contract-text" style="margin-top: 30px;">
+    ${contractData.data_atual_formatted}
+  </div>
+
+  <div class="signatures">
+    <div class="signature">
+      <div class="signature-line">
+        <strong>LOCADORA</strong><br />
+        João Roberto dos Santos de Oliveira<br />
+        neste ato representando a pessoa jurídica<br />
+        L dos Santos de Oliveira
+      </div>
+    </div>
+    
+    <div class="signature">
+      <div class="signature-line">
+        <strong>LOCATÁRIO</strong><br />
+        ${contractData.cliente_nome}
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 export default async function handler(request, response) {
   // Log básico para debug
   console.log('=== LOCACOES HANDLER ===');
@@ -48,6 +215,9 @@ export default async function handler(request, response) {
       if (pathParts.includes('contrato-data')) {
         isContratoData = true;
         console.log('Endpoint contrato-data detectado');
+      } else if (pathParts.includes('contrato')) {
+        isContratoData = false;
+        console.log('Endpoint contrato (HTML) detectado');
       }
     } else if (request.url.includes('contrato-data')) {
       // Fallback para URLs diretas (desenvolvimento local)
@@ -62,7 +232,7 @@ export default async function handler(request, response) {
     }
 
     if (method === 'GET') {
-      if (isContratoData) {
+      if (isContratoData || path?.includes('contrato')) {
         if (!id) {
           return response.status(400).json({ success: false, error: 'ID da locação é obrigatório' });
         }
@@ -119,7 +289,15 @@ export default async function handler(request, response) {
           observacoes: locacao.observacoes
         };
 
-        return response.status(200).json({ success: true, data: contractData });
+        // Se for contrato-data, retorna JSON
+        if (isContratoData) {
+          return response.status(200).json({ success: true, data: contractData });
+        }
+        
+        // Se for contrato, retorna HTML
+        const htmlContent = generateContractHTML(contractData);
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return response.status(200).send(htmlContent);
       }
 
       let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, cliente:clientes ( nome ), veiculo:veiculos ( marca, modelo, placa )');
