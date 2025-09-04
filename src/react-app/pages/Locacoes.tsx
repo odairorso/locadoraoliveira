@@ -739,7 +739,7 @@ export default function LocacoesPage() {
                 <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0' }}><strong>Entre:</strong></p>
                 
                 <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
-                  a pessoa jurídica OR DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, 
+                  a pessoa jurídica L DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, 
                   com sede em Av campo grande 707 centro, neste ato representada, conforme poderes especialmente 
                   conferidos, por: João Roberto dos Santos de Oliveira, na qualidade de: Administrador, 
                   CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:
@@ -862,7 +862,7 @@ export default function LocacoesPage() {
                         <strong>LOCADORA</strong><br />
                         João Roberto dos Santos de Oliveira<br />
                         neste ato representando a pessoa jurídica<br />
-                        Or dos Santos de Oliveira
+                        L dos Santos de Oliveira
                       </div>
                     </div>
                     
