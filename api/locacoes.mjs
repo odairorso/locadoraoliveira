@@ -1,169 +1,180 @@
 import { createClient } from '@supabase/supabase-js';
 
 function generateContractHTML(contractData) {
+  // Helper for conditional rendering of observations
+  const observacoesHTML = contractData.observacoes 
+    ? `<div style="margin: 20px 0;">
+        <h3 style="font-weight: bold;">OBSERVAÇÕES:</h3>
+        <p style="margin: 10px 0; text-align: justify;">${contractData.observacoes}</p>
+      </div>`
+    : '';
+
+  // NOTE: The `valor_caucao_extenso` field is missing from the data passed to this template.
+  // It has been removed from the CLÁUSULA 14ª to prevent rendering issues.
+  // This should be added to the `contractData` object construction if available.
+
   return `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contrato de Locação - ${contractData.id}</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      font-size: 12px;
-      line-height: 1.4;
-      margin: 20px;
-      color: #000;
-    }
-    .contract-header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .contract-title {
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .contract-text {
-      text-align: justify;
-      margin: 10px 0;
-    }
-    .clause-title {
-      font-weight: bold;
-      margin: 15px 0 5px 0;
-    }
-    .signatures {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 50px;
-    }
-    .signature {
-      text-align: center;
-      width: 300px;
-    }
-    .signature-line {
-      border-top: 1px solid black;
-      padding-top: 5px;
-      margin-top: 30px;
-    }
-    @media print {
-      body { margin: 0; }
-      .no-print { display: none; }
-    }
-  </style>
-</head>
-<body>
-  <div class="contract-header">
-    <div class="contract-title">CONTRATO DE LOCAÇÃO DE VEÍCULO</div>
-    <div>Contrato nº ${contractData.id}</div>
-  </div>
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <title>Contrato de Locação</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; color: #000; font-size: 12px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        h1 { margin: 20px 0; font-size: 1.5em; }
+        h3 { margin: 20px 0 10px 0; font-size: 1em; font-weight: bold; }
+        p { margin: 10px 0; }
+        .signature-section { margin-top: 50px; }
+        .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+        .signature { text-align: center; width: 300px; }
+        .signature-line { border-top: 1px solid black; padding-top: 5px; margin-top: 30px; }
+      </style>
+    </head>
+    <body>
+      <div style="font-family: Arial, sans-serif; line-height: 1.4; font-size: 12px; color: black;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h1 style="font-size: 24px; font-weight: bold;">Oliveira Veiculos</h1>
+          <p>Av. Campo Grande, 707 - Centro, Navirai - MS, 79947-033</p>
+          <p>Tel 3461-9864  Cel-67 99622-9840 67 999913-5153</p>
+          <h1 style="font-size: 20px; font-weight: bold; margin-top: 16px;">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
+        </div>
 
-  <div class="contract-text">
-    <strong>LOCADORA:</strong> João Roberto dos Santos de Oliveira, brasileiro, empresário, portador do CPF nº 123.456.789-00, residente e domiciliado na Rua Exemplo, 123, Centro, Cidade - Estado, CEP 12345-678, neste ato representando a pessoa jurídica L dos Santos de Oliveira, inscrita no CNPJ sob o nº 12.345.678/0001-90.
-  </div>
+        <div>
+          <p style="margin: 10px 0;"><strong>Entre:</strong></p>
+          <p style="margin: 10px 0; text-align: justify;">
+            a pessoa jurídica L DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, 
+            com sede em Av campo grande 707 centro, neste ato representada, conforme poderes especialmente 
+            conferidos, por: João Roberto dos Santos de Oliveira, na qualidade de: Administrador, 
+            CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:
+          </p>
+          <p style="margin: 10px 0; text-align: justify;">
+            <strong>${contractData?.cliente_nome || '[Nome do Cliente]'}</strong>, CPF n.º <strong>${contractData?.cliente_cpf || '[CPF]'}</strong>, 
+            residente em: <strong>${contractData?.endereco_completo || '[Endereço]'}</strong>,
+            doravante denominado <strong>LOCATÁRIO</strong>.
+          </p>
+          <p style="margin: 10px 0;">As partes acima identificadas têm entre si justo e acertado o presente contrato de locação de veículo, ficando desde já aceito nas cláusulas e condições abaixo descritas.</p>
 
-  <div class="contract-text">
-    <strong>LOCATÁRIO:</strong> ${contractData.cliente_nome}, portador do CPF nº ${contractData.cliente_cpf}, residente e domiciliado em ${contractData.endereco_completo}.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 1ª – DO OBJETO</h3>
+          <p style="margin: 10px 0; text-align: justify;">Por meio deste contrato, que firmam entre si a LOCADORA e o LOCATÁRIO, regula-se a locação do veículo:</p>
+          <p style="margin: 10px 0; text-align: justify;"><strong>${contractData?.veiculo_marca || '[Marca]'} ${contractData?.veiculo_modelo || '[Modelo]'} ano ${contractData?.veiculo_ano || '[Ano]'}</strong></p>
+          <p style="margin: 10px 0; text-align: justify;">Com placa <strong>${contractData?.veiculo_placa || '[Placa]'}</strong>, e com o valor de mercado aproximado em <strong>${contractData?.valor_veiculo_formatted || '[Valor]'}</strong>.</p>
+          <p style="margin: 10px 0; text-align: justify;">Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
 
-  <div class="contract-text">
-    Têm entre si justo e acordado o presente contrato de locação de veículo, que se regerá pelas cláusulas e condições seguintes:
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
+          <p style="margin: 10px 0; text-align: justify;">O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>${contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>. O valor total da locação é de <strong>${contractData?.valor_total_formatted || '[Valor Total]'}</strong> para o período estabelecido.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. O LOCATÁRIO deverá efetuar o pagamento do valor acordado, por meio de pix, utilizando a chave 17909442000158, ou em espécie, ou cartão.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. Em caso de atraso no pagamento do aluguel, será aplicada multa de 5% (cinco por cento), sobre o valor devido, bem como juros de mora de 3% (três por cento) ao mês, mais correção monetária, apurada conforme variação do IGP-M no período.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 3º. O LOCATÁRIO, não vindo a efetuar o pagamento do aluguel por um período de atraso superior à 7 (sete) dias, fica sujeito a ter a posse do veículo configurada como Apropriação Indébita, implicando também a possibilidade de adoção de medidas judiciais, inclusive a Busca e Apreensão do veículo e/ou lavratura de Boletim de Ocorrência, cabendo ao LOCATÁRIO ressarcir a LOCADORA das despesas oriundas da retenção indevida do bem, arcando ainda com as despesas judiciais e/ou extrajudiciais que a LOCADORA venha a ter para efetuar a busca, apreensão e efetiva reintegração da posse do veículo.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 4º. Será de responsabilidade do LOCATÁRIO as despesas referentes à utilização do veículo.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 5º. O valor do aluguel firmado neste contrato será reajustado a cada 12 (doze) meses, tendo como base o índice IGP. Em caso de falta deste índice, o reajuste do valor da locação terá por base a média da variação dos índices inflacionários do ano corrente ao da execução da locação.</p>
 
-  <div class="clause-title">CLÁUSULA 1ª - DO OBJETO</div>
-  <div class="contract-text">
-    O presente contrato tem por objeto a locação do veículo ${contractData.veiculo_marca} ${contractData.veiculo_modelo}, ano ${contractData.veiculo_ano}, placa ${contractData.veiculo_placa}, avaliado em ${contractData.valor_veiculo_formatted}.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 3ª – DO PRAZO DO ALUGUEL</h3>
+          <p style="margin: 10px 0; text-align: justify;">O prazo de locação do referido veículo é de <strong>${contractData?.data_locacao_formatted || '[Data Início]'} a ${contractData?.data_entrega_formatted || '[Data Fim]'}</strong>.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. Ao final do prazo estipulado, caso as partes permaneçam inertes, a locação prorrogar-se-á automaticamente por tempo indeterminado.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. Caso a LOCADORA não queira prorrogar a locação ao terminar o prazo estipulado neste contrato, e o referido veículo não for devolvido, será cobrado o valor do aluguel proporcional aos dias de atraso acumulado de multa diária de <strong>${contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 3º. Finda a locação, o LOCATÁRIO deverá devolver o veículo nas mesmas condições em que recebeu, salvo os desgastes decorrentes do uso normal, sob pena de indenização por perdas e danos a ser apurada.</p>
 
-  <div class="clause-title">CLÁUSULA 2ª - DO PRAZO</div>
-  <div class="contract-text">
-    O prazo de locação será de ${contractData.data_locacao_formatted} até ${contractData.data_entrega_formatted}.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 4ª – DO COMBUSTÍVEL</h3>
+          <p style="margin: 10px 0; text-align: justify;">O veículo será entregue ao LOCATÁRIO com um tanque de combustível completo, e sua quantidade será marcada no laudo de vistoria no momento da retirada.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. Ao final do prazo estipulado, o LOCATÁRIO deverá devolver o veículo à LOCADORA com o tanque de combustível completo.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. Caso não ocorra o cumprimento do parágrafo anterior, será cobrado o valor correspondente a leitura do marcador em oitavos, com base em tabela própria, e o valor do litro será informado no momento da retirada pela LOCADORA.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 3º. Caso seja constatado a utilização de combustível adulterado, o LOCATÁRIO responderá pelo mesmo e pelos danos decorrentes de tal utilização.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 4º. Fica desde já acordado que o LOCATÁRIO não terá direito a ressarcimento caso devolva o veículo com uma quantidade de combustível superior a que recebeu.</p>
 
-  <div class="clause-title">CLÁUSULA 3ª - DO VALOR</div>
-  <div class="contract-text">
-    O valor da diária é de ${contractData.valor_diaria_formatted}, totalizando ${contractData.valor_total_formatted}. O LOCATÁRIO pagará ainda uma caução no valor de ${contractData.valor_caucao_formatted}.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 5ª – DA LIMPEZA</h3>
+          <p style="margin: 10px 0; text-align: justify;">O veículo será entregue ao LOCATÁRIO limpo e deverá ser devolvido à LOCADORA nas mesmas condições higiênicas que foi retirado.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. Caso o veículo seja devolvido sujo, interna ou externamente, será cobrada uma taxa de lavagem simples ou especial, dependendo do estado do veículo na devolução.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. Caso haja a necessidade de lavagem especial, será cobrada, além da taxa de lavagem, o valor mínimo de (uma) diária de locação, ou quantas diárias forem necessárias até a disponibilização do veículo para locação, limitado a 5 (cinco) diárias do veículo com base na tarifa vigente.</p>
 
-  <div class="clause-title">CLÁUSULA 4ª - DAS RESPONSABILIDADES</div>
-  <div class="contract-text">
-    O LOCATÁRIO assume total responsabilidade pelo veículo durante o período de locação, comprometendo-se a devolvê-lo nas mesmas condições em que o recebeu.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 6ª – DA UTILIZAÇÃO</h3>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. Deverá também o LOCATÁRIO utilizar o veículo alugado sempre de acordo com os regulamentos estabelecidos pelo Conselho Nacional de Trânsito (CONTRAN) e pelo Departamento Estadual de Trânsito (DETRAN).</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. A utilização do veículo de forma diferente do descrito acima estará sujeita à cobrança de multa, assim como poderá a LOCADORA dar por rescindido o presente contrato independente de qualquer notificação, e sem maiores formalidades poderá também proceder com o recolhimento do veículo sem que seja ensejada qualquer pretensão para ação indenizatória, reparatória ou compensatória pelo LOCATÁRIO.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 3º. Qualquer modificação no veículo só poderá ser feita com a autorização expressa da LOCADORA.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 4º. O LOCATÁRIO declara estar ciente que quaisquer danos causados, materiais ou pessoais, decorrente da utilização do veículo ora locado, será de sua responsabilidade.</p>
 
-  <div class="clause-title">CLÁUSULA 5ª - DA MANUTENÇÃO</div>
-  <div class="contract-text">
-    A manutenção do veículo, referente à troca de óleo, filtros e demais itens de desgaste natural, será de responsabilidade e ônus para a LOCADORA.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 7ª – RESTRIÇÃO TERRITORIAL</h3>
+          <p style="margin: 10px 0; text-align: justify;">O LOCATÁRIO se compromete a utilizar o veículo exclusivamente dentro do território nacional brasileiro, sendo expressamente proibida sua saída para qualquer outro país. O descumprimento desta cláusula implicará em multa de R$ 280,00 (duzentos e oitenta reais) e rescisão imediata do presente contrato, sem prejuízo das demais medidas legais cabíveis.</p>
 
-  <div class="contract-text">
-    Parágrafo único: Se durante o período de locação houver necessidade de manutenção no veículo, proporcional ao período de manutenção, será descontado do aluguel o valor correspondente ao período em que o veículo estiver indisponível.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 8ª – DAS MULTAS E INFRAÇÕES</h3>
+          <p style="margin: 10px 0; text-align: justify;">As multas ou quaisquer outras infrações às leis de trânsito, cometidas durante o período da locação do veículo, serão de responsabilidade do LOCATÁRIO, devendo ser liquidadas quando da notificação pelos órgãos competentes ou no final do contrato, o que ocorrer primeiro.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. Em caso de apreensão do veículo, serão cobradas do LOCATÁRIO todas as despesas de serviço dos profissionais envolvidos para liberação do veículo alugado, assim como todas as taxas cobradas pelos órgãos competentes, e também quantas diárias forem necessárias até a disponibilização do veículo para locação.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. O LOCATÁRIO declara-se ciente e concorda que se ocorrer qualquer multa ou infração de trânsito durante a vigência deste contrato, seu nome poderá ser indicado pela LOCADORA junto ao Órgão de Trânsito autuante, na qualidade de condutor do veículo, tendo assim a pontuação recebida transferida para sua carteira de habilitação.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 3º. A LOCADORA poderá preencher os dados relativos à "apresentação do Condutor", previsto na Resolução 404/12 do CONTRAN, caso tenha sido lavrada autuação por infrações de trânsito enquanto o veículo esteve em posse e responsabilidade do LOCATÁRIO, situação na qual a LOCADORA apresentará para o Órgão de Trânsito competente a cópia do presente contrato celebrado com o LOCATÁRIO.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 4º. Descabe qualquer discussão sobre a procedência ou improcedência das infrações de trânsito aplicadas, e poderá o LOCATÁRIO, a seu critério e às suas expensas, recorrer das multas, junto ao Órgão de Trânsito competente, o que não o eximirá do pagamento do valor da multa, mas lhe dará o direito ao reembolso, caso o recurso seja julgado procedente.</p>
 
-  <div class="clause-title">CLÁUSULA 6ª - DA UTILIZAÇÃO DO SEGURO</div>
-  <div class="contract-text">
-    Ocorrendo a necessidade de utilização do seguro do veículo, seja por sinistro parcial ou total, ou danos ao veículo por terceiros, a franquia do seguro será de responsabilidade do LOCATÁRIO, devendo arcar com o valor da franquia do seguro veicular.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 9ª – DA VEDAÇÃO À SUBLOCAÇÃO E EMPRÉSTIMO DO VEÍCULO</h3>
+          <p style="margin: 10px 0; text-align: justify;">Será permitido o uso do veículo objeto do presente contrato, apenas pelo LOCATÁRIO, sendo vedada, no todo ou em parte, a sublocação, transferência, empréstimo, comodato ou cessão da locação, seja a qualquer título, sem expressa anuência da LOCADORA, sob pena de imediata rescisão, aplicação de multa e de demais penalidades contratuais e legais cabíveis.</p>
+          <p style="margin: 10px 0; text-align: justify;">Parágrafo único. Ocorrendo a utilização do veículo por terceiros com a concordância do LOCATÁRIO, este se responsabilizará por qualquer ação civil ou criminal que referida utilização possa gerar, isentando assim a LOCADORA de qualquer responsabilidade, ou ônus.</p>
 
-  <div class="contract-text">
-    Parágrafo único: O LOCATÁRIO declara estar ciente de que assume total responsabilidade civil e material por qualquer dano causado ao veículo durante o período de vigência deste contrato, inclusive por danos causados por quaisquer ônus, indenizações ou outras despesas decorrentes do uso do veículo.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 10ª – DA MANUTENÇÃO</h3>
+          <p style="margin: 10px 0; text-align: justify;">A manutenção do veículo, referente a troca das peças oriundas do desgaste natural de sua utilização, é de responsabilidade do LOCATÁRIO, sem ônus para a LOCADORA.</p>
+          <p style="margin: 10px 0; text-align: justify;">Parágrafo único. Se durante o período da manutenção o LOCATÁRIO não dispor do bem, ou de outro de categoria igual ou similar, terá desconto no aluguel, proporcional ao período de manutenção.</p>
 
-  <div class="clause-title">CLÁUSULA 7ª - DOS DEVERES DO LOCATÁRIO</div>
-  <div class="contract-text">
-    São deveres do LOCATÁRIO:
-    <br />I - pagar o aluguel e os encargos de contratação;
-    <br />II - utilizar o veículo conforme convencionado, destinando-o exclusivamente ao uso particular;
-    <br />III - cuidar diligentemente do veículo como se fosse seu;
-    <br />IV - restituir o veículo no final da locação, no estado em que o recebeu;
-    <br />V - não modificar a forma interna ou externa do veículo sem o consentimento prévio por escrito da LOCADORA;
-    <br />VI - não utilizar o veículo em atividades ilícitas, corridas, competições ou atividades similares;
-    <br />VII - manter o veículo em local seguro quando não estiver em uso.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 11ª – DA UTILIZAÇÃO DO SEGURO</h3>
+          <p style="margin: 10px 0; text-align: justify;">Ocorrendo a necessidade da utilização do seguro veicular, registrado em nome da LOCADORA, devido à perda, extravio, furto, roubo, destruição parcial ou total, ou colisão do veículo por ora locado, fica desde já estipulada indenização devida pelo LOCATÁRIO que deverá, para efeito de cobertura do valor da franquia do seguro veicular, pagar à LOCADORA o valor de R$ 3.520,00 (três mil e quinhentos e vinte reais).</p>
+          <p style="margin: 10px 0; text-align: justify;">Parágrafo único. O LOCATÁRIO declara estar ciente de que a locação foi realizada sem a contratação de seguro veicular, assumindo, assim, total responsabilidade civil e material por quaisquer danos, perdas, furtos, roubos, destruição, sinistros ou acidentes ocorridos com o veículo durante o período de vigência deste contrato, obrigando-se a ressarcir integralmente a LOCADORA em todas essas situações, isentando-a de quaisquer ônus, indenizações ou coberturas decorrentes da ausência de seguro.</p>
+          <p style="margin-top: 30px; text-align: left;">ASS.________________________________________________________</p>
 
-  <div class="clause-title">CLÁUSULA 8ª - DAS PENALIDADES</div>
-  <div class="contract-text">
-    O descumprimento de qualquer cláusula deste contrato sujeitará o LOCATÁRIO ao pagamento de multa equivalente a 20% (vinte por cento) do valor total do contrato, sem prejuízo das demais sanções legais.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 12ª – DOS DEVERES DO LOCATÁRIO</h3>
+          <p style="margin: 10px 0; text-align: justify;">Sem prejuízo de outras disposições deste contrato, constituem obrigações do LOCATÁRIO:</p>
+          <p style="margin: 10px 0; text-align: justify;">I – pagar o aluguel e os encargos da locação, legal ou contratualmente exigíveis, no prazo estipulado;</p>
+          <p style="margin: 10px 0; text-align: justify;">II – usar o veículo como foi convencionado, de acordo com a sua natureza e com o objetivo a que se destina;</p>
+          <p style="margin: 10px 0; text-align: justify;">III – cuidar e zelar do veículo como se fosse sua propriedade;</p>
+          <p style="margin: 10px 0; text-align: justify;">IV – restituir o veículo, no final da locação, no estado em que o recebeu, conforme o laudo de vistoria, salvo as deteriorações decorrentes do seu uso normal;</p>
+          <p style="margin: 10px 0; text-align: justify;">V – levar imediatamente ao conhecimento da LOCADORA o surgimento de qualquer dano, ou ocorrência, cuja reparação, e ou indenização, a esta enquadre;</p>
+          <p style="margin: 10px 0; text-align: justify;">VI – reparar rapidamente os danos sob sua responsabilidade;</p>
+          <p style="margin: 10px 0; text-align: justify;">VII – não modificar a forma interna ou externa do veículo sem o consentimento prévio e por escrito da LOCADORA.</p>
 
-  <div class="clause-title">CLÁUSULA 9ª - DA RESCISÃO</div>
-  <div class="contract-text">
-    Este contrato poderá ser rescindido por qualquer das partes, mediante aviso prévio de 24 (vinte e quatro) horas, ficando o LOCATÁRIO obrigado ao pagamento proporcional do período utilizado.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 13ª – DOS DEVERES DA LOCADORA</h3>
+          <p style="margin: 10px 0; text-align: justify;">Sem prejuízo de outras disposições deste contrato, constituem obrigações da LOCADORA:</p>
+          <p style="margin: 10px 0; text-align: justify;">I – entregar ao LOCATÁRIO o veículo alugado em estado de servir ao uso a que se destina;</p>
+          <p style="margin: 10px 0; text-align: justify;">II – ser integralmente responsável pelos problemas, defeitos e vícios anteriores à locação.</p>
 
-  <div class="clause-title">CLÁUSULA 10ª - DO FORO</div>
-  <div class="contract-text">
-    Para dirimir quaisquer dúvidas oriundas deste contrato, as partes elegem o foro da comarca onde está situada a LOCADORA, renunciando a qualquer outro, por mais privilegiado que seja.
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 14ª – DA GARANTIA</h3>
+          <p style="margin: 10px 0; text-align: justify;">O cumprimento das obrigações previstas neste contrato, inclusive o pagamento pontual do aluguel, estará garantido por caução dada em dinheiro, perfazendo o montante de ${contractData.valor_caucao_formatted}, entregue à LOCADORA no ato de assinatura deste contrato.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. Ao final da locação, tendo sido todas as obrigações devidamente cumpridas, o LOCATÁRIO estará autorizado a levantar a respectiva soma.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. A critério das partes, o valor dado como caução poderá ser revertido para o pagamento de aluguéis devidos.</p>
 
-  ${contractData.observacoes ? `
-  <div class="clause-title">OBSERVAÇÕES</div>
-  <div class="contract-text">${contractData.observacoes}</div>
-  ` : ''}
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 15ª – DA RESCISÃO</h3>
+          <p style="margin: 10px 0; text-align: justify;">As partes poderão rescindir o contrato unilateralmente, sem apresentação de justificativa.</p>
+          <p style="margin: 10px 0; text-align: justify;">Parágrafo único. Em cumprimento ao princípio da boa-fé, as partes se comprometem a informar uma à outra qualquer fato que possa porventura intervir na relação jurídica formalizada através do presente contrato.</p>
 
-  <div class="contract-text" style="margin-top: 30px;">
-    ${contractData.data_atual_formatted}
-  </div>
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 16ª – DAS PENALIDADES</h3>
+          <p style="margin: 10px 0; text-align: justify;">A parte que violar as obrigações previstas neste contrato se sujeitará ao pagamento de indenização e ressarcimento pelas perdas, danos, lucros cessantes, danos indiretos e quaisquer outros prejuízos patrimoniais ou morais percebidos pela outra parte em decorrência deste descumprimento, sem prejuízo de demais penalidades legais ou contratuais cabíveis.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 1º. Caso ocorra uma violação, este contrato poderá ser rescindido de pleno direito pela parte prejudicada, sem a necessidade aviso prévio.</p>
+          <p style="margin: 10px 0; text-align: justify;">§ 2º. Ocorrendo uma tolerância de uma das partes em relação ao descumprimento das cláusulas contidas neste instrumento não se configura em renúncia ou alteração da norma infringida.</p>
 
-  <div class="signatures">
-    <div class="signature">
-      <div class="signature-line">
-        <strong>LOCADORA</strong><br />
-        João Roberto dos Santos de Oliveira<br />
-        neste ato representando a pessoa jurídica<br />
-        L dos Santos de Oliveira
+          <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 17ª – DO FORO</h3>
+          <p style="margin: 10px 0; text-align: justify;">Fica desde já eleito o foro da comarca de Naviraí para serem resolvidas eventuais pendências decorrentes deste contrato.</p>
+
+          <p style="margin: 10px 0; text-align: justify;">Por estarem assim certos e ajustados, firmam os signatários este instrumento em 02 (duas) vias de igual teor e forma.</p>
+
+          ${observacoesHTML}
+
+          <div style="margin-top: 50px;">
+            <p style="margin: 10px 0;">Naviraí, ${contractData?.data_atual_formatted || '[Data Atual]'}</p>
+            <div style="margin-top: 60px;">
+              <div style="text-align: center; margin-bottom: 60px;">
+                <div style="border-top: 1px solid black; padding-top: 5px; margin-top: 30px; display: inline-block; min-width: 300px;">
+                  <strong>LOCADORA</strong><br />
+                  João Roberto dos Santos de Oliveira<br />
+                  neste ato representando a pessoa jurídica<br />
+                  L dos Santos de Oliveira
+                </div>
+              </div>
+              <div style="text-align: center;">
+                <div style="border-top: 1px solid black; padding-top: 5px; margin-top: 30px; display: inline-block; min-width: 300px;">
+                  <strong>LOCATÁRIO</strong><br />
+                  ${contractData.cliente_nome}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    
-    <div class="signature">
-      <div class="signature-line">
-        <strong>LOCATÁRIO</strong><br />
-        ${contractData.cliente_nome}
-      </div>
-    </div>
-  </div>
-</body>
-</html>
+    </body>
+    </html>
   `;
 }
 
