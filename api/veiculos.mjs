@@ -22,8 +22,8 @@ export default async function handler(request, response) {
 
   try {
     const { method } = request;
-    const { id, search, status } = request.query;
-    const id = request.params?.id;
+    const { search, status } = request.query;
+    const id = request.params?.id || request.query.id;
 
     if (method === 'GET') {
       let query = supabase.from('veiculos').select('*');

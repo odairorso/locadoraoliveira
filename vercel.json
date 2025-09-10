@@ -20,6 +20,38 @@
       "destination": "/api/locacoes.mjs?path=$1"
     },
     {
+      "source": "/api/clientes",
+      "destination": "/api/clientes.mjs"
+    },
+    {
+      "source": "/api/clientes/(.*)",
+      "destination": "/api/clientes.mjs?path=$1"
+    },
+    {
+      "source": "/api/veiculos",
+      "destination": "/api/veiculos.mjs"
+    },
+    {
+      "source": "/api/veiculos/(.*)",
+      "destination": "/api/veiculos.mjs?path=$1"
+    },
+    {
+      "source": "/api/dashboard",
+      "destination": "/api/dashboard.mjs"
+    },
+    {
+      "source": "/api/movimentacoes",
+      "destination": "/api/movimentacoes.mjs"
+    },
+    {
+      "source": "/api/movimentacoes/(.*)",
+      "destination": "/api/movimentacoes.mjs?path=$1"
+    },
+    {
+      "source": "/api/receita-por-veiculo",
+      "destination": "/api/receita-por-veiculo.mjs"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
