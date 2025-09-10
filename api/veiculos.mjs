@@ -25,16 +25,16 @@ export default async function handler(request, response) {
     const { search, status } = request.query;
     
     // Extrair ID da URL ou dos parâmetros da consulta
-    const urlParts = request.url.split('/');
-    const id = urlParts[urlParts.length - 1]; // Assuming ID is the last part of the URL
+    let id = request.params?.id || request.query.id;
     console.log("Backend received request.url:", request.url);
-    console.log("Backend extracted ID:", id);
     
     // Verificar se o ID está na URL (formato /api/veiculos/123)
     const urlParts = request.url.split('/');
     if (urlParts.length > 2 && !isNaN(urlParts[urlParts.length - 1])) {
       id = parseInt(urlParts[urlParts.length - 1]);
     }
+    
+    console.log("Backend extracted ID:", id);
     
     console.log('URL:', request.url, 'Método:', method, 'ID extraído:', id);
 
