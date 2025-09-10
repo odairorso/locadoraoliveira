@@ -53,10 +53,11 @@ export default function VeiculosPage() {
         console.log('Enviando atualização para veículo ID:', vehicleId);
         console.log('Dados enviados:', formData);
         
-        // Usar a URL correta para a API e incluir o ID no corpo da requisição
+        // Usar a URL correta para a API e passar o ID como parâmetro separado
         result = await updateVeiculo('/api/veiculos', 
-          { ...formData, id: vehicleId }, 
-          'PUT'
+          formData, 
+          'PUT',
+          vehicleId
         );
         console.log("Resposta da atualização:", result);
       } else {
@@ -80,17 +81,9 @@ export default function VeiculosPage() {
 
   const handleEdit = (veiculo: Veiculo) => {
     setEditingVehicle(veiculo);
+    const { id, created_at, updated_at, ...rest } = veiculo; // Destructure to omit id, created_at, updated_at
     setFormData({
-      modelo: veiculo.modelo,
-      marca: veiculo.marca,
-      ano: veiculo.ano,
-      placa: veiculo.placa,
-      renavam: veiculo.renavam,
-      cor: veiculo.cor,
-      valor_diaria: veiculo.valor_diaria,
-      valor_veiculo: veiculo.valor_veiculo,
-      tipo_operacao: veiculo.tipo_operacao,
-      status: veiculo.status,
+      ...rest, // Spread the rest of the properties
     });
     setShowForm(true);
   };
