@@ -20,8 +20,8 @@
       "destination": "/api/locacoes.mjs?path=$1"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
