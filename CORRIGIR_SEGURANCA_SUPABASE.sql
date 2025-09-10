@@ -73,8 +73,9 @@ CREATE POLICY "Permitir acesso total movimentacoes" ON public.movimentacoes_fina
 CREATE OR REPLACE FUNCTION public.get_saldo_caixa()
 RETURNS DECIMAL
 LANGUAGE sql
+SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $
     SELECT COALESCE(SUM(
         CASE 
             WHEN tipo = 'entrada' THEN valor
@@ -83,19 +84,20 @@ AS $$
         END
     ), 0)
     FROM public.movimentacoes_financeiras;
-$$;
+$;
 
 -- Corrigir função get_receita_mes
 CREATE OR REPLACE FUNCTION public.get_receita_mes(mes_ano DATE)
 RETURNS DECIMAL
 LANGUAGE sql
+SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $
     SELECT COALESCE(SUM(valor), 0)
     FROM public.movimentacoes_financeiras
     WHERE tipo = 'entrada'
     AND DATE_TRUNC('month', data_movimentacao) = DATE_TRUNC('month', mes_ano);
-$$;
+$;
 
 -- =====================================================
 -- 4. VERIFICAR SE AS CORREÇÕES FORAM APLICADAS
