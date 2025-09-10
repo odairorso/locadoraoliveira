@@ -41,26 +41,41 @@ export default async function handler(request, response) {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'locado');
 
-    // Chamar a função de RPC para a receita do mês
-    const currentMonthStr = new Date().toISOString().substring(0, 7);
-    const { data: receitaData, error: receitaError } = await supabase
-      .rpc('get_receita_mes', { month_text: currentMonthStr })
-      .single();
-    if (receitaError) {
-      console.error('Erro ao buscar receita do mês:', receitaError);
-      throw receitaError;
-    }
-    const totalRevenue = receitaData.total || 0;
+    // Busca todas as movimentações para calcular a receita e o saldo de caixa manualmente
+    const { data: movimentacoes, error: movimentacoesError } = await supabase
+      .from('movimentacoes_financeiras')
+      .select('tipo, valor, data_movimentacao');
 
-    // Chamar a função de RPC para o saldo de caixa
-    const { data: saldoData, error: saldoError } = await supabase
-      .rpc('get_saldo_caixa')
-      .single();
-    if (saldoError) {
-      console.error('Erro ao buscar saldo de caixa:', saldoError);
-      throw saldoError;
+    if (movimentacoesError) {
+      console.error('Erro ao buscar movimentações financeiras:', movimentacoesError);
+      throw movimentacoesError;
     }
-    const saldoCaixa = saldoData.total || 0;
+
+    // Calcula o saldo de caixa total
+    const saldoCaixa = movimentacoes.reduce((acc, mov) => {
+      if (mov.tipo === 'entrada') {
+        return acc + mov.valor;
+      } else if (mov.tipo === 'saida') {
+        return acc - mov.valor;
+      }
+      return acc;
+    }, 0);
+
+    // Calcula a receita do mês atual
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth();
+
+    const totalRevenue = movimentacoes
+      .filter(mov => {
+        const dataMov = new Date(mov.data_movimentacao);
+        return (
+          mov.tipo === 'entrada' &&
+          dataMov.getFullYear() === anoAtual &&
+          dataMov.getMonth() === mesAtual
+        );
+      })
+      .reduce((acc, mov) => acc + mov.valor, 0);
 
     const stats = {
       locacoesAtivas: activeRentals || 0,
