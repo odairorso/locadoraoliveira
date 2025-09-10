@@ -1,81 +1,50 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(request, response) {
-  // Secure the endpoint
-  if (request.headers['x-vercel-cron-secret'] !== process.env.CRON_SECRET) {
-    return response.status(401).json({ error: 'Unauthorized' });
+  if (request.method !== 'POST') {
+    response.setHeader('Allow', 'POST');
+    return response.status(405).end('Method Not Allowed');
   }
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Use service role for elevated privileges
-
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Cron Job Error: Missing Supabase URL or Service Role Key');
-    return response.status(500).json({ success: false, error: 'Server configuration error.' });
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
-  const today = new Date().toISOString().split('T')[0];
 
   try {
-    console.log(`Cron Job: Buscando locações ativas com data de entrega anterior a ${today}...`);
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY; // Usar a SERVICE_KEY para ter permissões de escrita
 
-    // 1. Find active leases that have expired
-    const { data: expiredLocacoes, error: fetchError } = await supabase
+    if (!supabaseUrl || !supabaseKey) {
+      return response.status(500).json({ error: "Variáveis de ambiente do Supabase não configuradas." });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // A data de hoje, no fuso horário UTC para consistência com o banco de dados
+    const hoje = new Date().toISOString().split('T')[0];
+
+    const { data, error, count } = await supabase
       .from('locacoes')
-      .select('id, veiculo_id')
+      .update({ 
+        status: 'finalizada',
+        updated_at: new Date().toISOString()
+      })
+      .lt('data_entrega', hoje) // lt = less than (menor que)
       .eq('status', 'ativa')
-      .lt('data_entrega', today);
+      .select(); // Adicionado select para que 'count' seja retornado
 
-    if (fetchError) {
-      console.error('Cron Job Error fetching leases:', fetchError);
-      throw fetchError;
+    if (error) {
+      console.error('Erro ao finalizar locações:', error);
+      throw error;
     }
 
-    if (!expiredLocacoes || expiredLocacoes.length === 0) {
-      console.log('Cron Job: Nenhuma locação expirada encontrada.');
-      return response.status(200).json({ success: true, message: 'Nenhuma locação expirada encontrada.' });
-    }
-
-    console.log(`Cron Job: ${expiredLocacoes.length} locações expiradas encontradas.`);
-    const locacaoIds = expiredLocacoes.map(l => l.id);
-    const veiculoIds = expiredLocacoes.map(l => l.veiculo_id);
-
-    // 2. Update status of expired leases to 'finalizada'
-    const { error: updateLocacoesError } = await supabase
-      .from('locacoes')
-      .update({ status: 'finalizada' })
-      .in('id', locacaoIds);
-
-    if (updateLocacoesError) {
-      console.error('Cron Job Error updating leases:', updateLocacoesError);
-      throw updateLocacoesError;
-    }
-
-    console.log(`Cron Job: ${locacaoIds.length} locações atualizadas para "finalizada".`);
-
-    // 3. Update status of corresponding vehicles to 'disponivel'
-    const { error: updateVeiculosError } = await supabase
-      .from('veiculos')
-      .update({ status: 'disponivel' })
-      .in('id', veiculoIds);
-
-    if (updateVeiculosError) {
-      console.error('Cron Job Error updating vehicles:', updateVeiculosError);
-      // Even if this fails, the primary goal (updating leases) was met.
-      // Log the error but don't throw, to avoid failed cron runs for a secondary issue.
-    } else {
-      console.log(`Cron Job: ${veiculoIds.length} veículos atualizados para "disponível".`);
-    }
-
-    return response.status(200).json({
-      success: true,
-      message: `Processo finalizado. ${locacaoIds.length} locações finalizadas e ${veiculoIds.length} veículos liberados.`,
+    response.status(200).json({ 
+      message: `Rotina executada com sucesso. ${count || 0} locações foram finalizadas.`,
+      finalizadas: count || 0,
+      data: data
     });
 
   } catch (error) {
-    console.error("Erro no Cron Job de finalização de locações:", error);
-    return response.status(500).json({ success: false, error: "Erro interno do servidor.", details: error.message });
+    console.error("Erro na rotina de finalização:", error);
+    response.status(500).json({ 
+      error: "Erro interno do servidor ao executar a rotina.",
+      details: error.message 
+    });
   }
 }
