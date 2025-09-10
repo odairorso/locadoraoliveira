@@ -352,7 +352,7 @@ export default function VeiculosPage() {
                       required
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       value={formData.valor_veiculo}
-                      onChange={(e) => setFormData({ ...formData, valor_veiculo: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => setFormData({ ...formData, valor_veiculo: parseFloat(e.target.value) || 0.01 })}
                       placeholder="Ex: 45000.00"
                     />
                   </div>
