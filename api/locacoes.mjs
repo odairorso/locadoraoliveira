@@ -206,49 +206,43 @@ export default async function handler(request, response) {
 
   try {
     const { method } = request;
-    const { search, status, path } = request.query;
+    const { search, status } = request.query;
     
-    // Extract ID and endpoint from path parameter (sent by Vercel rewrite)
-    let id = request.query.id;
+    // Derive ID from URL path for all methods for consistency
+    const urlObj = new URL(request.url, 'http://localhost');
+    const pathParts = urlObj.pathname.split('/').filter(p => p);
+    let idFromPath = null;
     let isContratoData = false;
-    
-    if (path) {
-      console.log('Path parameter:', path);
-      // path will be something like "9/contrato-data" or "9/contrato"
-      const pathParts = path.split('/');
-      console.log('Path parts:', pathParts);
-      
-      if (pathParts.length >= 1) {
-        id = pathParts[0];
-        console.log('ID extraído do path:', id);
+    let isContratoHtml = false;
+
+    // Check if the last part is a number (ID) or a specific endpoint like 'contrato-data'
+    if (pathParts.length > 0) {
+      const lastPart = pathParts[pathParts.length - 1];
+      if (!isNaN(parseInt(lastPart))) {
+        idFromPath = lastPart; // ID is the last part
+      } else if (pathParts.length > 1 && !isNaN(parseInt(pathParts[pathParts.length - 2]))) {
+        idFromPath = pathParts[pathParts.length - 2]; // ID is the second to last part (e.g., /id/contrato-data)
+        if (lastPart === 'contrato-data') {
+          isContratoData = true;
+        } else if (lastPart === 'contrato') {
+          isContratoHtml = true;
+        }
       }
-      
-      if (pathParts.includes('contrato-data')) {
-        isContratoData = true;
-        console.log('Endpoint contrato-data detectado');
-      } else if (pathParts.includes('contrato')) {
-        isContratoData = false;
-        console.log('Endpoint contrato (HTML) detectado');
-      }
-    } else if (request.url.includes('contrato-data')) {
-      // Fallback para URLs diretas (desenvolvimento local)
-      console.log('URL completa:', request.url);
-      const urlParts = request.url.split('/');
-      const contratoDataIndex = urlParts.indexOf('contrato-data');
-      if (contratoDataIndex > 1) {
-        id = urlParts[contratoDataIndex - 1];
-      }
-      isContratoData = true;
-      console.log('ID extraído da URL:', id);
     }
 
+    const finalId = idFromPath; // Use the ID derived from the path
+
+    console.log('Final ID derived from path:', finalId);
+    console.log('isContratoData:', isContratoData);
+    console.log('isContratoHtml:', isContratoHtml);
+
     if (method === 'GET') {
-      if (isContratoData || path?.includes('contrato')) {
-        if (!id) {
-          return response.status(400).json({ success: false, error: 'ID da locação é obrigatório' });
+      if (isContratoData || isContratoHtml) {
+        if (!finalId) {
+          return response.status(400).json({ success: false, error: 'ID da locação é obrigatório para contrato' });
         }
         
-        console.log('DEBUG: Buscando locação com ID:', id);
+        console.log('DEBUG: Buscando locação com ID:', finalId);
         
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
@@ -347,10 +341,10 @@ export default async function handler(request, response) {
     }
 
     if (method === 'PUT') {
-      const locacaoId = parseInt(id, 10);
-      if (!locacaoId) {
+      if (!finalId) {
         return response.status(400).json({ success: false, error: 'ID da locação inválido ou ausente.' });
       }
+      const locacaoId = parseInt(finalId, 10);
 
       // 1. Fetch the existing location to get the veiculo_id
       const { data: currentLocacao, error: fetchError } = await supabase
@@ -409,11 +403,11 @@ export default async function handler(request, response) {
     }
 
     if (method === 'DELETE') {
-      if (!id) return response.status(400).json({ success: false, error: 'Missing ID' });
-      const { data: locacao, error: locacaoError } = await supabase.from('locacoes').select('veiculo_id').eq('id', id).single();
+      if (!finalId) return response.status(400).json({ success: false, error: 'Missing ID' });
+      const { data: locacao, error: locacaoError } = await supabase.from('locacoes').select('veiculo_id').eq('id', finalId).single();
       if (locacaoError) throw locacaoError;
 
-      await supabase.from('locacoes').delete().eq('id', id);
+      await supabase.from('locacoes').delete().eq('id', finalId);
       await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', locacao.veiculo_id);
       return response.status(200).json({ success: true });
     }

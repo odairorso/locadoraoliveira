@@ -58,11 +58,17 @@ export default async function handler(request, response) {
     }
 
     if (method === 'PUT') {
-      if (!id) return response.status(400).json({ success: false, error: 'Missing ID' });
+      const urlObj = new URL(request.url, 'http://localhost');
+      const pathParts = urlObj.pathname.split('/').filter(p => p);
+      const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
+      const updateId = id || lastPathPart;
+      const finalUpdateId = updateId && /^\d+$/.test(updateId) ? updateId : null;
+
+      if (!finalUpdateId) return response.status(400).json({ success: false, error: 'Missing ID' });
       const { data: updatedCliente, error } = await supabase
         .from('clientes')
         .update(request.body)
-        .eq('id', id)
+        .eq('id', finalUpdateId)
         .select()
         .single();
 
@@ -71,8 +77,14 @@ export default async function handler(request, response) {
     }
 
     if (method === 'DELETE') {
-      if (!id) return response.status(400).json({ success: false, error: 'Missing ID' });
-      const { error } = await supabase.from('clientes').delete().eq('id', id);
+      const urlObj = new URL(request.url, 'http://localhost');
+      const pathParts = urlObj.pathname.split('/').filter(p => p);
+      const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
+      const deleteId = id || lastPathPart;
+      const finalDeleteId = deleteId && /^\d+$/.test(deleteId) ? deleteId : null;
+
+      if (!finalDeleteId) return response.status(400).json({ success: false, error: 'Missing ID' });
+      const { error } = await supabase.from('clientes').delete().eq('id', finalDeleteId);
       if (error) throw error;
       return response.status(200).json({ success: true });
     }
