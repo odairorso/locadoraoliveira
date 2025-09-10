@@ -91,10 +91,19 @@ export function useMutation<TData, TVariables = any>() {
     setError(null);
     
     try {
-      console.log(`Executando ${method} para ${url}`, variables);
+      // Para requisições PUT, garantir que estamos usando a URL correta
+      // Se o ID estiver no corpo da requisição e for uma atualização, usar a URL base
+      let finalUrl = url;
+      if (method === 'PUT' && typeof variables === 'object' && variables !== null && 'id' in variables) {
+        // Garantir que estamos usando a URL base sem ID na rota
+        finalUrl = url.split('/').filter(part => !(/^\d+$/.test(part))).join('/');
+        console.log(`URL ajustada para PUT: ${finalUrl}`);
+      }
+      
+      console.log(`Executando ${method} para ${finalUrl}`, variables);
       
       // Temporariamente removendo autenticação pois RLS está desabilitado
-      const response = await fetch(url, {
+      const response = await fetch(finalUrl, {
         method,
         headers: {
           'Content-Type': 'application/json',

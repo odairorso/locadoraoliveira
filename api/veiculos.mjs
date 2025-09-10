@@ -25,7 +25,10 @@ export default async function handler(request, response) {
     const { search, status } = request.query;
     
     // Extrair ID da URL ou dos parâmetros da consulta
-    let id = request.params?.id || request.query.id;
+    const urlParts = request.url.split('/');
+    const id = urlParts[urlParts.length - 1]; // Assuming ID is the last part of the URL
+    console.log("Backend received request.url:", request.url);
+    console.log("Backend extracted ID:", id);
     
     // Verificar se o ID está na URL (formato /api/veiculos/123)
     const urlParts = request.url.split('/');
@@ -61,8 +64,15 @@ export default async function handler(request, response) {
     }
 
     if (method === 'PUT') {
+      console.log('Recebida requisição PUT para veículos');
+      console.log('Corpo da requisição:', JSON.stringify(request.body));
+      console.log('URL completa:', request.url);
+      console.log('ID da URL ou query:', id);
+      
       // Obter ID do corpo da requisição se não estiver na URL
       const vehicleId = id || request.body.id;
+      
+      console.log('ID final para atualização:', vehicleId);
       
       if (!vehicleId) {
         console.error('ID não fornecido para atualização');
@@ -83,6 +93,8 @@ export default async function handler(request, response) {
         console.error('Erro ao verificar veículo:', checkError);
         return response.status(404).json({ success: false, error: 'Veículo não encontrado' });
       }
+      
+      console.log('Veículo encontrado, prosseguindo com atualização');
       
       // Remover o ID do corpo da requisição para evitar conflitos
       const updateData = { ...request.body };
