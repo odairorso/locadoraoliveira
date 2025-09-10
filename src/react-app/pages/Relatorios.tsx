@@ -1,22 +1,57 @@
-import { useState } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Calendar, FileText } from 'lucide-react';
-import { useApi } from '@/react-app/hooks/useApi';
-import LoadingSpinner from '@/react-app/components/LoadingSpinner';
-import type { DashboardStats } from '@/shared/types';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, TrendingUp, TrendingDown, Calendar, Filter, Car } from 'lucide-react';
+import { useApi } from '../hooks/useApi';
 
 interface MovimentacaoFinanceira {
   id: number;
   tipo: 'entrada' | 'saida';
-  valor: number;
+  categoria: string;
   descricao: string;
+  valor: number;
   data_movimentacao: string;
+  locacao_id?: number;
+  cliente_id?: number;
+  observacoes?: string;
   created_at: string;
+}
+
+interface ReceitaPorVeiculo {
+  veiculo_id: number;
+  veiculo_marca: string;
+  veiculo_modelo: string;
+  veiculo_placa: string;
+  cliente_nome: string;
+  valor_total: number;
+  data_locacao: string;
+  locacao_id: number;
 }
 
 export default function Relatorios() {
   const { data: stats, loading: statsLoading } = useApi<DashboardStats>('/api/dashboard');
   const { data: movimentacoes, loading: movLoading } = useApi<MovimentacaoFinanceira[]>('/api/movimentacoes');
+  const [receitaPorVeiculo, setReceitaPorVeiculo] = useState<ReceitaPorVeiculo[]>([]);
+  const [loadingReceita, setLoadingReceita] = useState(true);
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'entrada' | 'saida'>('todos');
+
+  // Buscar receita por veículo
+  useEffect(() => {
+    const fetchReceitaPorVeiculo = async () => {
+      try {
+        setLoadingReceita(true);
+        const response = await fetch('/api/receita-por-veiculo');
+        if (response.ok) {
+          const data = await response.json();
+          setReceitaPorVeiculo(data.data || []);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar receita por veículo:', error);
+      } finally {
+        setLoadingReceita(false);
+      }
+    };
+
+    fetchReceitaPorVeiculo();
+  }, []);
 
   const loading = statsLoading || movLoading;
 
@@ -107,6 +142,67 @@ export default function Relatorios() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Receita por Veículo */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <Car className="h-6 w-6 text-purple-600" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Veículos que Geraram a Receita do Mês
+            </h2>
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Total: R$ {(stats?.receitaMes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+
+        {loadingReceita ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando detalhes...</span>
+          </div>
+        ) : receitaPorVeiculo.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Nenhuma receita de veículo encontrada</p>
+            <p className="text-sm">As receitas de locações aparecerão aqui</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {receitaPorVeiculo.map((item) => (
+              <div key={item.locacao_id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded-lg">
+                      <Car className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        {item.veiculo_marca} {item.veiculo_modelo}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Placa: {item.veiculo_placa} • Cliente: {item.cliente_nome}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        Data da locação: {new Date(item.data_locacao).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                      R$ {item.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-500">
+                      Locação #{item.locacao_id}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Movimentações Financeiras */}
