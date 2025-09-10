@@ -91,6 +91,8 @@ export function useMutation<TData, TVariables = any>() {
     setError(null);
     
     try {
+      console.log(`Executando ${method} para ${url}`, variables);
+      
       // Temporariamente removendo autenticação pois RLS está desabilitado
       const response = await fetch(url, {
         method,
@@ -100,15 +102,20 @@ export function useMutation<TData, TVariables = any>() {
         body: method !== 'DELETE' ? JSON.stringify(variables) : undefined,
       });
       
+      console.log(`Resposta do servidor: ${response.status}`);
+      
       const result: ApiResponse<TData> = await response.json();
+      console.log('Dados da resposta:', result);
       
       if (result.success) {
         return result.data !== undefined ? result.data : true as any;
       } else {
+        console.error('Erro retornado pelo servidor:', result.error);
         setError(result.error || 'Erro desconhecido');
         return null;
       }
     } catch (err) {
+      console.error('Erro na requisição:', err);
       setError(err instanceof Error ? err.message : 'Erro de conexão');
       return null;
     } finally {
