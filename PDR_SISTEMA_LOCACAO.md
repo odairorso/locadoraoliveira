@@ -281,23 +281,72 @@ Desenvolver um sistema web responsivo para automatizar e gerenciar todo o proces
 - Atualizações de segurança
 - Correção de bugs
 
-### 14. RISCOS E MITIGAÇÕES
+### 14. SEGURANÇA DO SISTEMA
 
-#### 14.1 Riscos Técnicos
+#### 14.1 Problemas de Segurança Identificados
+**Status:** ⚠️ **CRÍTICO - Requer Ação Imediata**
+
+O Supabase Security Advisor identificou vulnerabilidades críticas:
+
+**Problemas RLS (Row Level Security):**
+- ❌ Tabela `public.contracts` sem RLS
+- ❌ Tabela `public.cars` sem RLS
+- ❌ Tabela `public.clientes` sem RLS
+- ❌ Tabela `public.veiculos` sem RLS
+- ❌ Tabela `public.locacoes` sem RLS
+- ❌ Tabela `public.movimentacoes_financeiras` sem RLS
+
+**Problemas de Funções:**
+- ⚠️ Função `get_saldo_caixa` com search_path mutável
+- ⚠️ Função `get_receita_mes` com search_path mutável
+
+#### 14.2 Impacto das Vulnerabilidades
+- **Acesso não autorizado:** Qualquer pessoa com a URL pode fazer CRUD nas tabelas
+- **Exposição de dados:** Informações sensíveis de clientes e contratos expostas
+- **Manipulação de dados:** Possibilidade de alteração/exclusão de registros
+- **Inconsistência:** Funções podem ter comportamento imprevisível
+
+#### 14.3 Solução Implementada
+**Arquivo:** `CORRIGIR_SEGURANCA_SUPABASE.sql`
+
+**Correções aplicadas:**
+1. ✅ Habilitação de RLS em todas as tabelas públicas
+2. ✅ Criação de políticas RLS permissivas (temporárias)
+3. ✅ Correção do search_path das funções
+4. ✅ Scripts de verificação das correções
+
+**Próximos passos de segurança:**
+- Implementar autenticação de usuários
+- Criar políticas RLS mais restritivas
+- Monitoramento contínuo do Security Advisor
+
+### 15. RISCOS E MITIGAÇÕES
+
+#### 15.1 Riscos Técnicos
 - **Falha no Supabase:** Backup e plano alternativo
 - **Limite Vercel:** Monitoramento de uso
 - **Perda de dados:** Backup automático
+- **Vulnerabilidades de segurança:** Aplicação das correções SQL
 
-#### 14.2 Riscos de Negócio
+#### 15.2 Riscos de Negócio
 - **Mudanças legais:** Atualização de contratos
 - **Crescimento:** Plano de escalabilidade
+- **Exposição de dados:** Implementação de autenticação
 
-### 15. CONCLUSÃO
+### 16. CONCLUSÃO
 
 O Sistema de Gestão de Locação de Veículos atende aos requisitos básicos para automatização do processo de locação. A arquitetura moderna e escalável permite futuras expansões e melhorias conforme a necessidade do negócio.
 
-**Status Atual:** ✅ Funcional e em produção  
-**Próximos Passos:** Implementar melhorias de UX e funcionalidades avançadas
+**Status Atual:** ⚠️ Funcional com vulnerabilidades de segurança identificadas  
+**Prioridade Crítica:** Aplicar correções de segurança do arquivo `CORRIGIR_SEGURANCA_SUPABASE.sql`  
+**Próximos Passos:** 
+1. **URGENTE:** Corrigir vulnerabilidades de segurança
+2. Implementar sistema de autenticação
+3. Melhorias de UX e funcionalidades avançadas
+
+**Arquivos de Correção Criados:**
+- `CORRIGIR_SEGURANCA_SUPABASE.sql` - Correções críticas de segurança
+- `PDR_SISTEMA_LOCACAO.md` - Documentação completa atualizada
 
 ---
 
