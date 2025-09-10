@@ -31,12 +31,35 @@ const loadApiRoutes = async () => {
       const module = await import(`file://${modulePath}`);
       
       if (module.default) {
-        app.use(`/api/${routeName}`, async (req, res) => {
+        // Configurar rotas para lidar com operações sem ID
+        app.all(`/api/${routeName}`, async (req, res) => {
+          console.log(`=== ${routeName.toUpperCase()} HANDLER ===`);
+          console.log(`Method: ${req.method}`);
+          console.log(`URL: ${req.url}`);
+          console.log(`Params: ${JSON.stringify(req.params)}`);
+          console.log(`========================`);
+          
           try {
             await module.default(req, res);
           } catch (error) {
             console.error(`Erro na API ${routeName}:`, error);
-            res.status(500).json({ error: 'Erro interno do servidor' });
+            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
+          }
+        });
+        
+        // Configurar rotas para lidar com operações com ID
+        app.all(`/api/${routeName}/:id`, async (req, res) => {
+          console.log(`=== ${routeName.toUpperCase()} HANDLER COM ID ===`);
+          console.log(`Method: ${req.method}`);
+          console.log(`URL: ${req.url}`);
+          console.log(`Params: ${JSON.stringify(req.params)}`);
+          console.log(`========================`);
+          
+          try {
+            await module.default(req, res);
+          } catch (error) {
+            console.error(`Erro na API ${routeName} com ID:`, error);
+            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
           }
         });
         console.log(`✓ Rota carregada: /api/${routeName}`);

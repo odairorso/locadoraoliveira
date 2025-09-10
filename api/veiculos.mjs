@@ -23,7 +23,17 @@ export default async function handler(request, response) {
   try {
     const { method } = request;
     const { search, status } = request.query;
-    const id = request.params?.id || request.query.id;
+    
+    // Extrair ID da URL ou dos parâmetros da consulta
+    let id = request.params?.id || request.query.id;
+    
+    // Verificar se o ID está na URL (formato /api/veiculos/123)
+    const urlParts = request.url.split('/');
+    if (urlParts.length > 2 && !isNaN(urlParts[urlParts.length - 1])) {
+      id = parseInt(urlParts[urlParts.length - 1]);
+    }
+    
+    console.log('URL:', request.url, 'Método:', method, 'ID extraído:', id);
 
     if (method === 'GET') {
       let query = supabase.from('veiculos').select('*');
@@ -51,9 +61,48 @@ export default async function handler(request, response) {
     }
 
     if (method === 'PUT') {
-      if (!id) return response.status(400).json({ success: false, error: 'Missing ID' });
-      const { data: updatedVeiculo, error } = await supabase.from('veiculos').update(request.body).eq('id', id).select().single();
-      if (error) throw error;
+      // Obter ID do corpo da requisição se não estiver na URL
+      const vehicleId = id || request.body.id;
+      
+      if (!vehicleId) {
+        console.error('ID não fornecido para atualização');
+        return response.status(400).json({ success: false, error: 'ID do veículo não fornecido' });
+      }
+      
+      console.log('Atualizando veículo ID:', vehicleId);
+      console.log('Dados recebidos:', JSON.stringify(request.body));
+      
+      // Verificar se o veículo existe antes de atualizar
+      const { data: existingVehicle, error: checkError } = await supabase
+        .from('veiculos')
+        .select('id')
+        .eq('id', vehicleId)
+        .single();
+        
+      if (checkError) {
+        console.error('Erro ao verificar veículo:', checkError);
+        return response.status(404).json({ success: false, error: 'Veículo não encontrado' });
+      }
+      
+      // Remover o ID do corpo da requisição para evitar conflitos
+      const updateData = { ...request.body };
+      delete updateData.id;
+      
+      console.log('Dados para atualização:', JSON.stringify(updateData));
+      
+      const { data: updatedVeiculo, error } = await supabase
+        .from('veiculos')
+        .update(updateData)
+        .eq('id', vehicleId)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Erro ao atualizar veículo:', error);
+        return response.status(500).json({ success: false, error: 'Erro ao atualizar veículo', details: error.message });
+      }
+      
+      console.log('Veículo atualizado com sucesso:', updatedVeiculo);
       return response.status(200).json({ success: true, data: updatedVeiculo });
     }
 

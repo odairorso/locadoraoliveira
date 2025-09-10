@@ -44,16 +44,35 @@ export default function VeiculosPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    let result;
-    if (editingVehicle) {
+    try {
+      let result;
+      if (editingVehicle) {
+        // Garantir que o ID seja um número
+        const vehicleId = typeof editingVehicle.id === 'string' ? parseInt(editingVehicle.id) : editingVehicle.id;
+        
+        console.log('Enviando atualização para veículo ID:', vehicleId);
+        console.log('Dados enviados:', formData);
+        
+        // Usar a URL correta para a API
       result = await updateVeiculo(`/api/veiculos/${editingVehicle.id}`, formData, 'PUT');
-    } else {
-      result = await createVeiculo('/api/veiculos', formData);
-    }
-    
-    if (result) {
-      resetForm();
-      refetch();
+      console.log("Updating vehicle with ID:", editingVehicle.id);
+      console.log("Form data being sent:", formData);
+      } else {
+        result = await createVeiculo('/api/veiculos', formData);
+      }
+      
+      if (result) {
+        console.log('Operação bem-sucedida:', result);
+        alert(editingVehicle ? 'Veículo atualizado com sucesso!' : 'Veículo criado com sucesso!');
+        resetForm();
+        refetch();
+      } else {
+        console.error('Falha na operação, sem mensagem de erro específica');
+        alert(editingVehicle ? 'Erro ao atualizar veículo. Tente novamente.' : 'Erro ao criar veículo. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar veículo:', error);
+      alert('Ocorreu um erro ao processar a operação. Verifique o console para mais detalhes.');
     }
   };
 
