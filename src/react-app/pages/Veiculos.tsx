@@ -54,12 +54,9 @@ export default function VeiculosPage() {
         console.log('Dados enviados:', formData);
         
         // Usar a URL correta para a API e passar o ID como parâmetro separado
-        result = await updateVeiculo('/api/veiculos', 
-          formData, 
-          'PUT',
-          vehicleId
-        );
-        console.log("Resposta da atualização:", result);
+      result = await updateVeiculo(`/api/veiculos/${editingVehicle.id}`, formData, 'PUT');
+      console.log("Updating vehicle with ID:", editingVehicle.id);
+      console.log("Form data being sent:", formData);
       } else {
         result = await createVeiculo('/api/veiculos', formData);
       }
