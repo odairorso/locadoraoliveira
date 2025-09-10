@@ -85,19 +85,20 @@ export function useMutation<TData, TVariables = any>() {
   const mutate = async (
     url: string, 
     variables: TVariables, 
-    method: 'POST' | 'PUT' | 'DELETE' = 'POST'
+    method: 'POST' | 'PUT' | 'DELETE' = 'POST',
+    id?: number
   ): Promise<TData | null> => {
     setLoading(true);
     setError(null);
     
     try {
       // Para requisições PUT, garantir que estamos usando a URL correta
-      // Se o ID estiver no corpo da requisição e for uma atualização, usar a URL base
+      // Se o ID for fornecido como parâmetro separado, adicionar à URL
       let finalUrl = url;
-      if (method === 'PUT' && typeof variables === 'object' && variables !== null && 'id' in variables) {
-        // Garantir que estamos usando a URL base sem ID na rota
-        finalUrl = url.split('/').filter(part => !(/^\d+$/.test(part))).join('/');
-        console.log(`URL ajustada para PUT: ${finalUrl}`);
+      if (method === 'PUT' && id !== undefined) {
+        // Garantir que estamos usando a URL base e adicionar o ID
+        finalUrl = `${url}/${id}`;
+        console.log(`URL ajustada para PUT com ID: ${finalUrl}`);
       }
       
       console.log(`Executando ${method} para ${finalUrl}`, variables);
