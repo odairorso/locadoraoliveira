@@ -51,6 +51,7 @@ export default function Home() {
           icon={FileText}
           color="blue"
           subtitle="contratos em andamento"
+          onClick={() => navigate('/locacoes')}
         />
         <DashboardCard
           title="Veículos Disponíveis"
@@ -58,6 +59,7 @@ export default function Home() {
           icon={Car}
           color="green"
           subtitle="prontos para locação"
+          onClick={() => navigate('/veiculos')}
         />
         <DashboardCard
           title="Veículos Locados"
@@ -65,6 +67,7 @@ export default function Home() {
           icon={Users}
           color="yellow"
           subtitle="atualmente em uso"
+          onClick={() => navigate('/veiculos')}
         />
         <DashboardCard
           title="Receita do Mês"
@@ -72,6 +75,7 @@ export default function Home() {
           icon={DollarSign}
           color="purple"
           subtitle="faturamento atual"
+          onClick={() => navigate('/relatorios')}
         />
         <DashboardCard
           title="Saldo do Caixa"
@@ -79,6 +83,7 @@ export default function Home() {
           icon={Wallet}
           color="red"
           subtitle="disponível em caixa"
+          onClick={() => navigate('/relatorios')}
         />
       </div>
 
