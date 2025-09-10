@@ -1,0 +1,40 @@
+*** Begin Patch
+*** Update File: api/veiculos.mjs
+@@
+-      // Derive deleteId
+-      const urlObj = new URL(request.url, 'http://localhost');
+-      const pathParts = urlObj.pathname.split('/').filter(p => p);
+-      const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
+-      const deleteId = id || lastPathPart;
+-
+-      if (!deleteId) return response.status(400).json({ success: false, error: 'Missing ID' });
+-      const { data: activeRentals, error: rentalError } = await supabase.from('locacoes').select('id').eq('veiculo_id', deleteId).eq('status', 'ativa');
+-      if (rentalError) throw rentalError;
+-      if (activeRentals && activeRentals.length > 0) {
+-        return response.status(400).json({ success: false, error: "Não é possível excluir um veículo que está sendo usado em locações ativas" });
+-      }
+-      const { error } = await supabase.from('veiculos').delete().eq('id', deleteId);
+-      if (error) throw error;
+-      return response.status(200).json({ success: true });
+-    }
++      // Safer derivation
++      const urlObj = new URL(request.url, 'http://localhost');
++      const pathParts = urlObj.pathname.split('/').filter(p => p);
++      const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
++      const deleteId = id || lastPathPart;
++      const finalDeleteId = deleteId && /^\d+$/.test(deleteId) ? deleteId : null;
++
++      if (!finalDeleteId) return response.status(400).json({ success: false, error: 'Missing ID' });
++      const { data: activeRentals, error: rentalError } = await supabase.from('locacoes').select('id').eq('veiculo_id', finalDeleteId).eq('status', 'ativa');
++      if (rentalError) throw rentalError;
++      if (activeRentals && activeRentals.length > 0) {
++        return response.status(400).json({ success: false, error: "Não é possível excluir um veículo que está sendo usado em locações ativas" });
++      }
++      const { error } = await supabase.from('veiculos').delete().eq('id', finalDeleteId);
++      if (error) throw error;
++      return response.status(200).json({ success: true });
++    }
+@@
+-const { error } = await supabase.from('veiculos').delete().eq('id', deleteId);
++const { error } = await supabase.from('veiculos').delete().eq('id', finalDeleteId);
+*** End Patch

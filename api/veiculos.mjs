@@ -62,10 +62,13 @@ export default async function handler(request, response) {
       console.log('URL completa:', request.url);
       console.log('ID da URL ou query:', id);
       
-      // Obter ID do corpo da requisição se não estiver na URL
-      const vehicleId = id || request.body.id;
+      // Derive vehicleId from multiple sources: query param, request body, or URL path
+      const urlObj = new URL(request.url, 'http://localhost');
+      const pathParts = urlObj.pathname.split('/').filter(p => p);
+      const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
+      const vehicleId = id || request.body?.id || lastPathPart;
       
-      console.log('ID final para atualização:', vehicleId);
+      console.log('ID final para atualização (derivado):', vehicleId);
       
       if (!vehicleId) {
         console.error('ID não fornecido para atualização');
@@ -112,13 +115,20 @@ export default async function handler(request, response) {
     }
 
     if (method === 'DELETE') {
-      if (!id) return response.status(400).json({ success: false, error: 'Missing ID' });
-      const { data: activeRentals, error: rentalError } = await supabase.from('locacoes').select('id').eq('veiculo_id', id).eq('status', 'ativa');
+      // Safer derivation
+      const urlObj = new URL(request.url, 'http://localhost');
+      const pathParts = urlObj.pathname.split('/').filter(p => p);
+      const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
+      const deleteId = id || lastPathPart;
+      const finalDeleteId = deleteId && /^\d+$/.test(deleteId) ? deleteId : null;
+
+      if (!finalDeleteId) return response.status(400).json({ success: false, error: 'Missing ID' });
+      const { data: activeRentals, error: rentalError } = await supabase.from('locacoes').select('id').eq('veiculo_id', finalDeleteId).eq('status', 'ativa');
       if (rentalError) throw rentalError;
       if (activeRentals && activeRentals.length > 0) {
         return response.status(400).json({ success: false, error: "Não é possível excluir um veículo que está sendo usado em locações ativas" });
       }
-      const { error } = await supabase.from('veiculos').delete().eq('id', id);
+      const { error } = await supabase.from('veiculos').delete().eq('id', finalDeleteId);
       if (error) throw error;
       return response.status(200).json({ success: true });
     }

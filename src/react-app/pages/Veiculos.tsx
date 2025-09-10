@@ -88,6 +88,7 @@ export default function VeiculosPage() {
   const handleDelete = async (veiculo: Veiculo) => {
     if (confirm(`Tem certeza que deseja excluir o veículo ${veiculo.marca} ${veiculo.modelo}?`)) {
       try {
+        console.log('Attempting to delete vehicle with ID:', veiculo.id);
         const result = await deleteVeiculo(`/api/veiculos/${veiculo.id}`, {}, 'DELETE');
         if (result) {
           alert('Veículo excluído com sucesso!');
