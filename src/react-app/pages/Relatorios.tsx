@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Calendar, Filter, Car } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, TrendingUp, TrendingDown, Calendar, Car, FileText } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import LoadingSpinner from '../components/LoadingSpinner';
+import type { DashboardStats } from '../../shared/types';
 
 interface MovimentacaoFinanceira {
   id: number;
