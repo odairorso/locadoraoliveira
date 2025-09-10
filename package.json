@@ -48,7 +48,6 @@
     "dev": "vite",
     "dev:api": "node server.js",
     "dev:full": "concurrently \"npm run dev:api\" \"npm run dev\"",
-    "push": "node auto-push.js",
     "lint": "eslint ."
   }
 }

@@ -109,7 +109,7 @@ function generateContractHTML(contractData) {
 
           <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 10ª – DA MANUTENÇÃO</h3>
           <p style="margin: 10px 0; text-align: justify;">A manutenção do veículo, referente a troca das peças oriundas do desgaste natural de sua utilização, é de responsabilidade do LOCATÁRIO, sem ônus para a LOCADORA.</p>
-          <p style="margin: 10px 0; text-align: justify;">Parágrafo único. Se durante o período da manutenção o LOCATÁrio não dispor do bem, ou de outro de categoria igual ou similar, terá desconto no aluguel, proporcional ao período de manutenção.</p>
+          <p style="margin: 10px 0; text-align: justify;">Parágrafo único. Se durante o período da manutenção o LOCATÁRIO não dispor do bem, ou de outro de categoria igual ou similar, terá desconto no aluguel, proporcional ao período de manutenção.</p>
 
           <h3 style="margin: 20px 0 10px 0; font-weight: bold;">CLÁUSULA 11ª – DA UTILIZAÇÃO DO SEGURO</h3>
           <p style="margin: 10px 0; text-align: justify;">Ocorrendo a necessidade da utilização do seguro veicular, registrado em nome da LOCADORA, devido à perda, extravio, furto, roubo, destruição parcial ou total, ou colisão do veículo por ora locado, fica desde já estipulada indenização devida pelo LOCATÁRIO que deverá, para efeito de cobertura do valor da franquia do seguro veicular, pagar à LOCADORA o valor de R$ 3.520,00 (três mil e quinhentos e vinte reais).</p>

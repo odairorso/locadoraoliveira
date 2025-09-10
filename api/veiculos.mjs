@@ -23,6 +23,7 @@ export default async function handler(request, response) {
   try {
     const { method } = request;
     const { id, search, status } = request.query;
+    const id = pathSegments[pathSegments.length - 1];
 
     if (method === 'GET') {
       let query = supabase.from('veiculos').select('*');

@@ -4,10 +4,9 @@ interface DashboardCardProps {
   icon: React.ComponentType<{ className?: string }>;
   color: 'blue' | 'green' | 'yellow' | 'red' | 'purple';
   subtitle?: string;
-  onClick?: () => void;
 }
 
-export default function DashboardCard({ title, value, icon: Icon, color, subtitle, onClick }: DashboardCardProps) {
+export default function DashboardCard({ title, value, icon: Icon, color, subtitle }: DashboardCardProps) {
   const colorClasses = {
     blue: 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-200',
     green: 'bg-gradient-to-br from-green-500 to-green-600 shadow-green-200',
@@ -17,10 +16,7 @@ export default function DashboardCard({ title, value, icon: Icon, color, subtitl
   };
 
   return (
-    <div 
-      className={`${colorClasses[color]} rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-transform duration-200 ${onClick ? 'cursor-pointer' : ''}`}
-      onClick={onClick}
-    >
+    <div className={`${colorClasses[color]} rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-transform duration-200`}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-blue-100 text-sm font-medium opacity-90">{title}</p>
