@@ -292,16 +292,26 @@ export default function LocacoesPage() {
             <head>
               <title>Contrato de Locação</title>
               <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
-                .header { text-align: center; margin-bottom: 30px; }
-                .logo { height: 80px; margin-bottom: 20px; }
-                h1 { margin: 20px 0; }
-                h3 { margin: 20px 0 10px 0; }
-                p { margin: 10px 0; }
-                .signature-section { margin-top: 50px; }
-                .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+                @media print {
+                  @page {
+                    size: a4;
+                    margin: 2cm;
+                  }
+                  body {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                  }
+                }
+                body { font-family: Arial, sans-serif; line-height: 1.3; margin: 10px; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .logo { height: 60px; margin-bottom: 15px; }
+                h1 { margin: 15px 0; font-size: 1.2em; }
+                h3 { margin: 15px 0 8px 0; font-size: 1.0em; }
+                p { margin: 5px 0; }
+                .signature-section { margin-top: 25px; page-break-inside: avoid; }
+                .signatures { display: flex; justify-content: space-between; margin-top: 20px; }
                 .signature { text-align: center; width: 200px; }
-                .signature-line { border-top: 1px solid black; padding-top: 5px; margin-top: 30px; }
+                .signature-line { border-top: 1px solid black; padding-top: 5px; margin-top: 15px; }
               </style>
             </head>
             <body>
@@ -855,12 +865,12 @@ export default function LocacoesPage() {
                   </div>
                 )}
 
-                <div style={{ marginTop: '50px' }}>
+                <div className="signature-section" style={{ marginTop: '40px' }}>
                   <p style={{ margin: '10px 0' }}>Naviraí, {contractData?.data_atual_formatted || '[Data Atual]'}</p>
                   
-                  <div style={{ marginTop: '60px' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '30px', display: 'inline-block', minWidth: '300px' }}>
+                  <div style={{ marginTop: '40px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '20px', display: 'inline-block', minWidth: '300px' }}>
                         <strong>LOCADORA</strong><br />
                         João Roberto dos Santos de Oliveira<br />
                         neste ato representando a pessoa jurídica<br />
@@ -869,7 +879,7 @@ export default function LocacoesPage() {
                     </div>
                     
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '30px', display: 'inline-block', minWidth: '300px' }}>
+                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '20px', display: 'inline-block', minWidth: '300px' }}>
                         <strong>LOCATÁRIO</strong><br />
                         {contractData.cliente_nome}
                       </div>

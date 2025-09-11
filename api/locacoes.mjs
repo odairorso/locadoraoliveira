@@ -253,38 +253,46 @@ export default async function handler(request, response) {
         console.log('DEBUG: Resultado da busca locação:', { locacao, locacaoError });
 
         if (locacaoError) {
+          console.error('Erro ao buscar locação:', locacaoError);
+          return response.status(500).json({ success: false, error: "Erro ao buscar dados da locação.", details: locacaoError.message });
+        }
+
+        if (!locacao) {
           return response.status(404).json({ success: false, error: "Locação não encontrada" });
         }
 
+        const cliente = locacao.cliente || {};
+        const veiculo = locacao.veiculo || {};
+
         // Format address properly, avoiding empty parts
         let endereco_parts = [];
-        if (locacao.cliente.endereco) endereco_parts.push(locacao.cliente.endereco);
-        if (locacao.cliente.bairro) endereco_parts.push(locacao.cliente.bairro);
+        if (cliente.endereco) endereco_parts.push(cliente.endereco);
+        if (cliente.bairro) endereco_parts.push(cliente.bairro);
         
         let cidade_estado = [];
-        if (locacao.cliente.cidade) cidade_estado.push(locacao.cliente.cidade);
-        if (locacao.cliente.estado) cidade_estado.push(locacao.cliente.estado);
+        if (cliente.cidade) cidade_estado.push(cliente.cidade);
+        if (cliente.estado) cidade_estado.push(cliente.estado);
         
         let enderecoCompleto = endereco_parts.join(', ');
         if (cidade_estado.length > 0) {
           enderecoCompleto += ' - ' + cidade_estado.join('/');
         }
-        if (locacao.cliente.cep) {
-          enderecoCompleto += ', CEP: ' + locacao.cliente.cep;
+        if (cliente.cep) {
+          enderecoCompleto += ', CEP: ' + cliente.cep;
         }
         const formatCurrency = (value) => value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value)) : 'R$ 0,00';
         const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('pt-BR') : '';
 
         const contractData = {
           id: locacao.id,
-          cliente_nome: locacao.cliente.nome,
-          cliente_cpf: locacao.cliente.cpf,
+          cliente_nome: cliente.nome || '[Cliente não encontrado]',
+          cliente_cpf: cliente.cpf || '[CPF não encontrado]',
           endereco_completo: enderecoCompleto,
-          veiculo_marca: locacao.veiculo.marca,
-          veiculo_modelo: locacao.veiculo.modelo,
-          veiculo_ano: locacao.veiculo.ano,
-          veiculo_placa: locacao.veiculo.placa,
-          valor_veiculo_formatted: formatCurrency(locacao.veiculo.valor_veiculo),
+          veiculo_marca: veiculo.marca || '[Marca não encontrada]',
+          veiculo_modelo: veiculo.modelo || '[Modelo não encontrado]',
+          veiculo_ano: veiculo.ano || '',
+          veiculo_placa: veiculo.placa || '',
+          valor_veiculo_formatted: formatCurrency(veiculo.valor_veiculo),
           valor_diaria_formatted: formatCurrency(locacao.valor_diaria),
           valor_total_formatted: formatCurrency(locacao.valor_total),
           valor_caucao_formatted: formatCurrency(locacao.valor_caucao),
