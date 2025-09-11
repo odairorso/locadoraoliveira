@@ -745,7 +745,8 @@ export default function LocacoesPage() {
               </div>
             </div>
             
-            <div id="contract-content" className="bg-white text-black p-2 sm:p-4 md:p-8" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.4', fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
+            <div id="contract-content" className="contract-preview bg-white text-black p-2 sm:p-4 md:p-8" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.4', fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
+              <div className="contract-page">
               <div className="text-center mb-4 sm:mb-8">
                 <h1 className="text-2xl font-bold">Oliveira Veiculos</h1>
                 <p>Av. Campo Grande, 707 - Centro, Navirai - MS, 79947-033</p>
@@ -753,10 +754,8 @@ export default function LocacoesPage() {
               </div>
 
               <div style={{ color: '#000', fontSize: window.innerWidth < 640 ? '10px' : '12px', lineHeight: '1.4' }}>
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0' }}><strong>Entre:</strong></p>
-                
                 <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
-                  a pessoa jurídica L DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, 
+                  <strong>Entre:</strong> a pessoa jurídica L DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, 
                   com sede em Av campo grande 707 centro, neste ato representada, conforme poderes especialmente 
                   conferidos, por: João Roberto dos Santos de Oliveira, na qualidade de: Administrador, 
                   CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:
@@ -872,7 +871,9 @@ export default function LocacoesPage() {
                   </div>
                 )}
 
-                <div className="signature-section" style={{ marginTop: '40px' }}>
+                <div style={{ marginTop: '80px' }}></div>
+
+                <div className="signature-section" style={{ marginTop: '60px' }}>
                   <p style={{ margin: '10px 0' }}>Naviraí, {contractData?.data_atual_formatted || '[Data Atual]'}</p>
                   
                   <div style={{ marginTop: '40px' }}>
@@ -893,6 +894,7 @@ export default function LocacoesPage() {
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
