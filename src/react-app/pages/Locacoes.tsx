@@ -749,7 +749,6 @@ export default function LocacoesPage() {
               <div className="text-center mb-4 sm:mb-8">
                 <h1 className="text-2xl font-bold">Oliveira Veiculos</h1>
                 <p>Av. Campo Grande, 707 - Centro, Navirai - MS, 79947-033</p>
-                <p>Tel 3461-9864  Cel-67 99622-9840 67 999913-5153</p>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 mt-4">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
               </div>
 
