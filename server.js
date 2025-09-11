@@ -62,6 +62,37 @@ const loadApiRoutes = async () => {
             res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
           }
         });
+        
+        // Configurar rotas para contrato-data e contrato
+        app.all(`/api/${routeName}/:id/contrato-data`, async (req, res) => {
+          console.log(`=== ${routeName.toUpperCase()} CONTRATO-DATA ===`);
+          console.log(`Method: ${req.method}`);
+          console.log(`URL: ${req.url}`);
+          console.log(`Params: ${JSON.stringify(req.params)}`);
+          console.log(`========================`);
+          
+          try {
+            await module.default(req, res);
+          } catch (error) {
+            console.error(`Erro na API ${routeName} contrato-data:`, error);
+            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
+          }
+        });
+        
+        app.all(`/api/${routeName}/:id/contrato`, async (req, res) => {
+          console.log(`=== ${routeName.toUpperCase()} CONTRATO ===`);
+          console.log(`Method: ${req.method}`);
+          console.log(`URL: ${req.url}`);
+          console.log(`Params: ${JSON.stringify(req.params)}`);
+          console.log(`========================`);
+          
+          try {
+            await module.default(req, res);
+          } catch (error) {
+            console.error(`Erro na API ${routeName} contrato:`, error);
+            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
+          }
+        });
         console.log(`✓ Rota carregada: /api/${routeName}`);
       }
     } catch (error) {

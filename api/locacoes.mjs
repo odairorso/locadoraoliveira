@@ -247,7 +247,7 @@ export default async function handler(request, response) {
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
           .select(`*, cliente:clientes (*), veiculo:veiculos (*)`)
-          .eq('id', parseInt(id))
+          .eq('id', parseInt(finalId))
           .single();
         
         console.log('DEBUG: Resultado da busca locação:', { locacao, locacaoError });
