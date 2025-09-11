@@ -303,21 +303,24 @@ export default function LocacoesPage() {
                 @media print {
                   @page {
                     size: a4;
-                    margin: 2cm;
+                    margin: 1.5cm 1cm;
                   }
                   body {
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
-                  }
-                  /* Ocultar URL e elementos do navegador na impressão */
-                  @page {
-                    margin-top: 0;
-                    margin-bottom: 0;
+                    margin: 0 !important;
+                    padding: 0 !important;
                   }
                   /* Remover qualquer fundo amarelo ou destacado */
                   * {
                     background: white !important;
                     color: black !important;
+                  }
+                  /* Ajustar margens do conteúdo */
+                  .contract-page {
+                    margin: 0 !important;
+                    padding: 10px !important;
+                    box-sizing: border-box;
                   }
                 }
                 body { 
