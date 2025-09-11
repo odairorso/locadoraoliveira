@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Car, DollarSign, Palette } from 'lucide-react';
 import { useApi, useMutation } from '@/react-app/hooks/useApi';

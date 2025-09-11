@@ -36,6 +36,14 @@ export default function LocacoesPage() {
   const isLoading = creating || updating || deleting;
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const status = params.get('status');
+    if (status) {
+      setStatusFilter(status);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
       refetch();
     }, 300);

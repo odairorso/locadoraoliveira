@@ -1,5 +1,5 @@
 import { Car, Users, FileText, DollarSign, Wallet } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import DashboardCard from '@/react-app/components/DashboardCard';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import { useApi } from '@/react-app/hooks/useApi';
@@ -51,6 +51,7 @@ export default function Home() {
           icon={FileText}
           color="blue"
           subtitle="contratos em andamento"
+          onClick={() => navigate('/locacoes?status=ativa')}
         />
         <DashboardCard
           title="Veículos Disponíveis"
@@ -58,6 +59,7 @@ export default function Home() {
           icon={Car}
           color="green"
           subtitle="prontos para locação"
+          onClick={() => navigate('/veiculos?status=disponivel')}
         />
         <DashboardCard
           title="Veículos Locados"
@@ -65,6 +67,7 @@ export default function Home() {
           icon={Users}
           color="yellow"
           subtitle="atualmente em uso"
+          onClick={() => navigate('/veiculos?status=locado')}
         />
         <DashboardCard
           title="Receita do Mês"

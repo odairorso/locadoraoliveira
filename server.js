@@ -19,6 +19,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Servir arquivos estáticos
+app.use(express.static(__dirname));
+
+// Rota para a página principal
+app.get('/', (req, res) => {
+  res.sendFile(join(__dirname, 'index.html'));
+});
+
 // Função para carregar e executar arquivos .mjs da pasta api
 const loadApiRoutes = async () => {
   const apiDir = join(__dirname, 'api');
