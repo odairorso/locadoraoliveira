@@ -309,8 +309,24 @@ export default function LocacoesPage() {
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                   }
+                  /* Ocultar URL e elementos do navegador na impressão */
+                  @page {
+                    margin-top: 0;
+                    margin-bottom: 0;
+                  }
+                  /* Remover qualquer fundo amarelo ou destacado */
+                  * {
+                    background: white !important;
+                    color: black !important;
+                  }
                 }
-                body { font-family: Arial, sans-serif; line-height: 1.3; margin: 10px; }
+                body { 
+                  font-family: Arial, sans-serif; 
+                  line-height: 1.3; 
+                  margin: 10px;
+                  background: white !important;
+                  color: black !important;
+                }
                 .header { text-align: center; margin-bottom: 20px; }
                 .logo { height: 60px; margin-bottom: 15px; }
                 h1 { margin: 15px 0; font-size: 1.2em; }
