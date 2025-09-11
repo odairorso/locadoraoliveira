@@ -6,6 +6,7 @@ import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import type { Veiculo, VeiculoCreate } from '@/shared/types';
 
 export default function VeiculosPage() {
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -35,6 +36,14 @@ export default function VeiculosPage() {
   const isLoading = creating || updating || deleting;
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const status = params.get('status');
+    if (status) {
+      setStatusFilter(status);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
       refetch();
     }, 300);
@@ -48,13 +57,11 @@ export default function VeiculosPage() {
     try {
       let result;
       if (editingVehicle) {
-        // Garantir que o ID seja um número
         const vehicleId = typeof editingVehicle.id === 'string' ? parseInt(editingVehicle.id) : editingVehicle.id;
         
         console.log('Enviando atualização para veículo ID:', vehicleId);
         console.log('Dados enviados:', formData);
         
-        // Usar a URL correta para a API e passar o ID como parâmetro separado
       result = await updateVeiculo(`/api/veiculos/${editingVehicle.id}`, formData, 'PUT');
       console.log("Updating vehicle with ID:", editingVehicle.id);
       console.log("Form data being sent:", formData);
@@ -79,9 +86,9 @@ export default function VeiculosPage() {
 
   const handleEdit = (veiculo: Veiculo) => {
     setEditingVehicle(veiculo);
-    const { id, created_at, updated_at, ...rest } = veiculo; // Destructure to omit id, created_at, updated_at
+    const { id, created_at, updated_at, ...rest } = veiculo;
     setFormData({
-      ...rest, // Spread the rest of the properties
+      ...rest,
     });
     setShowForm(true);
   };
@@ -95,7 +102,6 @@ export default function VeiculosPage() {
           alert('Veículo excluído com sucesso!');
           refetch();
         } else {
-          // Show specific error message
           alert('Erro ao excluir veículo. Verifique se o veículo não está sendo usado em locações ativas.');
         }
       } catch (error) {
