@@ -4,13 +4,13 @@ import {
   Car, 
   Users, 
   FileText, 
-  ShoppingCart, 
   BarChart3, 
   Menu, 
   X,
   Home,
   Sun,
-  Moon
+  Moon,
+  ClipboardList
 } from 'lucide-react';
 import { useTheme } from '@/react-app/hooks/useTheme';
 
@@ -23,7 +23,7 @@ const navigation = [
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Veículos', href: '/veiculos', icon: Car },
   { name: 'Locações', href: '/locacoes', icon: FileText },
-  { name: 'Vendas', href: '/vendas', icon: ShoppingCart },
+  { name: 'Check List', href: '/checklist', icon: ClipboardList },
   { name: 'Relatórios', href: '/relatorios', icon: BarChart3 },
 ];
 

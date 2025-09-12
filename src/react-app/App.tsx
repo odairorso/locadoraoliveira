@@ -4,6 +4,8 @@ import HomePage from "@/react-app/pages/Home";
 import ClientesPage from "@/react-app/pages/Clientes";
 import VeiculosPage from "@/react-app/pages/Veiculos";
 import LocacoesPage from "@/react-app/pages/Locacoes";
+import ChecklistDashboard from "@/react-app/pages/ChecklistDashboard";
+import VistoriaForm from "@/react-app/pages/VistoriaForm";
 
 export default function App() {
   return (
@@ -14,7 +16,8 @@ export default function App() {
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/veiculos" element={<VeiculosPage />} />
           <Route path="/locacoes" element={<LocacoesPage />} />
-          <Route path="/vendas" element={<div className="p-8 text-center text-gray-500">Módulo de Vendas em desenvolvimento</div>} />
+          <Route path="/checklist" element={<ChecklistDashboard />} />
+          <Route path="/checklist/novo" element={<VistoriaForm />} />
           <Route path="/relatorios" element={<div className="p-8 text-center text-gray-500">Módulo de Relatórios em desenvolvimento</div>} />
         </Routes>
       </Layout>
