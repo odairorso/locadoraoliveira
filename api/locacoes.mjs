@@ -414,20 +414,20 @@ export default async function handler(request, response) {
               assinatura_vistoriador: null,
               nome_vistoriador: 'Sistema', // Valor padrão para criação automática
               fotos: '[]',
-              // Inicializar todos os itens do checklist como null (não verificado)
-              item_calota: null,
-              item_pneu: null,
-              item_antena: null,
-              item_bateria: null,
-              item_estepe: null,
-              item_macaco: null,
-              item_chave_roda: null,
-              item_triangulo: null,
-              item_extintor: null,
-              item_tapetes: null,
-              item_som: null,
-              item_documentos: null,
-              item_higienizacao: null
+              // Inicializar todos os itens do checklist como false
+              item_calota: false,
+              item_pneu: false,
+              item_antena: false,
+              item_bateria: false,
+              item_estepe: false,
+              item_macaco: false,
+              item_chave_roda: false,
+              item_triangulo: false,
+              item_extintor: false,
+              item_tapetes: false,
+              item_som: false,
+              item_documentos: false,
+              item_higienizacao: false
             };
 
             console.log('Dados da vistoria a serem inseridos:', vistoriaData);
