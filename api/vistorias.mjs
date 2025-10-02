@@ -25,6 +25,7 @@ export default async function handler(request, response) {
 
     if (method === 'GET') {
       const url = new URL(request.url, `http://${request.headers.host}`);
+      const veiculosComEntrada = url.searchParams.get('veiculos_com_entrada');
 
       // Extrai o ID da URL, se for o último segmento numérico
       const pathParts = url.pathname.split('/').filter(p => p);
