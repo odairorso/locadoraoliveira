@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Save, X, Search } from 'lucide-react'; // Added Search icon for input
 import { useApi, useMutation } from '@/react-app/hooks/useApi'; // Import API hooks
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'; // Import useNavigate, useSearchParams and useParams
+import CarDamageMap from '../components/CarDamageMap';
+import PhotoCapture from '../components/PhotoCapture';
 
 // Helper for debouncing search input
 const debounce = (func: Function, delay: number) => {
@@ -30,6 +32,9 @@ const avariaLegendas = {
 
 const VistoriaForm: React.FC = () => {
   const navigate = useNavigate(); // Initialize useNavigate
+  const [searchParams] = useSearchParams();
+  const { id } = useParams(); // Get ID from URL params for editing
+  const isEditing = Boolean(id); // Check if we're in edit mode
 
   const [formData, setFormData] = useState({
     cliente: '',
@@ -42,28 +47,44 @@ const VistoriaForm: React.FC = () => {
     telefone: '',
     dataHora: new Date().toLocaleString('pt-BR'),
     tipoVistoria: 'entrada' as 'entrada' | 'saida', // Added tipoVistoria
-    combustivel: '' as string,
+    combustivel: 'vazio' as string,
     observacoes: '',
     checklist: {} as Record<string, boolean>,
   });
 
+  const [avarias, setAvarias] = useState<Array<{id: string, x: number, y: number, type: 'A' | 'R' | 'T' | 'Q' | 'F'}>>([]);
+  const [selectedDamageType, setSelectedDamageType] = useState<'A' | 'R' | 'T' | 'Q' | 'F'>('A');
+  const [photos, setPhotos] = useState<Array<{id: string, file: File, preview: string, description?: string}>>([]);
+
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [clientSearchResults, setClientSearchResults] = useState<any[]>([]);
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  
+  // Estados para veículos locados
+  const [veiculosLocados, setVeiculosLocados] = useState<any[]>([]);
+  const [showVeiculosLocados, setShowVeiculosLocados] = useState(false);
+  const [loadingVeiculosLocados, setLoadingVeiculosLocados] = useState(false);
 
   // Use useApi for client search
-  const { execute: fetchClients, loading: loadingClients } = useApi<any[]>( // Added loadingClients
-    `/api/clientes?search=${clientSearchTerm}`,
+  const { data: clientsData, loading: loadingClients } = useApi<any[]>(
+    `http://localhost:3000/api/clientes`,
     { immediate: false }
   );
 
   const debouncedClientSearch = useRef(debounce(async (term: string) => {
     if (term.length > 2) {
-      const response = await fetchClients(); // Call the execute function
-      if (response && response.success && response.data) {
-        setClientSearchResults(response.data);
-        setShowClientSuggestions(true);
-      } else {
+      try {
+        const response = await fetch(`http://localhost:3000/api/clientes?search=${encodeURIComponent(term)}`);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setClientSearchResults(result.data);
+          setShowClientSuggestions(true);
+        } else {
+          setClientSearchResults([]);
+          setShowClientSuggestions(false);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar clientes:', error);
         setClientSearchResults([]);
         setShowClientSuggestions(false);
       }
@@ -72,6 +93,8 @@ const VistoriaForm: React.FC = () => {
       setShowClientSuggestions(false);
     }
   }, 500)).current;
+
+
 
   useEffect(() => {
     if (clientSearchTerm) {
@@ -100,28 +123,157 @@ const VistoriaForm: React.FC = () => {
         setShowClientSuggestions(false);
       };
 
-      // Add tipoVistoria to formData state
+      const handleVeiculoLocadoSelect = (locacao: any) => {
+        setFormData(prev => ({
+          ...prev,
+          cliente: locacao.cliente_nome,
+          clienteId: locacao.cliente_id,
+          placa: locacao.placa,
+          veiculoId: locacao.veiculo_id,
+          modelo: locacao.modelo,
+          telefone: locacao.cliente_telefone || prev.telefone,
+        }));
+        setShowVeiculosLocados(false);
+      };
+
+      // Detectar parâmetros da URL
       useEffect(() => {
-        setFormData(prev => ({ ...prev, tipoVistoria: 'entrada' })); // Default for this form
-      }, []);
+        const tipo = searchParams.get('tipo') as 'entrada' | 'saida';
+        const veiculoId = searchParams.get('veiculo_id');
+        const entradaId = searchParams.get('entrada_id');
+        const veiculoLocado = searchParams.get('veiculo_locado');
+        
+        console.log('VistoriaForm - Parâmetros da URL:', { tipo, veiculoId, entradaId, veiculoLocado });
+        
+        if (tipo) {
+          console.log('VistoriaForm - Definindo tipo de vistoria:', tipo);
+          setFormData(prev => ({ ...prev, tipoVistoria: tipo }));
+        }
+        
+        // Se for vistoria de saída, carregar dados do veículo da vistoria de entrada
+        if (tipo === 'saida' && veiculoId && entradaId) {
+          console.log('VistoriaForm - Carregando dados da vistoria de entrada:', entradaId);
+          carregarDadosVistoriaEntrada(entradaId);
+        }
+        
+        // Se for entrada de veículo locado, carregar lista de veículos locados
+        if (tipo === 'entrada' && veiculoLocado === 'true') {
+          console.log('VistoriaForm - Carregando veículos locados');
+          carregarVeiculosLocados();
+        }
+      }, [searchParams]);
+
+      const carregarVeiculosLocados = async () => {
+        setLoadingVeiculosLocados(true);
+        try {
+          const response = await fetch('/api/locacoes?status=ativa');
+          const result = await response.json();
+          
+          if (result.success && result.data) {
+            setVeiculosLocados(result.data);
+            setShowVeiculosLocados(true);
+          } else {
+            console.error('Erro ao carregar veículos locados:', result.error);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar veículos locados:', error);
+        } finally {
+          setLoadingVeiculosLocados(false);
+        }
+      };
+
+      const carregarDadosVistoriaEntrada = async (entradaId: string) => {
+        try {
+          console.log('VistoriaForm - Fazendo chamada para API:', `/api/vistorias/${entradaId}`);
+          const response = await fetch(`/api/vistorias/${entradaId}`);
+          const result = await response.json();
+          
+          console.log('VistoriaForm - Resposta da API:', result);
+          
+          if (result.success && result.data) {
+            const vistoriaEntrada = result.data;
+            console.log('VistoriaForm - Dados da vistoria de entrada:', vistoriaEntrada);
+            setFormData(prev => ({
+              ...prev,
+              cliente: vistoriaEntrada.cliente_nome || '',
+              clienteId: vistoriaEntrada.cliente_id,
+              placa: vistoriaEntrada.placa,
+              veiculoId: vistoriaEntrada.veiculo_id,
+              modelo: vistoriaEntrada.modelo,
+              telefone: vistoriaEntrada.telefone || '',
+            }));
+            console.log('VistoriaForm - FormData atualizado com sucesso');
+          } else {
+            console.error('VistoriaForm - Erro na resposta da API:', result);
+          }
+        } catch (error) {
+          console.error('VistoriaForm - Erro ao carregar dados da vistoria de entrada:', error);
+        }
+      };
+
+
+
+      // Load existing inspection data when editing
+      useEffect(() => {
+        if (isEditing && id) {
+          const carregarVistoria = async () => {
+            try {
+              const response = await fetch(`http://localhost:3000/api/vistorias/${id}`);
+              const result = await response.json();
+              
+              if (result.success && result.data) {
+                const vistoria = result.data;
+                setFormData({
+                  cliente: vistoria.cliente?.nome || '',
+                  clienteId: vistoria.cliente_id,
+                  placa: vistoria.veiculo?.placa || '',
+                  veiculoId: vistoria.veiculo_id,
+                  modelo: vistoria.veiculo?.modelo || '',
+                  quilometragem: vistoria.quilometragem?.toString() || '',
+                  condutor: vistoria.condutor || '',
+                  telefone: vistoria.telefone || '',
+                  dataHora: new Date(vistoria.data_hora).toLocaleString('pt-BR'),
+                  tipoVistoria: vistoria.tipo_vistoria,
+                  combustivel: vistoria.combustivel || 'vazio',
+                  observacoes: vistoria.observacoes || '',
+                  checklist: vistoria.checklist || {},
+                  avarias: vistoria.avarias || [],
+                  fotos: vistoria.fotos || []
+                });
+              }
+            } catch (error) {
+              console.error('Erro ao carregar vistoria:', error);
+            }
+          };
+          
+          carregarVistoria();
+        }
+      }, [isEditing, id]);
 
       const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
       const [vehicleSearchResults, setVehicleSearchResults] = useState<any[]>([]);
-      const [showVehicleSuggestions, setShowClientSuggestions] = useState(false);
+      const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
   
         // Use useApi for vehicle search
-        const { execute: fetchVehicles, loading: loadingVehicles } = useApi<any[]>(
-          `/api/veiculos?search=${vehicleSearchTerm}`,
+        const { data: vehiclesData, loading: loadingVehicles } = useApi<any[]>(
+          `http://localhost:3000/api/veiculos`,
           { immediate: false }
         );
   
         const debouncedVehicleSearch = useRef(debounce(async (term: string) => {
           if (term.length > 2) {
-            const response = await fetchVehicles();
-            if (response && response.success && response.data) {
-              setVehicleSearchResults(response.data);
-              setShowVehicleSuggestions(true);
-            } else {
+            try {
+              const response = await fetch(`http://localhost:3000/api/veiculos?search=${encodeURIComponent(term)}`);
+              const result = await response.json();
+              if (result.success && result.data) {
+                setVehicleSearchResults(result.data);
+                setShowVehicleSuggestions(true);
+              } else {
+                setVehicleSearchResults([]);
+                setShowVehicleSuggestions(false);
+              }
+            } catch (error) {
+              console.error('Erro ao buscar veículos:', error);
               setVehicleSearchResults([]);
               setShowVehicleSuggestions(false);
             }
@@ -130,6 +282,8 @@ const VistoriaForm: React.FC = () => {
             setShowVehicleSuggestions(false);
           }
         }, 500)).current;
+
+
   
         useEffect(() => {
           if (vehicleSearchTerm) {
@@ -152,9 +306,10 @@ const VistoriaForm: React.FC = () => {
           placa: vehicle.placa,
           veiculoId: vehicle.id,
           modelo: vehicle.modelo,
+          cor: vehicle.cor,
           quilometragem: vehicle.quilometragem_atual || '',
         }));
-        setVehicleSearchTerm(vehicle.placa);
+        setVehicleSearchTerm(`${vehicle.modelo} - ${vehicle.placa}`);
         setVehicleSearchResults([]);
         setShowVehicleSuggestions(false);
       };
@@ -178,8 +333,8 @@ const VistoriaForm: React.FC = () => {
 
         const handleSubmit = async (e: React.FormEvent) => {
           e.preventDefault();
-          if (!formData.clienteId || !formData.veiculoId || !formData.quilometragem || !formData.combustivel) {
-            alert('Por favor, preencha todos os campos obrigatórios (Cliente, Placa, Quilometragem, Combustível).');
+          if (!formData.clienteId || !formData.veiculoId || !formData.quilometragem || !formData.combustivel || !formData.condutor) {
+            alert('Por favor, preencha todos os campos obrigatórios (Cliente, Placa, Quilometragem, Combustível, Condutor).');
             return;
           }
   
@@ -201,31 +356,68 @@ const VistoriaForm: React.FC = () => {
             telefone: formData.telefone,
             combustivel: formData.combustivel,
             observacoes: formData.observacoes,
+            placa: formData.placa,
+            modelo: formData.modelo,
+            cor: formData.cor,
             checklist: checklistData,
-            avariasJson: {}, // Placeholder for now
+            avariasJson: avarias, // Use actual avarias state
             assinaturaClienteUrl: '',
             assinaturaVistoriadorUrl: '',
+            fotos: photos, // Include photos in payload
           };
   
           console.log('Payload para API:', payload);
+          console.log('Combustível sendo enviado:', formData.combustivel);
   
-          const result = await mutate('/api/vistorias', payload, 'POST');
+          const url = isEditing 
+            ? `http://localhost:3000/api/vistorias/${id}`
+            : 'http://localhost:3000/api/vistorias';
+          const method = isEditing ? 'PUT' : 'POST';
+          
+          const result = await mutate(url, payload, method);
   
           if (result) {
-            alert('Vistoria salva com sucesso!');
+            alert(isEditing ? 'Vistoria atualizada com sucesso!' : 'Vistoria salva com sucesso!');
             navigate('/checklist'); // Navigate back to dashboard
           } else if (saveError) {
-            alert(`Erro ao salvar vistoria: ${saveError}`);
+            alert(`Erro ao ${isEditing ? 'atualizar' : 'salvar'} vistoria: ${saveError}`);
           }
         };
   
         const handleCancel = () => {
           navigate('/checklist'); // Navigate back to dashboard
         };
+
+        const handleDamageAdd = (damage: Omit<{id: string, x: number, y: number, type: 'A' | 'R' | 'T' | 'Q' | 'F'}, 'id'>) => {
+          const newDamage = {
+            ...damage,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+          };
+          setAvarias(prev => [...prev, newDamage]);
+        };
+
+        const handleDamageRemove = (id: string) => {
+          setAvarias(prev => prev.filter(a => a.id !== id));
+        };
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Dados do Cliente e Veículo</h2>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+          {isEditing 
+          ? `Editar Vistoria de ${formData.tipoVistoria === 'entrada' ? 'Entrada' : 'Saída'}`
+          : `Nova Vistoria de ${formData.tipoVistoria === 'entrada' ? 'Entrada' : 'Saída'}`
+        }
+        </h1>
+        {formData.tipoVistoria === 'saida' && (
+          <p className="text-center text-gray-600 dark:text-gray-400 mb-4">
+            Comparação automática com vistoria de entrada será realizada
+          </p>
+        )}
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Dados do Cliente e Veículo</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="relative">
             <input
@@ -258,6 +450,49 @@ const VistoriaForm: React.FC = () => {
               </ul>
             )}
           </div>
+          
+          {/* Lista de Veículos Locados */}
+          {showVeiculosLocados && (
+            <div className="col-span-full">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                Selecione o Veículo Locado para Entrada
+              </h3>
+              {loadingVeiculosLocados ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando veículos locados...</span>
+                </div>
+              ) : veiculosLocados.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {veiculosLocados.map((locacao) => (
+                    <div
+                      key={locacao.id}
+                      onClick={() => handleVeiculoLocadoSelect(locacao)}
+                      className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="font-semibold text-gray-900 dark:text-white">
+                        {locacao.placa} - {locacao.modelo}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Cliente: {locacao.cliente_nome}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Telefone: {locacao.cliente_telefone || 'Não informado'}
+                      </div>
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                        Clique para selecionar
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+                  Nenhum veículo locado encontrado
+                </div>
+              )}
+            </div>
+          )}
+          
           <div className="relative">
             <input
               name="placa"
@@ -265,7 +500,7 @@ const VistoriaForm: React.FC = () => {
               onChange={handleVehicleSearchChange}
               onFocus={() => vehicleSearchResults.length > 0 && setShowVehicleSuggestions(true)}
               onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 100)} // Hide after a short delay
-              placeholder="Placa do Veículo"
+              placeholder="Buscar veículo por placa, modelo ou marca..."
               className="w-full p-2 pl-10 border rounded"
               required
             />
@@ -286,13 +521,12 @@ const VistoriaForm: React.FC = () => {
                     {vehicle.placa} - {vehicle.modelo} ({vehicle.marca})
                   </li>
                 ))}
-              }
               </ul>
             )}
           </div>
           <input name="modelo" value={formData.modelo} onChange={handleInputChange} placeholder="Modelo do Veículo" className="p-2 border rounded" readOnly />
           <input name="quilometragem" value={formData.quilometragem} onChange={handleInputChange} placeholder="Quilometragem" type="number" className="p-2 border rounded" />
-          <input name="condutor" value={formData.condutor} onChange={handleInputChange} placeholder="Nome do Condutor" className="p-2 border rounded" />
+          <input name="condutor" value={formData.condutor} onChange={handleInputChange} placeholder="Nome do Condutor *" className="p-2 border rounded" required />
           <input name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="Telefone" className="p-2 border rounded" />
           <input name="dataHora" value={formData.dataHora} placeholder="Data e Hora" className="p-2 border rounded bg-gray-100" readOnly />
         </div>
@@ -300,11 +534,16 @@ const VistoriaForm: React.FC = () => {
 
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Checklist de Itens</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {checklistItems.map(item => (
-            <label key={item} className="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" checked={!!formData.checklist[item]} onChange={() => handleChecklistChange(item)} className="h-5 w-5 rounded" />
-              <span className="text-gray-700 dark:text-gray-300">{item}</span>
+            <label key={item} className="flex items-start space-x-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
+              <input 
+                type="checkbox" 
+                checked={!!formData.checklist[item]} 
+                onChange={() => handleChecklistChange(item)} 
+                className="h-5 w-5 rounded mt-0.5 flex-shrink-0" 
+              />
+              <span className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed break-words">{item}</span>
             </label>
           ))}
         </div>
@@ -316,40 +555,97 @@ const VistoriaForm: React.FC = () => {
           <div>
             <h3 className="font-semibold mb-2">Nível de Combustível</h3>
             <div className="flex space-x-2">
-              {['E', '1/4', '1/2', '3/4', 'F'].map(level => (
-                <button key={level} type="button" onClick={() => setFormData(prev => ({...prev, combustivel: level}))} className={`px-4 py-2 rounded font-semibold ${formData.combustivel === level ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>
-                  {level}
+              {[
+                { value: 'vazio', label: 'E' },
+                { value: '1/4', label: '1/4' },
+                { value: '1/2', label: '1/2' },
+                { value: '3/4', label: '3/4' },
+                { value: 'cheio', label: 'F' }
+              ].map(level => (
+                <button key={level.value} type="button" onClick={() => setFormData(prev => ({...prev, combustivel: level.value}))} className={`px-4 py-2 rounded font-semibold ${formData.combustivel === level.value ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>
+                  {level.label}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">Diagrama de Avarias (Placeholder)</h3>
-            <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
-              <p className="text-gray-500">[Visualização do carro aqui]</p>
+            <h3 className="font-semibold mb-2">Diagrama de Avarias</h3>
+            
+            {/* Seletor de tipo de avaria */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Tipo de Avaria:</label>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(avariaLegendas).map(([key, value]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedDamageType(key as 'A' | 'R' | 'T' | 'Q' | 'F')}
+                    className={`px-3 py-1 rounded text-sm font-medium ${
+                      selectedDamageType === key 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {key} - {value}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="text-xs mt-2 grid grid-cols-3 gap-1">
-              {Object.entries(avariaLegendas).map(([key, value]) => (
-                <span key={key}>{`${key} = ${value}`}</span>
-              ))}
-            </div>
+
+            <CarDamageMap 
+              damages={avarias}
+              onDamageAdd={handleDamageAdd}
+              onDamageRemove={handleDamageRemove}
+              selectedDamageType={selectedDamageType}
+            />
+            
+            {/* Lista de avarias adicionadas */}
+            {avarias.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">Avarias Registradas:</h4>
+                <div className="space-y-1">
+                  {avarias.map((avaria) => (
+                    <div key={avaria.id} className="flex items-center justify-between text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                      <span>{avaria.type} - {avariaLegendas[avaria.type]}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDamageRemove(avaria.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-6">
             <h3 className="font-semibold mb-2">Observações</h3>
             <textarea name="observacoes" value={formData.observacoes} onChange={handleInputChange} rows={4} className="w-full p-2 border rounded" placeholder="Descreva aqui qualquer observação adicional..."></textarea>
         </div>
+
+        <div className="mt-6">
+            <h3 className="font-semibold mb-2">Fotos da Vistoria</h3>
+            <PhotoCapture 
+              photos={photos}
+              onPhotosChange={setPhotos}
+              maxPhotos={10}
+            />
+        </div>
       </div>
 
-      <div className="flex justify-end space-x-4">
-        <button type="button" onClick={handleCancel} className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded flex items-center">
-          <X className="mr-2" /> Cancelar
-        </button>
-        <button type="submit" className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center" disabled={savingVistoria}>
-          {savingVistoria ? 'Salvando...' : 'Salvar Vistoria'}
-        </button>
-      </div>
-    </form>
+        <div className="flex justify-end space-x-4">
+          <button type="button" onClick={handleCancel} className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded flex items-center">
+            <X className="mr-2" /> Cancelar
+          </button>
+          <button type="submit" className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center" disabled={savingVistoria}>
+            {savingVistoria ? 'Salvando...' : 'Salvar Vistoria'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

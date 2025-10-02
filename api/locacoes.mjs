@@ -313,7 +313,7 @@ export default async function handler(request, response) {
         return response.status(200).send(htmlContent);
       }
 
-      let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, cliente:clientes ( nome ), veiculo:veiculos ( marca, modelo, placa )');
+      let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, cliente:clientes ( id, nome, cpf ), veiculo:veiculos ( id, marca, modelo, placa, ano )');
       if (status) {
         query = query.eq('status', status);
       }
@@ -321,7 +321,13 @@ export default async function handler(request, response) {
 
       if (error) throw error;
 
-      const formattedData = data.map(l => ({ ...l, cliente_nome: l.cliente?.nome, veiculo_info: `${l.veiculo?.marca} ${l.veiculo?.modelo} - ${l.veiculo?.placa}` }));
+      const formattedData = data.map(l => ({ 
+        ...l, 
+        cliente_nome: l.cliente?.nome, 
+        veiculo_info: `${l.veiculo?.marca} ${l.veiculo?.modelo} - ${l.veiculo?.placa}`,
+        clientes: l.cliente,
+        veiculos: l.veiculo
+      }));
       return response.status(200).json({ success: true, data: formattedData });
     }
 
@@ -360,6 +366,95 @@ export default async function handler(request, response) {
           console.error('ALERTA: A locação foi criada, mas falhou ao inserir o registro financeiro:', movError);
           // Não retorna erro para o cliente, mas loga o problema para manutenção
         }
+      }
+
+      // Criar automaticamente uma vistoria de saída quando um carro é locado
+      console.log('=== INICIANDO CRIAÇÃO AUTOMÁTICA DE VISTORIA ===');
+      console.log('newLocacao:', newLocacao);
+      
+      if (newLocacao) {
+        try {
+          console.log('Buscando dados do veículo ID:', veiculo_id);
+          // Buscar dados do veículo para a vistoria
+          const { data: veiculo, error: veiculoError } = await supabase
+            .from('veiculos')
+            .select('marca, modelo, placa, cor, ano')
+            .eq('id', veiculo_id)
+            .single();
+
+          console.log('Dados do veículo:', veiculo);
+          console.log('Erro do veículo:', veiculoError);
+
+          // Buscar dados do cliente para incluir o nome como condutor padrão
+          const { data: cliente, error: clienteError } = await supabase
+            .from('clientes')
+            .select('nome, cpf')
+            .eq('id', newLocacao.cliente_id)
+            .single();
+
+          console.log('Dados do cliente:', cliente);
+          console.log('Erro do cliente:', clienteError);
+
+          if (!veiculoError && veiculo) {
+            const vistoriaData = {
+              cliente_id: newLocacao.cliente_id,
+              veiculo_id: veiculo_id,
+              locacao_id: newLocacao.id,
+              tipo_vistoria: 'saida',
+              placa: veiculo.placa,
+              modelo: `${veiculo.marca} ${veiculo.modelo}`,
+              cor: veiculo.cor,
+              quilometragem: 0, // Valor padrão, será preenchido posteriormente
+              nivel_combustivel: 'cheio', // Valor padrão
+              nome_condutor: cliente?.nome || '', // Usar o nome do cliente como condutor padrão
+              rg_condutor: null,
+              observacoes: `Vistoria criada automaticamente para a locação #${newLocacao.id}`,
+              avarias: null,
+              assinatura_cliente: null,
+              assinatura_vistoriador: null,
+              nome_vistoriador: 'Sistema', // Valor padrão para criação automática
+              fotos: '[]',
+              // Inicializar todos os itens do checklist como null (não verificado)
+              item_calota: null,
+              item_pneu: null,
+              item_antena: null,
+              item_bateria: null,
+              item_estepe: null,
+              item_macaco: null,
+              item_chave_roda: null,
+              item_triangulo: null,
+              item_extintor: null,
+              item_tapetes: null,
+              item_som: null,
+              item_documentos: null,
+              item_higienizacao: null
+            };
+
+            console.log('Dados da vistoria a serem inseridos:', vistoriaData);
+            
+            const { data: vistoriaResult, error: vistoriaError } = await supabase
+              .from('vistorias')
+              .insert([vistoriaData])
+              .select();
+
+            console.log('Resultado da inserção da vistoria:', vistoriaResult);
+            console.log('Erro da inserção da vistoria:', vistoriaError);
+
+            if (vistoriaError) {
+              console.error('ALERTA: A locação foi criada, mas falhou ao criar a vistoria automática:', vistoriaError);
+              // Não retorna erro para o cliente, mas loga o problema para manutenção
+            } else {
+              console.log(`Vistoria automática criada com sucesso para a locação #${newLocacao.id}`);
+            }
+          } else {
+            console.log('Não foi possível buscar dados do veículo ou houve erro:', veiculoError);
+          }
+        } catch (vistoriaCreationError) {
+          console.error('ERRO GERAL na criação automática de vistoria:', vistoriaCreationError);
+          // Não retorna erro para o cliente, mas loga o problema para manutenção
+        }
+      } else {
+        console.log('newLocacao é null ou undefined');
       }
 
       await supabase.from('veiculos').update({ status: 'locado' }).eq('id', veiculo_id);
@@ -429,12 +524,56 @@ export default async function handler(request, response) {
     }
 
     if (method === 'DELETE') {
+      console.log('=== INICIANDO DELETE DE LOCAÇÃO ===');
+      console.log('ID da locação:', finalId);
+      
       if (!finalId) return response.status(400).json({ success: false, error: 'Missing ID' });
+      
+      // Buscar dados da locação antes de deletar
       const { data: locacao, error: locacaoError } = await supabase.from('locacoes').select('veiculo_id').eq('id', finalId).single();
-      if (locacaoError) throw locacaoError;
+      console.log('Dados da locação encontrada:', locacao);
+      console.log('Erro ao buscar locação:', locacaoError);
+      
+      if (locacaoError) {
+        console.error('Erro ao buscar locação para deletar:', locacaoError);
+        throw locacaoError;
+      }
 
-      await supabase.from('locacoes').delete().eq('id', finalId);
-      await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', locacao.veiculo_id);
+      // PRIMEIRO: Deletar movimentações financeiras relacionadas
+      console.log('Deletando movimentações financeiras da locação:', finalId);
+      const { error: movimentacoesDeleteError } = await supabase
+        .from('movimentacoes_financeiras')
+        .delete()
+        .eq('locacao_id', finalId);
+      
+      console.log('Erro ao deletar movimentações financeiras:', movimentacoesDeleteError);
+      
+      if (movimentacoesDeleteError) {
+        console.error('Erro ao deletar movimentações financeiras:', movimentacoesDeleteError);
+        throw movimentacoesDeleteError;
+      }
+
+      // SEGUNDO: Deletar a locação
+      console.log('Deletando a locação:', finalId);
+      const { error: deleteError } = await supabase.from('locacoes').delete().eq('id', finalId);
+      console.log('Erro ao deletar locação:', deleteError);
+      
+      if (deleteError) {
+        console.error('Erro ao deletar locação:', deleteError);
+        throw deleteError;
+      }
+
+      // TERCEIRO: Atualizar status do veículo
+      console.log('Atualizando status do veículo para disponível:', locacao.veiculo_id);
+      const { error: vehicleUpdateError } = await supabase.from('veiculos').update({ status: 'disponivel' }).eq('id', locacao.veiculo_id);
+      console.log('Erro ao atualizar veículo:', vehicleUpdateError);
+      
+      if (vehicleUpdateError) {
+        console.error('Erro ao atualizar status do veículo após deletar locação:', vehicleUpdateError);
+        // Não bloqueia a resposta, mas loga o erro
+      }
+
+      console.log('Locação e movimentações financeiras deletadas com sucesso');
       return response.status(200).json({ success: true });
     }
 

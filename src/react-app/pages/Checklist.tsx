@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Car, 
   User, 
@@ -36,6 +37,17 @@ interface Locacao {
   data_locacao: string;
   data_entrega: string;
   status: string;
+  clientes?: {
+    nome: string;
+    cpf: string;
+    celular: string;
+  };
+  veiculos?: {
+    marca: string;
+    modelo: string;
+    placa: string;
+    cor: string;
+  };
 }
 
 interface Avaria {
@@ -72,6 +84,7 @@ interface VistoriaForm {
 }
 
 export default function CheckListPage() {
+  const [searchParams] = useSearchParams();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [locacoes, setLocacoes] = useState<Locacao[]>([]);
@@ -81,6 +94,7 @@ export default function CheckListPage() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [selectedVeiculo, setSelectedVeiculo] = useState<Veiculo | null>(null);
   const [selectedLocacao, setSelectedLocacao] = useState<Locacao | null>(null);
+  const [showLocacaoSelection, setShowLocacaoSelection] = useState(false);
 
   const sigClienteRef = useRef<SignatureCanvas>(null);
   const sigVistoriadorRef = useRef<SignatureCanvas>(null);
@@ -122,11 +136,33 @@ export default function CheckListPage() {
     carregarClientes();
     carregarVeiculos();
     carregarLocacoes();
-  }, []);
+    
+    // Detectar tipo de vistoria da URL
+    const tipo = searchParams.get('tipo') as 'entrada' | 'saida';
+    const veiculoId = searchParams.get('veiculo_id');
+    const entradaId = searchParams.get('entrada_id');
+    
+    console.log('Checklist useEffect - tipo:', tipo);
+    console.log('Parâmetros URL - entradaId:', entradaId, 'veiculoId:', veiculoId);
+    
+    if (tipo) {
+      setForm(prev => ({ ...prev, tipo_vistoria: tipo }));
+      
+      // Se for vistoria de saída com parâmetros, carregar dados automaticamente
+      if (tipo === 'saida' && veiculoId && entradaId) {
+        console.log('Carregando dados automáticos para vistoria de saída');
+        carregarDadosVistoriaEntrada(entradaId, veiculoId);
+      } else if (tipo === 'saida') {
+        // Se for vistoria de saída sem parâmetros, mostrar seleção de locação
+        console.log('Mostrando seleção de locação');
+        setShowLocacaoSelection(true);
+      }
+    }
+  }, [searchParams]);
 
   const carregarClientes = async () => {
     try {
-      const response = await fetch('/api/clientes');
+      const response = await fetch('http://localhost:3000/api/clientes');
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -139,7 +175,7 @@ export default function CheckListPage() {
 
   const carregarVeiculos = async () => {
     try {
-      const response = await fetch('/api/veiculos');
+      const response = await fetch('http://localhost:3000/api/veiculos');
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -147,6 +183,77 @@ export default function CheckListPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar veículos:', error);
+    }
+  };
+
+  const carregarLocacoes = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/locacoes');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setLocacoes(result.data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar locações:', error);
+    }
+  };
+
+  const carregarDadosVistoriaEntrada = async (entradaId: string, veiculoId: string) => {
+    try {
+      console.log('carregarDadosVistoriaEntrada - Iniciando com entradaId:', entradaId, 'veiculoId:', veiculoId);
+      
+      // Buscar dados da vistoria de entrada
+      const vistoriaResponse = await fetch(`http://localhost:3000/api/vistorias/${entradaId}`);
+      const vistoriaResult = await vistoriaResponse.json();
+      
+      console.log('Resposta da vistoria:', vistoriaResult);
+      
+      if (vistoriaResult.success && vistoriaResult.data) {
+        const vistoriaEntrada = vistoriaResult.data;
+        console.log('Dados da vistoria de entrada:', vistoriaEntrada);
+        
+        // Buscar dados do veículo
+        const veiculoResponse = await fetch(`http://localhost:3000/api/veiculos/${veiculoId}`);
+        const veiculoResult = await veiculoResponse.json();
+        
+        console.log('Resposta do veículo:', veiculoResult);
+        
+        if (veiculoResult.success && veiculoResult.data) {
+          const veiculo = veiculoResult.data;
+          console.log('Dados do veículo:', veiculo);
+          setSelectedVeiculo(veiculo);
+          
+          // Buscar dados do cliente
+          const clienteResponse = await fetch(`http://localhost:3000/api/clientes/${vistoriaEntrada.cliente_id}`);
+          const clienteResult = await clienteResponse.json();
+          
+          console.log('Resposta do cliente:', clienteResult);
+          
+          if (clienteResult.success && clienteResult.data) {
+            const cliente = clienteResult.data;
+            console.log('Dados do cliente:', cliente);
+            setSelectedCliente(cliente);
+            
+            // Preencher o formulário com os dados
+            setForm(prev => ({
+              ...prev,
+              veiculo_id: parseInt(veiculoId),
+              cliente_id: vistoriaEntrada.cliente_id,
+              locacao_id: vistoriaEntrada.locacao_id,
+              nome_condutor: cliente.nome
+            }));
+            
+            console.log('Formulário preenchido, ocultando seleção de locação');
+            // Não mostrar seleção de locação pois já temos os dados
+            setShowLocacaoSelection(false);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados da vistoria de entrada:', error);
+      // Em caso de erro, mostrar seleção manual
+      setShowLocacaoSelection(true);
     }
   };
 
@@ -181,6 +288,27 @@ export default function CheckListPage() {
       setSelectedLocacao(locacaoAtiva);
       setForm({ ...form, veiculo_id: veiculo.id, locacao_id: locacaoAtiva.id });
     }
+  };
+
+  const selecionarLocacao = (locacao: Locacao) => {
+    setSelectedLocacao(locacao);
+    setForm(prev => ({ ...prev, locacao_id: locacao.id }));
+    
+    // Buscar dados do cliente e veículo da locação
+    const cliente = clientes.find(c => c.id === locacao.cliente_id);
+    const veiculo = veiculos.find(v => v.id === locacao.veiculo_id);
+    
+    if (cliente) {
+      setSelectedCliente(cliente);
+      setForm(prev => ({ ...prev, cliente_id: cliente.id }));
+    }
+    
+    if (veiculo) {
+      setSelectedVeiculo(veiculo);
+      setForm(prev => ({ ...prev, veiculo_id: veiculo.id }));
+    }
+    
+    setShowLocacaoSelection(false);
   };
 
   const adicionarAvaria = () => {
@@ -225,17 +353,42 @@ export default function CheckListPage() {
       const assinaturaCliente = sigClienteRef.current?.toDataURL() || '';
       const assinaturaVistoriador = sigVistoriadorRef.current?.toDataURL() || '';
 
+      // Preparar dados conforme a estrutura da API
       const vistoriaData = {
-        ...form,
+        clienteId: form.cliente_id,
+        veiculoId: form.veiculo_id,
+        tipoVistoria: form.tipo_vistoria,
+        quilometragem: form.quilometragem,
+        combustivel: form.nivel_combustivel,
+        condutor: form.nome_condutor,
+        rgCondutor: form.rg_condutor,
         placa: selectedVeiculo.placa,
         modelo: `${selectedVeiculo.marca} ${selectedVeiculo.modelo}`,
         cor: selectedVeiculo.cor,
-        assinatura_cliente: assinaturaCliente,
-        assinatura_vistoriador: assinaturaVistoriador,
-        avarias: form.avarias // Enviar como array, a API converterá para JSON
+        observacoes: form.observacoes,
+        nomeVistoriador: form.nome_vistoriador,
+        assinaturaClienteUrl: assinaturaCliente,
+        assinaturaVistoriadorUrl: assinaturaVistoriador,
+        avariasJson: JSON.stringify(form.avarias),
+        locacaoId: form.locacao_id,
+        checklist: {
+          calota: form.item_calota,
+          pneu: form.item_pneu,
+          antena: form.item_antena,
+          bateria: form.item_bateria,
+          estepe: form.item_estepe,
+          macaco: form.item_macaco,
+          chaveRoda: form.item_chave_roda,
+          triangulo: form.item_triangulo,
+          extintor: form.item_extintor,
+          tapetes: form.item_tapetes,
+          som: form.item_som,
+          documentos: form.item_documentos,
+          higienizacao: form.item_higienizacao
+        }
       };
 
-      const response = await fetch('/api/vistorias', {
+      const response = await fetch('http://localhost:3000/api/vistorias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -340,6 +493,54 @@ export default function CheckListPage() {
         </p>
       </div>
 
+      {/* Seleção de Locação para Vistoria de Saída */}
+      {showLocacaoSelection && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Selecione a Locação para Vistoria de Saída
+          </h2>
+          <div className="space-y-3">
+            {locacoes.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400">
+                Nenhuma locação ativa encontrada
+              </p>
+            ) : (
+              locacoes.map((locacao) => {
+                const cliente = clientes.find(c => c.id === locacao.cliente_id);
+                const veiculo = veiculos.find(v => v.id === locacao.veiculo_id);
+                
+                return (
+                  <div
+                    key={locacao.id}
+                    onClick={() => selecionarLocacao(locacao)}
+                    className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          {cliente?.nome || 'Cliente não encontrado'}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {veiculo ? `${veiculo.marca} ${veiculo.modelo} - ${veiculo.placa}` : 'Veículo não encontrado'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500">
+                          Locação #{locacao.id} - {new Date(locacao.data_locacao).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          Ativa
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Tipo de Vistoria */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -370,6 +571,7 @@ export default function CheckListPage() {
       </div>
 
       {/* Seleção de Cliente */}
+      {!showLocacaoSelection && (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
           <User className="mr-2" size={24} />
@@ -391,16 +593,22 @@ export default function CheckListPage() {
             
             {searchCliente && (
               <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {clientesFiltrados.map(cliente => (
-                  <button
-                    key={cliente.id}
-                    onClick={() => handleSelectCliente(cliente)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
-                  >
-                    <div className="font-medium text-gray-900 dark:text-white">{cliente.nome}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{cliente.cpf} • {cliente.celular}</div>
-                  </button>
-                ))}
+                {clientesFiltrados.length > 0 ? (
+                  clientesFiltrados.map(cliente => (
+                    <button
+                      key={cliente.id}
+                      onClick={() => handleSelectCliente(cliente)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900 dark:text-white">{cliente.nome}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{cliente.cpf} • {cliente.celular}</div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                    Nenhum cliente encontrado
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -422,8 +630,10 @@ export default function CheckListPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Seleção de Veículo */}
+      {!showLocacaoSelection && (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
           <Car className="mr-2" size={24} />
@@ -445,16 +655,22 @@ export default function CheckListPage() {
             
             {searchVeiculo && (
               <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {veiculosFiltrados.map(veiculo => (
-                  <button
-                    key={veiculo.id}
-                    onClick={() => handleSelectVeiculo(veiculo)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
-                  >
-                    <div className="font-medium text-gray-900 dark:text-white">{veiculo.marca} {veiculo.modelo}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{veiculo.placa} • {veiculo.cor}</div>
-                  </button>
-                ))}
+                {veiculosFiltrados.length > 0 ? (
+                  veiculosFiltrados.map(veiculo => (
+                    <button
+                      key={veiculo.id}
+                      onClick={() => handleSelectVeiculo(veiculo)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900 dark:text-white">{veiculo.marca} {veiculo.modelo}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{veiculo.placa} • {veiculo.cor}</div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                    Nenhum veículo encontrado
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -476,6 +692,50 @@ export default function CheckListPage() {
           </div>
         )}
       </div>
+      )}
+
+      {/* Dados da Locação Selecionada */}
+      {selectedLocacao && form.tipo_vistoria === 'saida' && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Dados da Locação
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Cliente
+              </label>
+              <p className="text-gray-900 dark:text-white font-medium">
+                {selectedCliente?.nome}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Veículo
+              </label>
+              <p className="text-gray-900 dark:text-white font-medium">
+                {selectedVeiculo ? `${selectedVeiculo.marca} ${selectedVeiculo.modelo} - ${selectedVeiculo.placa}` : ''}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data da Locação
+              </label>
+              <p className="text-gray-900 dark:text-white">
+                {new Date(selectedLocacao.data_locacao).toLocaleDateString()}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data de Entrega
+              </label>
+              <p className="text-gray-900 dark:text-white">
+                {new Date(selectedLocacao.data_entrega).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dados do Veículo */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">

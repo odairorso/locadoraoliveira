@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Checklist</title>
+</head>
+<body>
+    <h1>Teste de Carregamento Automático</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testarCarregamento() {
+            try {
+                console.log('Testando carregamento da vistoria 16...');
+                
+                // Testar busca da vistoria
+                const vistoriaResponse = await fetch('/api/vistorias/16');
+                const vistoriaResult = await vistoriaResponse.json();
+                console.log('Vistoria:', vistoriaResult);
+                
+                if (vistoriaResult.success && vistoriaResult.data) {
+                    const vistoriaEntrada = vistoriaResult.data;
+                    console.log('Dados da vistoria:', vistoriaEntrada);
+                    
+                    // Testar busca do veículo
+                    const veiculoResponse = await fetch('/api/veiculos/9');
+                    const veiculoResult = await veiculoResponse.json();
+                    console.log('Veículo:', veiculoResult);
+                    
+                    // Testar busca do cliente
+                    const clienteResponse = await fetch('/api/clientes/5');
+                    const clienteResult = await clienteResponse.json();
+                    console.log('Cliente:', clienteResult);
+                    
+                    document.getElementById('result').innerHTML = 
+                        <h2>Dados carregados com sucesso!</h2>
+                        <p><strong>Cliente:</strong> +clienteResult.data.nome+</p>
+                        <p><strong>Veículo:</strong> +veiculoResult.data.marca+ +veiculoResult.data.modelo+</p>
+                        <p><strong>Placa:</strong> +veiculoResult.data.placa+</p>
+                    ;
+                } else {
+                    document.getElementById('result').innerHTML = '<p>Erro ao carregar vistoria</p>';
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                document.getElementById('result').innerHTML = '<p>Erro: ' + error.message + '</p>';
+            }
+        }
+        
+        // Executar teste ao carregar a página
+        testarCarregamento();
+    </script>
+</body>
+</html>

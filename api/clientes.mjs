@@ -65,6 +65,12 @@ export default async function handler(request, response) {
       const finalUpdateId = updateId && /^\d+$/.test(updateId) ? updateId : null;
 
       if (!finalUpdateId) return response.status(400).json({ success: false, error: 'Missing ID' });
+      
+      // Verificar se o nome está presente no body
+      if (!request.body.nome || request.body.nome.trim() === '') {
+        return response.status(400).json({ success: false, error: 'Nome é obrigatório' });
+      }
+
       const { data: updatedCliente, error } = await supabase
         .from('clientes')
         .update(request.body)

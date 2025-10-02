@@ -56,13 +56,23 @@ export default async function handler(request, response) {
       });
     }
 
-    // Buscar locações no período para contar locações ativas por mês
-    const { data: locacoes, error: locError } = await supabase
+    // Buscar todas as locações para filtrar no código
+    const { data: todasLocacoes, error: locError } = await supabase
       .from('locacoes')
       .select('id, data_locacao, data_entrega, status')
-      .gte('data_locacao', inicio)
-      .lte('data_locacao', fim)
       .order('data_locacao', { ascending: true });
+      
+    // Filtrar locações que estavam ativas durante o período
+    const dataInicioPeriodo = new Date(inicio);
+    const dataFimPeriodo = new Date(fim);
+    
+    const locacoes = todasLocacoes?.filter(locacao => {
+      const dataInicio = new Date(locacao.data_locacao);
+      const dataFim = locacao.data_entrega ? new Date(locacao.data_entrega) : new Date();
+      
+      // Locação estava ativa se começou antes ou durante o período E terminou depois ou durante o período
+      return dataInicio <= dataFimPeriodo && dataFim >= dataInicioPeriodo;
+    }) || [];
 
     if (locError) {
       console.error('Erro ao buscar locações:', locError);
@@ -72,15 +82,8 @@ export default async function handler(request, response) {
       });
     }
 
-    console.log('Locações encontradas no período:', locacoes?.length || 0);
+    console.log('Locações encontradas para o período:', locacoes?.length || 0);
     console.log('Período consultado:', inicio, 'a', fim);
-    
-    if (locacoes && locacoes.length > 0) {
-      console.log('Primeiras 3 locações:');
-      locacoes.slice(0, 3).forEach((loc, i) => {
-        console.log(`${i + 1}:`, loc);
-      });
-    }
 
     // Buscar manutenções no período para incluir como despesas
     const { data: manutencoes, error: manutError } = await supabase

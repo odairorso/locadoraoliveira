@@ -8,6 +8,7 @@ import ManutencaoPage from "@/react-app/pages/Manutencao";
 import RelatoriosPage from "@/react-app/pages/Relatorios";
 import ChecklistDashboard from "@/react-app/pages/ChecklistDashboard";
 import VistoriaForm from "@/react-app/pages/VistoriaForm";
+import VistoriaDetalhes from "@/react-app/pages/VistoriaDetalhes";
 
 export default function App() {
   return (
@@ -22,6 +23,8 @@ export default function App() {
           <Route path="/relatorios" element={<RelatoriosPage />} />
           <Route path="/checklist" element={<ChecklistDashboard />} />
           <Route path="/checklist/novo" element={<VistoriaForm />} />
+          <Route path="/checklist/visualizar/:id" element={<VistoriaDetalhes />} />
+          <Route path="/checklist/editar/:id" element={<VistoriaForm />} />
         </Routes>
       </Layout>
     </Router>
