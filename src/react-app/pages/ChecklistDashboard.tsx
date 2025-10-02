@@ -23,8 +23,8 @@ const ChecklistDashboard: React.FC = () => {
         const todasVistorias = result.data.vistorias;
         
         // Separa as vistorias em pendentes e realizadas
-        const pendentes = todasVistorias.filter(v => v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'saida');
-        const realizadas = todasVistorias.filter(v => v.nome_vistoriador !== 'Sistema');
+        const pendentes = todasVistorias.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'saida');
+        const realizadas = todasVistorias.filter((v: { nome_vistoriador: string }) => v.nome_vistoriador !== 'Sistema');
 
         setVistoriasPendentes(pendentes);
         setVistoriasRealizadas(realizadas);
