@@ -68,7 +68,7 @@ const VistoriaDetalhes: React.FC = () => {
 
   const excluirVistoria = async () => {
     try {
-      const response = await fetch(`/api/vistorias?id=${id}`, {
+      const response = await fetch(`/api/vistorias/${id}`, {
         method: 'DELETE',
       });
       
