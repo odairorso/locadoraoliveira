@@ -132,10 +132,10 @@ loadApiRoutes().then(() => {
     console.log('   - /api/locacoes');
     console.log('   - /api/movimentacoes');
     console.log('   - /api/vistorias');
-    console.log('   - /api/relatorios/financeiro');
-    console.log('   - /api/relatorios/veiculos');
-    console.log('   - /api/relatorios/clientes');
-    console.log('   - /api/relatorios/locacoes');
+    console.log('   - /api/relatorios?tipo=financeiro');
+    console.log('   - /api/relatorios?tipo=veiculos');
+    console.log('   - /api/relatorios?tipo=clientes');
+    console.log('   - /api/relatorios?tipo=locacoes');
   });
 }).catch(error => {
   console.error('Erro ao inicializar servidor:', error);

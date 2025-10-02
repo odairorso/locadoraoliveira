@@ -61,7 +61,7 @@ interface AdvancedStats {
 
 export default function Home() {
   const { data: stats, loading, error } = useApi<DashboardStats>('/api/dashboard');
-  const { data: advancedStats, loading: loadingAdvanced } = useApi<AdvancedStats>('/api/dashboard-stats');
+  const { data: advancedStats, loading: loadingAdvanced } = useApi<AdvancedStats>('/api/dashboard?tipo=stats');
   const navigate = useNavigate();
 
   if (loading) {

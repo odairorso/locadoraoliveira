@@ -4,7 +4,7 @@ async function testFinanceiroAPI() {
   console.log('=== Testando API Financeiro ===');
   
   try {
-    const response = await fetch('http://localhost:3000/api/relatorios/financeiro?inicio=2025-08-01&fim=2025-10-31');
+    const response = await fetch('http://localhost:3000/api/relatorios?tipo=financeiro&inicio=2025-08-01&fim=2025-10-31');
     
     console.log('Status:', response.status);
     console.log('Status Text:', response.statusText);
