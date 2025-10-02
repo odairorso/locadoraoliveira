@@ -147,8 +147,13 @@ export default async function handler(request, response) {
         // Verificar se este mês está no período solicitado
         const primeiroDiaMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), 1);
         const ultimoDiaMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0);
+        const dataInicioPeriodo = new Date(inicio);
+        const dataFimPeriodo = new Date(fim);
         
-        if (primeiroDiaMes >= new Date(inicio) && ultimoDiaMes <= new Date(fim)) {
+        // O mês está no período se há sobreposição entre o mês e o período solicitado
+        const mesNoPeriodo = (primeiroDiaMes <= dataFimPeriodo && ultimoDiaMes >= dataInicioPeriodo);
+        
+        if (mesNoPeriodo) {
           inicializarMes(chave, mesAtual);
           
           // Verificar se a locação estava ativa durante este mês
