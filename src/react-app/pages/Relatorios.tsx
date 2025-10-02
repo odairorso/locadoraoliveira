@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Calendar, 
-  Car, 
   Users, 
   DollarSign, 
-  FileText, 
   Download,
   Filter,
   TrendingUp,
@@ -102,16 +100,14 @@ interface EstatisticasLocacoes {
     cancelada: number;
     pendente: number;
   };
+  evolucao_mensal?: Array<{
+    mes: string;
+    total_locacoes: number;
+    valor_total: number;
+  }>;
 }
 
-interface RelatorioLocacoes {
-  total_locacoes: number;
-  locacoes_ativas: number;
-  locacoes_finalizadas: number;
-  locacoes_canceladas: number;
-  receita_media_por_locacao: number;
-  duracao_media_dias: number;
-}
+
 
 export default function Relatorios() {
   const [tipoRelatorio, setTipoRelatorio] = useState<'financeiro' | 'veiculos' | 'clientes' | 'locacoes'>('financeiro');

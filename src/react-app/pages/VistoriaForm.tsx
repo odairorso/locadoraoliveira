@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, X, Search } from 'lucide-react'; // Added Search icon for input
+import { X, Search } from 'lucide-react'; // Added Search icon for input
 import { useApi, useMutation } from '@/react-app/hooks/useApi'; // Import API hooks
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'; // Import useNavigate, useSearchParams and useParams
 import CarDamageMap from '../components/CarDamageMap';
 import PhotoCapture from '../components/PhotoCapture';
 
 // Helper for debouncing search input
-const debounce = (func: Function, delay: number) => {
+const debounce = (func: (...args: any[]) => void, delay: number) => {
   let timeout: NodeJS.Timeout;
-  return function(...args: any[]) {
-    const context = this;
+  return (...args: any[]) => {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(context, args), delay);
+    timeout = setTimeout(() => func(...args), delay);
   };
 };
 
@@ -42,6 +41,7 @@ const VistoriaForm: React.FC = () => {
     placa: '',
     veiculoId: null as string | null, // Added veiculoId
     modelo: '',
+    cor: '',
     quilometragem: '',
     condutor: '',
     telefone: '',
@@ -50,6 +50,8 @@ const VistoriaForm: React.FC = () => {
     combustivel: 'vazio' as string,
     observacoes: '',
     checklist: {} as Record<string, boolean>,
+    avarias: [] as Array<{id: string, x: number, y: number, type: 'A' | 'R' | 'T' | 'Q' | 'F'}>,
+    fotos: [] as Array<{id: string, file: File, preview: string, description?: string}>
   });
 
   const [avarias, setAvarias] = useState<Array<{id: string, x: number, y: number, type: 'A' | 'R' | 'T' | 'Q' | 'F'}>>([]);
@@ -66,7 +68,7 @@ const VistoriaForm: React.FC = () => {
   const [loadingVeiculosLocados, setLoadingVeiculosLocados] = useState(false);
 
   // Use useApi for client search
-  const { data: clientsData, loading: loadingClients } = useApi<any[]>(
+  const { loading: loadingClients } = useApi<any[]>(
     `http://localhost:3000/api/clientes`,
     { immediate: false }
   );
@@ -229,6 +231,7 @@ const VistoriaForm: React.FC = () => {
                   placa: vistoria.veiculo?.placa || '',
                   veiculoId: vistoria.veiculo_id,
                   modelo: vistoria.veiculo?.modelo || '',
+                  cor: vistoria.veiculo?.cor || '',
                   quilometragem: vistoria.quilometragem?.toString() || '',
                   condutor: vistoria.condutor || '',
                   telefone: vistoria.telefone || '',
@@ -255,7 +258,7 @@ const VistoriaForm: React.FC = () => {
       const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
   
         // Use useApi for vehicle search
-        const { data: vehiclesData, loading: loadingVehicles } = useApi<any[]>(
+        const { loading: loadingVehicles } = useApi<any[]>(
           `http://localhost:3000/api/veiculos`,
           { immediate: false }
         );

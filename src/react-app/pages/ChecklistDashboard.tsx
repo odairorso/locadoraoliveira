@@ -2,17 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search, X, Car } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface Vistoria {
-  id: number;
-  tipo_vistoria: 'entrada' | 'saida';
-  placa: string;
-  modelo: string;
-  nome_condutor: string;
-  quilometragem: number;
-  created_at: string;
-  cliente_id: number;
-  veiculo_id: number;
-}
+
 
 const ChecklistDashboard: React.FC = () => {
   const navigate = useNavigate();

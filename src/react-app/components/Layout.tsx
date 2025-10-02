@@ -8,7 +8,6 @@ import {
   Menu, 
   X,
   Home,
-  Sun,
   Moon,
   Wrench,
   ClipboardList
@@ -32,7 +31,7 @@ const navigation = [
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
 
   return (
     <div className="min-h-screen bg-slate-900">

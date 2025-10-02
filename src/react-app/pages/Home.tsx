@@ -16,7 +16,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import { Line, Doughnut } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -30,9 +30,38 @@ ChartJS.register(
   ArcElement
 );
 
+interface AdvancedStats {
+  veiculosMaisLocados?: Array<{
+    veiculo: {
+      id: string;
+      marca: string;
+      modelo: string;
+      ano: number;
+      placa: string;
+    };
+    totalLocacoes: number;
+    totalLucro: number;
+  }>;
+  veiculosMaiorLucro?: Array<{
+    veiculo: {
+      id: string;
+      marca: string;
+      modelo: string;
+      ano: number;
+      placa: string;
+    };
+    totalLocacoes: number;
+    totalLucro: number;
+  }>;
+  receitaMensal?: Array<{
+    mes: string;
+    valor: number;
+  }>;
+}
+
 export default function Home() {
   const { data: stats, loading, error } = useApi<DashboardStats>('/api/dashboard');
-  const { data: advancedStats, loading: loadingAdvanced } = useApi('/api/dashboard-stats');
+  const { data: advancedStats, loading: loadingAdvanced } = useApi<AdvancedStats>('/api/dashboard-stats');
   const navigate = useNavigate();
 
   if (loading) {
@@ -175,7 +204,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-4">
-              {advancedStats?.veiculosMaisLocados?.slice(0, 5).map((item, index) => (
+              {(advancedStats?.veiculosMaisLocados || []).slice(0, 5).map((item: any, index: number) => (
                 <div key={item.veiculo.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 dark:bg-blue-900/50 dark:border-blue-800">
                   <div className="flex items-center space-x-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
@@ -232,7 +261,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-4">
-              {advancedStats?.veiculosMaiorLucro?.slice(0, 5).map((item, index) => (
+              {(advancedStats?.veiculosMaiorLucro || []).slice(0, 5).map((item: any, index: number) => (
                 <div key={item.veiculo.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100 dark:bg-green-900/50 dark:border-green-800">
                   <div className="flex items-center space-x-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
@@ -282,11 +311,11 @@ export default function Home() {
             <div className="animate-pulse">
               <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
-          ) : advancedStats?.receitaMensal?.length > 0 ? (
+          ) : (advancedStats as any)?.receitaMensal?.length > 0 ? (
             <div className="h-48">
               <Line
                 data={{
-                  labels: advancedStats.receitaMensal.map(item => {
+                  labels: (advancedStats as any).receitaMensal.map((item: any) => {
                     const [ano, mes] = item.mes.split('-');
                     return new Date(parseInt(ano), parseInt(mes) - 1).toLocaleDateString('pt-BR', { 
                       month: 'short', 
@@ -296,7 +325,7 @@ export default function Home() {
                   datasets: [
                     {
                       label: 'Receita (R$)',
-                      data: advancedStats.receitaMensal.map(item => item.valor),
+                      data: (advancedStats as any).receitaMensal.map((item: any) => item.valor),
                       borderColor: 'rgb(147, 51, 234)',
                       backgroundColor: 'rgba(147, 51, 234, 0.1)',
                       borderWidth: 3,
@@ -321,7 +350,7 @@ export default function Home() {
                     y: {
                       beginAtZero: true,
                       ticks: {
-                        callback: function(value) {
+                        callback: function(value: any) {
                           return 'R$ ' + value.toLocaleString('pt-BR');
                         },
                       },

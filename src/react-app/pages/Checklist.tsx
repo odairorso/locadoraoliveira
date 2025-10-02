@@ -3,14 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { 
   Car, 
   User, 
-  Calendar, 
-  Gauge, 
-  Fuel, 
   CheckCircle2, 
   XCircle, 
   Save,
-  FileText,
-  AlertCircle,
   Search
 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
@@ -50,113 +45,90 @@ interface Locacao {
   };
 }
 
-interface Avaria {
-  tipo: 'A' | 'R' | 'T' | 'Q' | 'F';
-  localizacao: string;
-  descricao: string;
+interface ChecklistItem {
+  id: string;
+  label: string;
+  status: 'ok' | 'problema' | null;
+  observacao?: string;
 }
 
-interface VistoriaForm {
-  tipo_vistoria: 'entrada' | 'saida';
-  locacao_id: number | null;
-  veiculo_id: number | null;
+interface FormData {
   cliente_id: number | null;
-  quilometragem: number;
-  nivel_combustivel: 'vazio' | '1/4' | '1/2' | '3/4' | 'cheio';
+  veiculo_id: number | null;
+  locacao_id: number | null;
   nome_condutor: string;
-  rg_condutor: string;
-  item_calota: boolean;
-  item_pneu: boolean;
-  item_antena: boolean;
-  item_bateria: boolean;
-  item_estepe: boolean;
-  item_macaco: boolean;
-  item_chave_roda: boolean;
-  item_triangulo: boolean;
-  item_extintor: boolean;
-  item_tapetes: boolean;
-  item_som: boolean;
-  item_documentos: boolean;
-  item_higienizacao: boolean;
-  avarias: Avaria[];
+  quilometragem: string;
+  combustivel: string;
   observacoes: string;
-  nome_vistoriador: string;
+  checklist: ChecklistItem[];
+  tipo_vistoria: 'entrada' | 'saida';
+  assinatura: string;
 }
 
-export default function CheckListPage() {
+const checklistItems: ChecklistItem[] = [
+  { id: 'pneus', label: 'Pneus', status: null },
+  { id: 'rodas', label: 'Rodas', status: null },
+  { id: 'para_choque_dianteiro', label: 'Para-choque Dianteiro', status: null },
+  { id: 'para_choque_traseiro', label: 'Para-choque Traseiro', status: null },
+  { id: 'lateral_direita', label: 'Lateral Direita', status: null },
+  { id: 'lateral_esquerda', label: 'Lateral Esquerda', status: null },
+  { id: 'teto', label: 'Teto', status: null },
+  { id: 'capo', label: 'Capô', status: null },
+  { id: 'porta_malas', label: 'Porta-malas', status: null },
+  { id: 'farol_dianteiro', label: 'Farol Dianteiro', status: null },
+  { id: 'farol_traseiro', label: 'Farol Traseiro', status: null },
+  { id: 'retrovisor_direito', label: 'Retrovisor Direito', status: null },
+  { id: 'retrovisor_esquerdo', label: 'Retrovisor Esquerdo', status: null },
+  { id: 'para_brisa', label: 'Para-brisa', status: null },
+  { id: 'vidro_traseiro', label: 'Vidro Traseiro', status: null },
+  { id: 'vidros_laterais', label: 'Vidros Laterais', status: null },
+  { id: 'interior', label: 'Interior', status: null },
+  { id: 'documentos', label: 'Documentos', status: null },
+  { id: 'triangulo', label: 'Triângulo', status: null },
+  { id: 'macaco', label: 'Macaco', status: null },
+  { id: 'chave_roda', label: 'Chave de Roda', status: null },
+  { id: 'estepe', label: 'Estepe', status: null },
+];
+
+export default function Checklist() {
   const [searchParams] = useSearchParams();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [locacoes, setLocacoes] = useState<Locacao[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchCliente, setSearchCliente] = useState('');
-  const [searchVeiculo, setSearchVeiculo] = useState('');
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [selectedVeiculo, setSelectedVeiculo] = useState<Veiculo | null>(null);
   const [selectedLocacao, setSelectedLocacao] = useState<Locacao | null>(null);
-  const [showLocacaoSelection, setShowLocacaoSelection] = useState(false);
-
-  const sigClienteRef = useRef<SignatureCanvas>(null);
-  const sigVistoriadorRef = useRef<SignatureCanvas>(null);
-
-  const [form, setForm] = useState<VistoriaForm>({
-    tipo_vistoria: 'entrada',
-    locacao_id: null,
-    veiculo_id: null,
+  const [searchCliente, setSearchCliente] = useState('');
+  const [searchVeiculo, setSearchVeiculo] = useState('');
+  const [showLocacaoSelection, setShowLocacaoSelection] = useState(true);
+  const [form, setForm] = useState<FormData>({
     cliente_id: null,
-    quilometragem: 0,
-    nivel_combustivel: 'cheio',
+    veiculo_id: null,
+    locacao_id: null,
     nome_condutor: '',
-    rg_condutor: '',
-    item_calota: true,
-    item_pneu: true,
-    item_antena: true,
-    item_bateria: true,
-    item_estepe: true,
-    item_macaco: true,
-    item_chave_roda: true,
-    item_triangulo: true,
-    item_extintor: true,
-    item_tapetes: true,
-    item_som: true,
-    item_documentos: true,
-    item_higienizacao: true,
-    avarias: [],
+    quilometragem: '',
+    combustivel: '',
     observacoes: '',
-    nome_vistoriador: 'João Roberto'
+    checklist: checklistItems,
+    tipo_vistoria: 'entrada',
+    assinatura: ''
   });
-
-  const [novaAvaria, setNovaAvaria] = useState<Avaria>({
-    tipo: 'A',
-    localizacao: '',
-    descricao: ''
-  });
+  const [loading, setLoading] = useState(false);
+  const signatureRef = useRef<SignatureCanvas>(null);
 
   useEffect(() => {
     carregarClientes();
     carregarVeiculos();
     carregarLocacoes();
-    
-    // Detectar tipo de vistoria da URL
-    const tipo = searchParams.get('tipo') as 'entrada' | 'saida';
-    const veiculoId = searchParams.get('veiculo_id');
+
+    // Verificar se há parâmetros de URL para vistoria de saída
     const entradaId = searchParams.get('entrada_id');
-    
-    console.log('Checklist useEffect - tipo:', tipo);
-    console.log('Parâmetros URL - entradaId:', entradaId, 'veiculoId:', veiculoId);
-    
-    if (tipo) {
-      setForm(prev => ({ ...prev, tipo_vistoria: tipo }));
-      
-      // Se for vistoria de saída com parâmetros, carregar dados automaticamente
-      if (tipo === 'saida' && veiculoId && entradaId) {
-        console.log('Carregando dados automáticos para vistoria de saída');
-        carregarDadosVistoriaEntrada(entradaId, veiculoId);
-      } else if (tipo === 'saida') {
-        // Se for vistoria de saída sem parâmetros, mostrar seleção de locação
-        console.log('Mostrando seleção de locação');
-        setShowLocacaoSelection(true);
-      }
+    const veiculoId = searchParams.get('veiculo_id');
+    const tipoVistoria = searchParams.get('tipo');
+
+    if (entradaId && veiculoId && tipoVistoria === 'saida') {
+      setForm(prev => ({ ...prev, tipo_vistoria: 'saida' }));
+      carregarDadosVistoriaEntrada(entradaId, veiculoId);
     }
   }, [searchParams]);
 
@@ -257,21 +229,6 @@ export default function CheckListPage() {
     }
   };
 
-  const carregarLocacoes = async () => {
-    try {
-      const response = await fetch('/api/locacoes');
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        // Filtrar apenas locações ativas
-        const locacoesAtivas = result.data.filter(l => l.status === 'ativa');
-        setLocacoes(locacoesAtivas);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar locações:', error);
-    }
-  };
-
   const handleSelectCliente = (cliente: Cliente) => {
     setSelectedCliente(cliente);
     setForm({ ...form, cliente_id: cliente.id, nome_condutor: cliente.nome });
@@ -283,7 +240,7 @@ export default function CheckListPage() {
     setForm({ ...form, veiculo_id: veiculo.id });
     setSearchVeiculo('');
     
-    const locacaoAtiva = locacoes.find(l => l.veiculo_id === veiculo.id);
+    const locacaoAtiva = locacoes.find((l: Locacao) => l.veiculo_id === veiculo.id);
     if (locacaoAtiva) {
       setSelectedLocacao(locacaoAtiva);
       setForm({ ...form, veiculo_id: veiculo.id, locacao_id: locacaoAtiva.id });
@@ -300,7 +257,7 @@ export default function CheckListPage() {
     
     if (cliente) {
       setSelectedCliente(cliente);
-      setForm(prev => ({ ...prev, cliente_id: cliente.id }));
+      setForm(prev => ({ ...prev, cliente_id: cliente.id, nome_condutor: cliente.nome }));
     }
     
     if (veiculo) {
@@ -311,81 +268,27 @@ export default function CheckListPage() {
     setShowLocacaoSelection(false);
   };
 
-  const adicionarAvaria = () => {
-    if (novaAvaria.localizacao && novaAvaria.descricao) {
-      setForm({
-        ...form,
-        avarias: [...form.avarias, novaAvaria]
-      });
-      setNovaAvaria({ tipo: 'A', localizacao: '', descricao: '' });
-    }
+  const updateChecklistItem = (id: string, status: 'ok' | 'problema', observacao?: string) => {
+    setForm(prev => ({
+      ...prev,
+      checklist: prev.checklist.map(item =>
+        item.id === id ? { ...item, status, observacao } : item
+      )
+    }));
   };
 
-  const removerAvaria = (index: number) => {
-    setForm({
-      ...form,
-      avarias: form.avarias.filter((_, i) => i !== index)
-    });
-  };
-
-  const limparAssinaturaCliente = () => {
-    sigClienteRef.current?.clear();
-  };
-
-  const limparAssinaturaVistoriador = () => {
-    sigVistoriadorRef.current?.clear();
-  };
-
-  const salvarVistoria = async () => {
-    if (!form.veiculo_id || !form.cliente_id) {
-      alert('Selecione um cliente e um veículo!');
-      return;
-    }
-
-    if (!selectedVeiculo || !selectedCliente) {
-      alert('Dados do veículo ou cliente não encontrados!');
-      return;
-    }
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
 
     try {
-      const assinaturaCliente = sigClienteRef.current?.toDataURL() || '';
-      const assinaturaVistoriador = sigVistoriadorRef.current?.toDataURL() || '';
-
-      // Preparar dados conforme a estrutura da API
+      // Capturar assinatura
+      const assinatura = signatureRef.current?.toDataURL() || '';
+      
       const vistoriaData = {
-        clienteId: form.cliente_id,
-        veiculoId: form.veiculo_id,
-        tipoVistoria: form.tipo_vistoria,
-        quilometragem: form.quilometragem,
-        combustivel: form.nivel_combustivel,
-        condutor: form.nome_condutor,
-        rgCondutor: form.rg_condutor,
-        placa: selectedVeiculo.placa,
-        modelo: `${selectedVeiculo.marca} ${selectedVeiculo.modelo}`,
-        cor: selectedVeiculo.cor,
-        observacoes: form.observacoes,
-        nomeVistoriador: form.nome_vistoriador,
-        assinaturaClienteUrl: assinaturaCliente,
-        assinaturaVistoriadorUrl: assinaturaVistoriador,
-        avariasJson: JSON.stringify(form.avarias),
-        locacaoId: form.locacao_id,
-        checklist: {
-          calota: form.item_calota,
-          pneu: form.item_pneu,
-          antena: form.item_antena,
-          bateria: form.item_bateria,
-          estepe: form.item_estepe,
-          macaco: form.item_macaco,
-          chaveRoda: form.item_chave_roda,
-          triangulo: form.item_triangulo,
-          extintor: form.item_extintor,
-          tapetes: form.item_tapetes,
-          som: form.item_som,
-          documentos: form.item_documentos,
-          higienizacao: form.item_higienizacao
-        }
+        ...form,
+        assinatura,
+        data_vistoria: new Date().toISOString()
       };
 
       const response = await fetch('http://localhost:3000/api/vistorias', {
@@ -393,58 +296,39 @@ export default function CheckListPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(vistoriaData)
+        body: JSON.stringify(vistoriaData),
       });
 
       const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao salvar vistoria');
+      if (result.success) {
+        alert('Vistoria salva com sucesso!');
+        // Reset form
+        setForm({
+          cliente_id: null,
+          veiculo_id: null,
+          locacao_id: null,
+          nome_condutor: '',
+          quilometragem: '',
+          combustivel: '',
+          observacoes: '',
+          checklist: checklistItems,
+          tipo_vistoria: 'entrada',
+          assinatura: ''
+        });
+        setSelectedCliente(null);
+        setSelectedVeiculo(null);
+        setSelectedLocacao(null);
+        signatureRef.current?.clear();
+      } else {
+        throw new Error(result.message || 'Erro ao salvar vistoria');
       }
-
-      alert('Vistoria salva com sucesso!');
-      resetarFormulario();
-      
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar vistoria:', error);
-      alert(`Erro ao salvar vistoria: ${error.message}`);
+      alert('Erro ao salvar vistoria: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
     } finally {
       setLoading(false);
     }
-  };
-
-  const resetarFormulario = () => {
-    setForm({
-      tipo_vistoria: 'entrada',
-      locacao_id: null,
-      veiculo_id: null,
-      cliente_id: null,
-      quilometragem: 0,
-      nivel_combustivel: 'cheio',
-      nome_condutor: '',
-      rg_condutor: '',
-      item_calota: true,
-      item_pneu: true,
-      item_antena: true,
-      item_bateria: true,
-      item_estepe: true,
-      item_macaco: true,
-      item_chave_roda: true,
-      item_triangulo: true,
-      item_extintor: true,
-      item_tapetes: true,
-      item_som: true,
-      item_documentos: true,
-      item_higienizacao: true,
-      avarias: [],
-      observacoes: '',
-      nome_vistoriador: 'João Roberto'
-    });
-    setSelectedCliente(null);
-    setSelectedVeiculo(null);
-    setSelectedLocacao(null);
-    sigClienteRef.current?.clear();
-    sigVistoriadorRef.current?.clear();
   };
 
   const clientesFiltrados = clientes.filter(c => 
@@ -457,30 +341,6 @@ export default function CheckListPage() {
     v.marca.toLowerCase().includes(searchVeiculo.toLowerCase()) ||
     v.placa.toLowerCase().includes(searchVeiculo.toLowerCase())
   );
-
-  const itensObrigatorios = [
-    { key: 'item_calota', label: 'Calota' },
-    { key: 'item_pneu', label: 'Pneu' },
-    { key: 'item_antena', label: 'Antena' },
-    { key: 'item_bateria', label: 'Bateria' },
-    { key: 'item_estepe', label: 'Estepe' },
-    { key: 'item_macaco', label: 'Macaco' },
-    { key: 'item_chave_roda', label: 'Chave de Roda' },
-    { key: 'item_triangulo', label: 'Triângulo' },
-    { key: 'item_extintor', label: 'Extintor' },
-    { key: 'item_tapetes', label: 'Tapetes' },
-    { key: 'item_som', label: 'Som' },
-    { key: 'item_documentos', label: 'Documentos' },
-    { key: 'item_higienizacao', label: 'Higienização' }
-  ];
-
-  const tiposAvaria = [
-    { value: 'A', label: 'Amassado' },
-    { value: 'R', label: 'Risco' },
-    { value: 'T', label: 'Trincado' },
-    { value: 'Q', label: 'Quebrado' },
-    { value: 'F', label: 'Falta' }
-  ];
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -737,52 +597,52 @@ export default function CheckListPage() {
         </div>
       )}
 
-      {/* Dados do Veículo */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Dados do Veículo
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Gauge className="inline mr-2" size={16} />
-              Quilometragem
-            </label>
-            <input
-              type="number"
-              value={form.quilometragem}
-              onChange={(e) => setForm({ ...form, quilometragem: parseInt(e.target.value) || 0 })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Ex: 50000"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Fuel className="inline mr-2" size={16} />
-              Nível de Combustível
-            </label>
-            <select
-              value={form.nivel_combustivel}
-              onChange={(e) => setForm({ ...form, nivel_combustivel: e.target.value as any })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="vazio">Vazio</option>
-              <option value="1/4">1/4</option>
-              <option value="1/2">1/2</option>
-              <option value="3/4">3/4</option>
-              <option value="cheio">Cheio</option>
-            </select>
+      {/* Formulário de Vistoria */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Dados do Veículo */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Dados do Veículo
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Quilometragem
+              </label>
+              <input
+                type="text"
+                value={form.quilometragem}
+                onChange={(e) => setForm({ ...form, quilometragem: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Ex: 50000"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Nível de Combustível
+              </label>
+              <select
+                value={form.combustivel}
+                onChange={(e) => setForm({ ...form, combustivel: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Selecione...</option>
+                <option value="vazio">Vazio</option>
+                <option value="1/4">1/4</option>
+                <option value="1/2">1/2</option>
+                <option value="3/4">3/4</option>
+                <option value="cheio">Cheio</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Dados do Condutor */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Dados do Condutor
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Dados do Condutor */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Dados do Condutor
+          </h2>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Nome do Condutor
@@ -795,237 +655,105 @@ export default function CheckListPage() {
               placeholder="Nome completo"
             />
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              RG do Condutor
-            </label>
-            <input
-              type="text"
-              value={form.rg_condutor}
-              onChange={(e) => setForm({ ...form, rg_condutor: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Ex: 12.345.678-9"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Itens Obrigatórios */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Itens Obrigatórios
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {itensObrigatorios.map(item => (
-            <label
-              key={item.key}
-              className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={form[item.key as keyof VistoriaForm] as boolean}
-                onChange={(e) => setForm({ ...form, [item.key]: e.target.checked })}
-                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {item.label}
-              </span>
-              {form[item.key as keyof VistoriaForm] ? (
-                <CheckCircle2 className="text-green-500" size={18} />
-              ) : (
-                <XCircle className="text-red-500" size={18} />
-              )}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Avarias */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <AlertCircle className="mr-2" size={24} />
-          Avarias
-        </h2>
-        
-        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Legenda:
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {tiposAvaria.map(tipo => (
-              <span key={tipo.value} className="text-sm text-gray-600 dark:text-gray-400">
-                <strong>{tipo.value}</strong> = {tipo.label}
-              </span>
-            ))}
-          </div>
         </div>
 
-        <div className="space-y-4 mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tipo
-              </label>
-              <select
-                value={novaAvaria.tipo}
-                onChange={(e) => setNovaAvaria({ ...novaAvaria, tipo: e.target.value as any })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                {tiposAvaria.map(tipo => (
-                  <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Localização
-              </label>
-              <input
-                type="text"
-                value={novaAvaria.localizacao}
-                onChange={(e) => setNovaAvaria({ ...novaAvaria, localizacao: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: Para-choque dianteiro"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Descrição
-              </label>
-              <input
-                type="text"
-                value={novaAvaria.descricao}
-                onChange={(e) => setNovaAvaria({ ...novaAvaria, descricao: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: Amassado leve"
-              />
-            </div>
-          </div>
-          
-          <button
-            onClick={adicionarAvaria}
-            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Adicionar Avaria
-          </button>
-        </div>
-
-        {form.avarias.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-2">Avarias Registradas:</h3>
-            {form.avarias.map((avaria, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <div>
-                  <span className="font-bold text-red-600 dark:text-red-400">{avaria.tipo}</span>
-                  <span className="mx-2 text-gray-600 dark:text-gray-400">•</span>
-                  <span className="text-gray-900 dark:text-white">{avaria.localizacao}</span>
-                  <span className="mx-2 text-gray-600 dark:text-gray-400">•</span>
-                  <span className="text-gray-600 dark:text-gray-400">{avaria.descricao}</span>
+        {/* Checklist */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Checklist do Veículo
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {form.checklist.map(item => (
+              <div key={item.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 dark:text-white mb-2">{item.label}</h3>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => updateChecklistItem(item.id, 'ok')}
+                    className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
+                      item.status === 'ok'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <CheckCircle2 className="inline mr-1" size={16} />
+                    OK
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateChecklistItem(item.id, 'problema')}
+                    className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
+                      item.status === 'problema'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <XCircle className="inline mr-1" size={16} />
+                    Problema
+                  </button>
                 </div>
-                <button
-                  onClick={() => removerAvaria(index)}
-                  className="text-red-600 hover:text-red-700 dark:text-red-400"
-                >
-                  <XCircle size={20} />
-                </button>
+                {item.status === 'problema' && (
+                  <textarea
+                    placeholder="Descreva o problema..."
+                    value={item.observacao || ''}
+                    onChange={(e) => updateChecklistItem(item.id, 'problema', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    rows={2}
+                  />
+                )}
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* Observações */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Observações
-        </h2>
-        <textarea
-          value={form.observacoes}
-          onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-          rows={4}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          placeholder="Observações adicionais sobre o veículo..."
-        />
-      </div>
-
-      {/* Assinaturas */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Assinaturas
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Assinatura do Cliente
-            </label>
-            <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <SignatureCanvas
-                ref={sigClienteRef}
-                canvasProps={{
-                  className: 'w-full h-40 bg-white dark:bg-gray-700'
-                }}
-              />
-            </div>
-            <button
-              onClick={limparAssinaturaCliente}
-              className="mt-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400"
-            >
-              Limpar Assinatura
-            </button>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Assinatura do Vistoriador
-            </label>
-            <input
-              type="text"
-              value={form.nome_vistoriador}
-              onChange={(e) => setForm({ ...form, nome_vistoriador: e.target.value })}
-              className="w-full px-4 py-2 mb-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Nome do vistoriador"
-            />
-            <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <SignatureCanvas
-                ref={sigVistoriadorRef}
-                canvasProps={{
-                  className: 'w-full h-40 bg-white dark:bg-gray-700'
-                }}
-              />
-            </div>
-            <button
-              onClick={limparAssinaturaVistoriador}
-              className="mt-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400"
-            >
-              Limpar Assinatura
-            </button>
-          </div>
         </div>
-      </div>
 
-      {/* Botões de Ação */}
-      <div className="flex gap-4">
-        <button
-          onClick={salvarVistoria}
-          disabled={loading || !selectedCliente || !selectedVeiculo}
-          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          <Save size={20} />
-          {loading ? 'Salvando...' : 'Salvar Vistoria'}
-        </button>
-        
-        <button
-          onClick={resetarFormulario}
-          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          <XCircle size={20} />
-          Cancelar
-        </button>
-      </div>
+        {/* Observações */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Observações
+          </h2>
+          <textarea
+            value={form.observacoes}
+            onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+            rows={4}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            placeholder="Observações adicionais sobre o veículo..."
+          />
+        </div>
+
+        {/* Assinatura */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Assinatura
+          </h2>
+          <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+            <SignatureCanvas
+              ref={signatureRef}
+              canvasProps={{
+                className: 'w-full h-40 bg-white dark:bg-gray-700'
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => signatureRef.current?.clear()}
+            className="mt-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400"
+          >
+            Limpar Assinatura
+          </button>
+        </div>
+
+        {/* Botões de Ação */}
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            disabled={loading || !selectedCliente || !selectedVeiculo}
+            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          >
+            <Save size={20} />
+            {loading ? 'Salvando...' : 'Salvar Vistoria'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

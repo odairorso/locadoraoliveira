@@ -1,13 +1,10 @@
 import path from "path";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 // import { cloudflare } from "@cloudflare/vite-plugin";
 // import { mochaPlugins } from "@getmocha/vite-plugins";
 
-export default defineConfig(({ mode }) => {
-  // Carregar variáveis de ambiente
-  const env = loadEnv(mode, process.cwd(), '');
-  
+export default defineConfig(() => {
   return {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [/*...mochaPlugins(process.env as any),*/ react()/*, cloudflare()*/],
