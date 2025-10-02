@@ -144,12 +144,17 @@ const VistoriaForm: React.FC = () => {
         const veiculoId = searchParams.get('veiculo_id');
         const entradaId = searchParams.get('entrada_id');
         const veiculoLocado = searchParams.get('veiculo_locado');
+        const locacaoId = searchParams.get('locacaoId');
         
-        console.log('VistoriaForm - Parâmetros da URL:', { tipo, veiculoId, entradaId, veiculoLocado });
+        console.log('VistoriaForm - Parâmetros da URL:', { tipo, veiculoId, entradaId, veiculoLocado, locacaoId });
         
         if (tipo) {
           console.log('VistoriaForm - Definindo tipo de vistoria:', tipo);
           setFormData(prev => ({ ...prev, tipoVistoria: tipo }));
+        }
+
+        if (locacaoId) {
+          carregarDadosLocacao(locacaoId);
         }
         
         // Se for vistoria de saída, carregar dados do veículo da vistoria de entrada
@@ -164,6 +169,33 @@ const VistoriaForm: React.FC = () => {
           carregarVeiculosLocados();
         }
       }, [searchParams]);
+
+      const carregarDadosLocacao = async (locacaoId: string) => {
+        try {
+          const response = await fetch(`http://localhost:3000/api/locacoes/${locacaoId}`);
+          const result = await response.json();
+          if (result.success && result.data) {
+            const locacao = result.data;
+            setFormData(prev => ({
+              ...prev,
+              cliente: locacao.cliente_nome,
+              clienteId: locacao.cliente_id,
+              placa: locacao.veiculo_placa,
+              veiculoId: locacao.veiculo_id,
+              modelo: locacao.veiculo_modelo,
+              condutor: locacao.cliente_nome, // Default condutor to client name
+              telefone: locacao.cliente_telefone,
+            }));
+            // Also update search terms to reflect the loaded data
+            setClientSearchTerm(locacao.cliente_nome);
+            setVehicleSearchTerm(`${locacao.veiculo_modelo} - ${locacao.veiculo_placa}`);
+          } else {
+            console.error('Erro ao carregar dados da locação:', result.error);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados da locação:', error);
+        }
+      };
 
       const carregarVeiculosLocados = async () => {
         setLoadingVeiculosLocados(true);
