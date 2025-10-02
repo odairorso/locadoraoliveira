@@ -24,12 +24,14 @@ export default async function handler(request, response) {
     const { method } = request;
 
     if (method === 'GET') {
-      // Verificar se é uma busca por veículos com entrada
       const url = new URL(request.url, `http://${request.headers.host}`);
-      const veiculosComEntrada = url.searchParams.get('veiculos_com_entrada');
-      const vistoriaId = url.searchParams.get('id');
-      
-      // Se foi solicitada uma vistoria específica por ID
+
+      // Extrai o ID da URL, se for o último segmento numérico
+      const pathParts = url.pathname.split('/').filter(p => p);
+      const lastPart = pathParts[pathParts.length - 1];
+      const vistoriaId = /^[0-9]+$/.test(lastPart) ? lastPart : null;
+
+      // Se um ID foi encontrado na URL, busca a vistoria específica
       if (vistoriaId) {
         const { data: vistoria, error: vistoriaError } = await supabase
           .from('vistorias')
