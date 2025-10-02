@@ -1,12 +1,38 @@
-import { Car, Users, FileText, DollarSign, Wallet } from 'lucide-react';
+import { Car, Users, FileText, DollarSign, Wallet, TrendingUp, Award, BarChart3, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardCard from '@/react-app/components/DashboardCard';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import { useApi } from '@/react-app/hooks/useApi';
 import type { DashboardStats } from '@/shared/types';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { Line, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 export default function Home() {
   const { data: stats, loading, error } = useApi<DashboardStats>('/api/dashboard');
+  const { data: advancedStats, loading: loadingAdvanced } = useApi('/api/dashboard-stats');
   const navigate = useNavigate();
 
   if (loading) {
@@ -24,19 +50,21 @@ export default function Home() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 rounded-xl p-8 text-white shadow-xl">
-        <div className="flex items-center space-x-4">
-          <img
-            src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
-            alt="Oliveira Veículos"
-            className="h-32 w-auto"
-          />
-          <div>
-            <h1 className="text-3xl font-bold">Sistema Oliveira Veículos</h1>
-            <p className="text-blue-100 mt-2">
+      <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-gray-900 rounded-xl p-8 text-white shadow-2xl border border-slate-700">
+        <div className="flex items-center space-x-6">
+          <div className="bg-white bg-opacity-10 p-4 rounded-xl backdrop-blur-sm border border-white border-opacity-20">
+            <img
+              src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
+              alt="Logo Oliveira Veículos"
+              className="h-12 w-12 object-contain"
+            />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold text-white mb-2">Sistema Oliveira Veículos</h1>
+            <p className="text-gray-300 text-lg mb-1">
               Gestão completa de locação e venda de veículos
             </p>
-            <p className="text-blue-200 text-sm mt-1">
+            <p className="text-gray-400 text-sm">
               Contato: (67) 99622.9840 | veiculos.oliveira@gmail.com
             </p>
           </div>
@@ -124,13 +152,190 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Recent Activity Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Atividade Recente</h2>
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Nenhuma atividade recente encontrada</p>
-          <p className="text-sm">As locações e vendas aparecerão aqui</p>
+      {/* Advanced Analytics Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Veículos Mais Locados */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+              <Award className="h-6 w-6 text-yellow-500 mr-2" />
+              Top Veículos Locados
+            </h2>
+            <TrendingUp className="h-5 w-5 text-green-500" />
+          </div>
+          
+          {loadingAdvanced ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {advancedStats?.veiculosMaisLocados?.slice(0, 5).map((item, index) => (
+                <div key={item.veiculo.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 dark:bg-blue-900/50 dark:border-blue-800">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                      index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                        {item.veiculo.marca} {item.veiculo.modelo}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {item.veiculo.ano} • {item.veiculo.placa}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-blue-600 dark:text-blue-400 text-sm">
+                      {item.totalLocacoes} locações
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      R$ {item.totalLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              )) || (
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                  <Car className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhum dado disponível</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Veículos com Maior Lucro */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+              <DollarSign className="h-6 w-6 text-green-500 mr-2" />
+              Maior Lucro
+            </h2>
+            <TrendingUp className="h-5 w-5 text-green-500" />
+          </div>
+          
+          {loadingAdvanced ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {advancedStats?.veiculosMaiorLucro?.slice(0, 5).map((item, index) => (
+                <div key={item.veiculo.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100 dark:bg-green-900/50 dark:border-green-800">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                      index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-500' : 'bg-green-500'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                        {item.veiculo.marca} {item.veiculo.modelo}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {item.veiculo.ano} • {item.veiculo.placa}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-green-600 dark:text-green-400 text-sm">
+                      R$ {item.totalLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {item.totalLocacoes} locações
+                    </p>
+                  </div>
+                </div>
+              )) || (
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                  <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhum dado disponível</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Gráfico de Receita Mensal */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+              <BarChart3 className="h-6 w-6 text-purple-500 mr-2" />
+              Receita Mensal
+            </h2>
+            <Calendar className="h-5 w-5 text-purple-500" />
+          </div>
+          
+          {loadingAdvanced ? (
+            <div className="animate-pulse">
+              <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            </div>
+          ) : advancedStats?.receitaMensal?.length > 0 ? (
+            <div className="h-48">
+              <Line
+                data={{
+                  labels: advancedStats.receitaMensal.map(item => {
+                    const [ano, mes] = item.mes.split('-');
+                    return new Date(parseInt(ano), parseInt(mes) - 1).toLocaleDateString('pt-BR', { 
+                      month: 'short', 
+                      year: '2-digit' 
+                    });
+                  }),
+                  datasets: [
+                    {
+                      label: 'Receita (R$)',
+                      data: advancedStats.receitaMensal.map(item => item.valor),
+                      borderColor: 'rgb(147, 51, 234)',
+                      backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                      borderWidth: 3,
+                      fill: true,
+                      tension: 0.4,
+                      pointBackgroundColor: 'rgb(147, 51, 234)',
+                      pointBorderColor: 'white',
+                      pointBorderWidth: 2,
+                      pointRadius: 6,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      display: false,
+                    },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        callback: function(value) {
+                          return 'R$ ' + value.toLocaleString('pt-BR');
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-sm">Nenhum dado de receita disponível</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

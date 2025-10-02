@@ -10,7 +10,8 @@ import {
   X,
   Home,
   Sun,
-  Moon
+  Moon,
+  Wrench
 } from 'lucide-react';
 import { useTheme } from '@/react-app/hooks/useTheme';
 
@@ -23,7 +24,8 @@ const navigation = [
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Veículos', href: '/veiculos', icon: Car },
   { name: 'Locações', href: '/locacoes', icon: FileText },
-  { name: 'Vendas', href: '/vendas', icon: ShoppingCart },
+  { name: 'Manutenção', href: '/manutencao', icon: Wrench },
+  { name: 'Check List', href: '/vendas', icon: FileText },
   { name: 'Relatórios', href: '/relatorios', icon: BarChart3 },
 ];
 
@@ -33,44 +35,48 @@ export default function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-slate-900">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-gray-800">
+        <div className="fixed inset-0 bg-black bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-gradient-to-b from-slate-800 to-slate-900 shadow-2xl">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
               type="button"
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full bg-slate-700 hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex-shrink-0 flex items-center px-4">
-              <img
-                className="h-12 w-auto"
-                src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
-                alt="Oliveira Veículos"
-              />
+            <div className="flex-shrink-0 flex items-center px-4 mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Car className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Oliveira</h1>
+                  <p className="text-sm text-slate-300">Veículos</p>
+                </div>
+              </div>
             </div>
-            <nav className="mt-8 px-4 space-y-1">
+            <nav className="px-4 space-y-2">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 border-r-2 border-blue-500'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white hover:shadow-md hover:transform hover:scale-105'
                     }`}
                   >
                     <item.icon
                       className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                        isActive ? 'text-blue-500' : 'text-gray-400 dark:text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300'
+                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'
                       }`}
                     />
                     {item.name}
@@ -83,32 +89,36 @@ export default function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Static sidebar for desktop */}
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-          <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <div className="flex items-center flex-shrink-0 px-4 mb-8">
-              <img
-                className="h-12 w-auto"
-                src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
-                alt="Oliveira Veículos"
-              />
+      <div className="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0">
+        <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-slate-800 to-slate-900 border-r border-slate-700 shadow-2xl">
+          <div className="flex-1 flex flex-col pt-6 pb-4 overflow-y-auto">
+            <div className="flex items-center flex-shrink-0 px-6 mb-10">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Car className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Oliveira</h1>
+                  <p className="text-sm text-slate-300">Veículos</p>
+                </div>
+              </div>
             </div>
-            <nav className="flex-1 px-4 space-y-1">
+            <nav className="flex-1 px-4 space-y-2">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white hover:shadow-md hover:transform hover:scale-105'
                     }`}
                   >
                     <item.icon
-                      className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                        isActive ? 'text-white' : 'text-gray-400 dark:text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300'
+                      className={`mr-4 flex-shrink-0 h-5 w-5 ${
+                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'
                       }`}
                     />
                     {item.name}
@@ -117,23 +127,28 @@ export default function Layout({ children }: LayoutProps) {
               })}
             </nav>
           </div>
-          <div className="flex-shrink-0 flex border-t border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex-shrink-0 flex border-t border-slate-700 p-4 bg-slate-800/50">
             <div className="flex-shrink-0 w-full group block">
               <div className="flex items-center justify-between">
-                <div className="ml-3">
-                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
-                    João Roberto
-                  </p>
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300">
-                    (67) 99622.9840
-                  </p>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">JR</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      João Roberto
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      (67) 99622.9840
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={toggleTheme}
-                  className="p-2 rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-200"
+                  title="Alternar tema"
                 >
-                  {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                  <Moon className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -142,31 +157,28 @@ export default function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="md:pl-64 flex flex-col flex-1">
-        <div className="sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-gray-50 dark:bg-gray-900">
+      <div className="md:pl-72 flex flex-col flex-1">
+        <div className="sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-slate-900">
           <div className="flex items-center justify-between">
             <button
               type="button"
-              className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200"
               onClick={() => setSidebarOpen(true)}
             >
+              <span className="sr-only">Open sidebar</span>
               <Menu className="h-6 w-6" />
             </button>
             <button
               onClick={toggleTheme}
-              className="mr-4 p-2 rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+              className="mr-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-200"
+              title="Alternar tema"
             >
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              <Moon className="h-5 w-5" />
             </button>
           </div>
         </div>
-        <main className="flex-1">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {children}
-            </div>
-          </div>
+        <main className="flex-1 bg-slate-900">
+          {children}
         </main>
       </div>
     </div>

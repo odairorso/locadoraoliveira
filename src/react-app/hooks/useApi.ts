@@ -29,7 +29,13 @@ export function useApi<T>(
       const result: ApiResponse<T> = await response.json();
       
       if (result.success) {
-        setData(result.data || null);
+        // Se a resposta tem campos além de 'data', retorna o objeto completo
+        if (result.data && typeof result.data === 'object' && 
+            Object.keys(result).some(key => key !== 'success' && key !== 'data' && key !== 'error')) {
+          setData(result as any);
+        } else {
+          setData(result.data || null);
+        }
       } else {
         setError(result.error || 'Erro desconhecido');
       }

@@ -468,7 +468,7 @@ export default function LocacoesPage() {
                     <input
                       type="text"
                       required
-                      placeholder="dd/mm/aaaa"
+                      placeholder="dd/mm/yyyy"
                       maxLength={10}
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.data_locacao ? formatDateForInput(formData.data_locacao) : ''}
@@ -493,7 +493,7 @@ export default function LocacoesPage() {
                     <input
                       type="text"
                       required
-                      placeholder="dd/mm/aaaa"
+                      placeholder="dd/mm/yyyy"
                       maxLength={10}
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.data_entrega ? formatDateForInput(formData.data_entrega) : ''}

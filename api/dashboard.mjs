@@ -51,8 +51,18 @@ export default async function handler(request, response) {
       throw movimentacoesError;
     }
 
-    // Calcula o saldo de caixa total
-    const saldoCaixa = movimentacoes.reduce((acc, mov) => {
+    // Busca todas as manutenções para incluir no cálculo do saldo
+    const { data: manutencoes, error: manutencoesError } = await supabase
+      .from('manutencoes')
+      .select('valor, data_manutencao');
+
+    if (manutencoesError) {
+      console.error('Erro ao buscar manutenções:', manutencoesError);
+      throw manutencoesError;
+    }
+
+    // Calcula o saldo de caixa total (incluindo manutenções como despesas)
+    const saldoMovimentacoes = movimentacoes.reduce((acc, mov) => {
       if (mov.tipo === 'entrada') {
         return acc + mov.valor;
       } else if (mov.tipo === 'saida') {
@@ -60,6 +70,10 @@ export default async function handler(request, response) {
       }
       return acc;
     }, 0);
+
+    // Subtrai o total de manutenções do saldo
+    const totalManutencoes = manutencoes.reduce((acc, manutencao) => acc + manutencao.valor, 0);
+    const saldoCaixa = saldoMovimentacoes - totalManutencoes;
 
     // Calcula a receita do mês atual
     const hoje = new Date();

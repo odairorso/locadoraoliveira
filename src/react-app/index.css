@@ -9,6 +9,136 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
+/* Tema escuro global - FORÇADO */
+html {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+body {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+/* Forçar tema escuro em TODOS os elementos */
+*, *::before, *::after {
+  color-scheme: dark !important;
+}
+
+/* Forçar fundo escuro em toda a aplicação */
+#root {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+  min-height: 100vh !important;
+}
+
+/* Forçar tema escuro em divs principais */
+div {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Sobrescrever cores padrão do Tailwind para tema escuro */
+.bg-white {
+  background-color: #1e293b !important;
+}
+
+.bg-gray-50 {
+  background-color: #334155 !important;
+}
+
+.bg-gray-100 {
+  background-color: #475569 !important;
+}
+
+.text-gray-900 {
+  color: #e2e8f0 !important;
+}
+
+.text-gray-800 {
+  color: #f1f5f9 !important;
+}
+
+.text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.text-gray-500 {
+  color: #64748b !important;
+}
+
+.border-gray-200 {
+  border-color: #475569 !important;
+}
+
+.border-gray-300 {
+  border-color: #64748b !important;
+}
+
+/* Inputs e formulários em tema escuro */
+input, select, textarea {
+  background-color: #334155 !important;
+  border-color: #64748b !important;
+  color: #e2e8f0 !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  background-color: #475569 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Date inputs styling for dark theme */
+input[type="date"] {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #475569 !important;
+}
+
+/* Tabelas em tema escuro */
+table {
+  background-color: #1e293b !important;
+}
+
+thead {
+  background-color: #334155 !important;
+}
+
+tbody tr:hover {
+  background-color: #334155 !important;
+}
+
+/* Forçar tema escuro em páginas específicas */
+.container, .main-content, .page-container {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+/* Forçar tema escuro em cards e containers */
+.card, .bg-white, .bg-gray-50, .bg-gray-100 {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+/* Forçar tema escuro em textos */
+.text-gray-900, .text-gray-800, .text-gray-700, .text-black {
+  color: #e2e8f0 !important;
+}
+
+/* Forçar tema escuro em botões */
+button {
+  color: inherit !important;
+}
+
+/* Forçar tema escuro em modais e overlays */
+.modal, .overlay, .popup {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
 /* Ajustes gerais para melhor experiência mobile */
 * {
   -webkit-tap-highlight-color: transparent;

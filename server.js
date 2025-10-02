@@ -30,15 +30,22 @@ app.get('/', (req, res) => {
 // Função para carregar e executar arquivos .mjs da pasta api
 const loadApiRoutes = async () => {
   const apiDir = join(__dirname, 'api');
-  const files = fs.readdirSync(apiDir).filter(file => file.endsWith('.mjs'));
   
-  for (const file of files) {
-    try {
-      const routeName = file.replace('.mjs', '');
-      const modulePath = join(apiDir, file);
-      const module = await import(`file://${modulePath}`);
-      
-      if (module.default) {
+  // Função recursiva para carregar arquivos de subpastas
+  const loadFromDirectory = async (dir, basePath = '') => {
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    
+    for (const item of items) {
+      if (item.isDirectory()) {
+        // Carregar arquivos de subpastas recursivamente
+        await loadFromDirectory(join(dir, item.name), basePath + item.name + '/');
+      } else if (item.name.endsWith('.mjs')) {
+        try {
+          const routeName = basePath + item.name.replace('.mjs', '');
+          const modulePath = join(dir, item.name);
+          const module = await import(`file://${modulePath}`);
+          
+          if (module.default) {
         // Configurar rotas para lidar com operações sem ID
         app.all(`/api/${routeName}`, async (req, res) => {
           console.log(`=== ${routeName.toUpperCase()} HANDLER ===`);
@@ -101,12 +108,17 @@ const loadApiRoutes = async () => {
             res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
           }
         });
-        console.log(`✓ Rota carregada: /api/${routeName}`);
+            console.log(`✓ Rota carregada: /api/${routeName}`);
+          }
+        } catch (error) {
+          console.error(`Erro ao carregar ${item.name}:`, error);
+        }
       }
-    } catch (error) {
-      console.error(`Erro ao carregar ${file}:`, error);
     }
-  }
+  };
+  
+  // Carregar arquivos da pasta api e suas subpastas
+  await loadFromDirectory(apiDir);
 };
 
 // Carregar rotas da API
@@ -119,6 +131,11 @@ loadApiRoutes().then(() => {
     console.log('   - /api/veiculos');
     console.log('   - /api/locacoes');
     console.log('   - /api/movimentacoes');
+    console.log('   - /api/vistorias');
+    console.log('   - /api/relatorios/financeiro');
+    console.log('   - /api/relatorios/veiculos');
+    console.log('   - /api/relatorios/clientes');
+    console.log('   - /api/relatorios/locacoes');
   });
 }).catch(error => {
   console.error('Erro ao inicializar servidor:', error);
