@@ -11,6 +11,7 @@ import {
   PieChart
 } from 'lucide-react';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
+import { supabase } from '@/react-app/supabase';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -117,6 +118,10 @@ export default function Relatorios() {
   const [clienteSelecionado, setClienteSelecionado] = useState('');
   const [loading, setLoading] = useState(false);
   
+  // Estados para mobile e tratamento de erros
+  const [isMobile, setIsMobile] = useState(false);
+  const [chartError, setChartError] = useState<string | null>(null);
+  
   // Estados para dados dos relatórios
   const [dadosFinanceiro, setDadosFinanceiro] = useState<RelatorioFinanceiro[]>([]);
   const [dadosVeiculos, setDadosVeiculos] = useState<RelatorioVeiculo[]>([]);
@@ -128,6 +133,18 @@ export default function Relatorios() {
   // Estados para listas de filtros
   const [veiculos, setVeiculos] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
+
+  // Detectar dispositivo móvel
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Definir período padrão (incluindo dados de teste em 2025)
   useEffect(() => {
@@ -181,83 +198,385 @@ export default function Relatorios() {
       const dataInicioAPI = formatDateFromInput(periodoInicio);
       const dataFimAPI = formatDateFromInput(periodoFim);
       
-      const params = new URLSearchParams({
-        inicio: dataInicioAPI,
-        fim: dataFimAPI,
-        ...(veiculoSelecionado && { veiculo_id: veiculoSelecionado }),
-        ...(clienteSelecionado && { cliente_id: clienteSelecionado })
-      });
-
-      const response = await fetch(`/api/relatorios/${tipoRelatorio}?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Erro ao gerar relatório');
-      }
-      
-      const data = await response.json();
+      let data;
       
       switch (tipoRelatorio) {
         case 'financeiro':
-          setDadosFinanceiro(data.data || []);
+          data = await gerarRelatorioFinanceiro(dataInicioAPI, dataFimAPI);
+          setDadosFinanceiro(data || []);
           break;
         case 'veiculos':
-          setDadosVeiculos(data.data || []);
+          data = await gerarRelatorioVeiculos(dataInicioAPI, dataFimAPI, veiculoSelecionado);
+          setDadosVeiculos(data || []);
           break;
         case 'clientes':
-          const clientesData = data.data || [];
-          setDadosClientes(clientesData);
-          
-          // Calcular estatísticas de clientes
-          if (clientesData.length > 0) {
-            const totalClientes = clientesData.length;
-            const clientesAtivos = clientesData.filter((c: any) => c.status === 'ativo').length;
-            const receitaTotal = clientesData.reduce((sum: number, c: any) => sum + (c.receita_total || 0), 0);
-            const ticketMedio = receitaTotal / totalClientes;
-            
-            setEstatisticasClientes({
-              total_clientes: totalClientes,
-              clientes_ativos: clientesAtivos,
-              clientes_inativos: totalClientes - clientesAtivos,
-              receita_total: receitaTotal,
-              ticket_medio: ticketMedio
-            });
-          }
+          data = await gerarRelatorioClientes(dataInicioAPI, dataFimAPI, clienteSelecionado);
+          setDadosClientes(data?.data || []);
+          setEstatisticasClientes(data?.estatisticas || {});
           break;
         case 'locacoes':
-          const locacoesData = data.data || [];
-          setDadosLocacoes(locacoesData);
-          
-          // Calcular estatísticas de locações
-          if (locacoesData.length > 0) {
-            const totalLocacoes = locacoesData.length;
-            const valorTotal = locacoesData.reduce((sum: number, l: any) => sum + (l.valor_total || 0), 0);
-            const valorMedio = valorTotal / totalLocacoes;
-            const diasTotal = locacoesData.reduce((sum: number, l: any) => sum + (l.dias_locacao || 0), 0);
-            const diasMedio = diasTotal / totalLocacoes;
-            
-            const distribuicaoStatus = {
-              ativa: locacoesData.filter((l: any) => l.status === 'ativa').length,
-              finalizada: locacoesData.filter((l: any) => l.status === 'finalizada').length,
-              cancelada: locacoesData.filter((l: any) => l.status === 'cancelada').length,
-              pendente: locacoesData.filter((l: any) => l.status === 'pendente').length
-            };
-            
-            setEstatisticasLocacoes({
-              total_locacoes: totalLocacoes,
-              valor_total_periodo: valorTotal,
-              valor_medio_locacao: valorMedio,
-              dias_medio_locacao: diasMedio,
-              distribuicao_status: distribuicaoStatus
-            });
-          }
+          data = await gerarRelatorioLocacoes(dataInicioAPI, dataFimAPI, veiculoSelecionado, clienteSelecionado);
+          setDadosLocacoes(data?.data || []);
+          setEstatisticasLocacoes(data?.estatisticas || {});
           break;
+        default:
+          throw new Error('Tipo de relatório não suportado');
       }
+      
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
-      alert('Erro ao gerar relatório. Tente novamente.');
+      alert('Erro ao gerar relatório: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para gerar relatório financeiro usando Supabase
+  const gerarRelatorioFinanceiro = async (dataInicio: string, dataFim: string) => {
+    // Buscar movimentações financeiras
+    const { data: movimentacoes, error: errorMov } = await supabase
+      .from('movimentacoes_financeiras')
+      .select('*')
+      .gte('data_movimentacao', dataInicio)
+      .lte('data_movimentacao', dataFim)
+      .order('data_movimentacao', { ascending: false });
+
+    if (errorMov) {
+      throw new Error('Erro ao buscar dados financeiros: ' + errorMov.message);
+    }
+
+    // Buscar manutenções no mesmo período
+    const { data: manutencoes, error: errorMan } = await supabase
+      .from('manutencoes')
+      .select('*')
+      .gte('data_manutencao', dataInicio)
+      .lte('data_manutencao', dataFim)
+      .order('data_manutencao', { ascending: false });
+
+    if (errorMan) {
+      throw new Error('Erro ao buscar dados de manutenções: ' + errorMan.message);
+    }
+
+    // Agrupar movimentações financeiras por mês
+    const dadosAgrupados = (movimentacoes || []).reduce((acc: any, mov: any) => {
+      const mes = new Date(mov.data_movimentacao).toLocaleDateString('pt-BR', { 
+        year: 'numeric', 
+        month: '2-digit' 
+      });
+      
+      if (!acc[mes]) {
+        acc[mes] = { mes, receitas: 0, despesas: 0, lucro: 0, locacoes_ativas: 0 };
+      }
+      
+      if (mov.tipo === 'entrada') {
+        acc[mes].receitas += parseFloat(mov.valor);
+      } else {
+        acc[mes].despesas += parseFloat(mov.valor);
+      }
+      
+      return acc;
+    }, {});
+
+    // Adicionar manutenções como despesas
+    (manutencoes || []).forEach((manutencao: any) => {
+      const mes = new Date(manutencao.data_manutencao).toLocaleDateString('pt-BR', { 
+        year: 'numeric', 
+        month: '2-digit' 
+      });
+      
+      if (!dadosAgrupados[mes]) {
+        dadosAgrupados[mes] = { mes, receitas: 0, despesas: 0, lucro: 0, locacoes_ativas: 0 };
+      }
+      
+      dadosAgrupados[mes].despesas += parseFloat(manutencao.valor);
+    });
+
+    // Calcular lucro para todos os meses
+    Object.values(dadosAgrupados).forEach((dados: any) => {
+      dados.lucro = dados.receitas - dados.despesas;
+    });
+
+    return Object.values(dadosAgrupados);
+  };
+
+  // Função para gerar relatório de veículos usando Supabase
+  const gerarRelatorioVeiculos = async (dataInicio: string, dataFim: string, veiculoId?: string) => {
+    let query = supabase
+      .from('veiculos')
+      .select(`
+        *,
+        locacoes!inner(
+          id,
+          data_locacao,
+          data_entrega,
+          valor_total,
+          status
+        )
+      `);
+
+    if (veiculoId) {
+      query = query.eq('id', veiculoId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error('Erro ao buscar dados de veículos: ' + error.message);
+    }
+
+    // Processar dados dos veículos
+    return data.map((veiculo: any) => {
+      const locacoes = veiculo.locacoes.filter((loc: any) => 
+        loc.data_locacao >= dataInicio && loc.data_locacao <= dataFim
+      );
+      
+      const totalLocacoes = locacoes.length;
+      const receitaTotal = locacoes.reduce((sum: number, loc: any) => sum + parseFloat(loc.valor_total), 0);
+      const diasLocado = locacoes.reduce((sum: number, loc: any) => {
+        const inicio = new Date(loc.data_locacao);
+        const fim = new Date(loc.data_entrega);
+        return sum + Math.ceil((fim.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
+      }, 0);
+      
+      const diasPeriodo = Math.ceil((new Date(dataFim).getTime() - new Date(dataInicio).getTime()) / (1000 * 60 * 60 * 24));
+      const taxaOcupacao = diasPeriodo > 0 ? (diasLocado / diasPeriodo) * 100 : 0;
+
+      return {
+        id: veiculo.id,
+        marca: veiculo.marca,
+        modelo: veiculo.modelo,
+        placa: veiculo.placa,
+        total_locacoes: totalLocacoes,
+        receita_total: receitaTotal,
+        dias_locado: diasLocado,
+        taxa_ocupacao: taxaOcupacao
+      };
+    });
+  };
+
+  // Função para gerar relatório de clientes usando Supabase
+  const gerarRelatorioClientes = async (dataInicio: string, dataFim: string, clienteId?: string) => {
+    let query = supabase
+      .from('clientes')
+      .select(`
+        *,
+        locacoes(
+          id,
+          data_locacao,
+          data_entrega,
+          valor_total,
+          status
+        )
+      `);
+
+    if (clienteId) {
+      query = query.eq('id', clienteId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error('Erro ao buscar dados de clientes: ' + error.message);
+    }
+
+    // Processar dados dos clientes
+    const clientes = data.map((cliente: any) => {
+      const locacoes = cliente.locacoes.filter((loc: any) => 
+        loc.data_locacao >= dataInicio && loc.data_locacao <= dataFim
+      );
+      
+      const totalLocacoes = locacoes.length;
+      const valorTotalGasto = locacoes.reduce((sum: number, loc: any) => sum + parseFloat(loc.valor_total), 0);
+      const valorMedioLocacao = totalLocacoes > 0 ? valorTotalGasto / totalLocacoes : 0;
+      
+      const ultimaLocacao = locacoes.length > 0 
+        ? Math.max(...locacoes.map((loc: any) => new Date(loc.data_locacao).getTime()))
+        : null;
+      
+      const statusCliente = ultimaLocacao && (Date.now() - ultimaLocacao) < (90 * 24 * 60 * 60 * 1000) 
+        ? 'ativo' : 'inativo';
+
+      return {
+        id: cliente.id,
+        nome: cliente.nome,
+        cpf: cliente.cpf,
+        celular: cliente.celular,
+        email: cliente.email,
+        total_locacoes: totalLocacoes,
+        valor_total_gasto: valorTotalGasto,
+        valor_medio_locacao: valorMedioLocacao,
+        ultima_locacao: ultimaLocacao ? new Date(ultimaLocacao).toLocaleDateString('pt-BR') : 'Nunca',
+        status_cliente: statusCliente
+      };
+    });
+
+    // Calcular estatísticas
+    const estatisticas = {
+      total_clientes: clientes.length,
+      clientes_ativos: clientes.filter(c => c.status_cliente === 'ativo').length,
+      clientes_inativos: clientes.filter(c => c.status_cliente === 'inativo').length,
+      receita_total: clientes.reduce((sum, c) => sum + c.valor_total_gasto, 0),
+      ticket_medio: clientes.length > 0 ? clientes.reduce((sum, c) => sum + c.valor_medio_locacao, 0) / clientes.length : 0
+    };
+
+    return { data: clientes, estatisticas };
+  };
+
+  // Função para gerar relatório de locações usando Supabase
+  const gerarRelatorioLocacoes = async (dataInicio: string, dataFim: string, veiculoId?: string, clienteId?: string) => {
+    let query = supabase
+      .from('locacoes')
+      .select(`
+        *,
+        clientes(nome),
+        veiculos(marca, modelo, placa)
+      `)
+      .gte('data_locacao', dataInicio)
+      .lte('data_locacao', dataFim);
+
+    if (veiculoId) {
+      query = query.eq('veiculo_id', veiculoId);
+    }
+    
+    if (clienteId) {
+      query = query.eq('cliente_id', clienteId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error('Erro ao buscar dados de locações: ' + error.message);
+    }
+
+    // Processar dados das locações
+    const locacoes = data.map((locacao: any) => {
+      const diasLocacao = Math.ceil(
+        (new Date(locacao.data_entrega).getTime() - new Date(locacao.data_locacao).getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        id: locacao.id,
+        cliente: locacao.clientes?.nome || 'Cliente não encontrado',
+        veiculo: `${locacao.veiculos?.marca} ${locacao.veiculos?.modelo} (${locacao.veiculos?.placa})`,
+        data_locacao: new Date(locacao.data_locacao).toLocaleDateString('pt-BR'),
+        data_entrega: new Date(locacao.data_entrega).toLocaleDateString('pt-BR'),
+        valor_total: parseFloat(locacao.valor_total),
+        status: locacao.status,
+        dias_locacao: diasLocacao,
+        observacoes: locacao.observacoes
+      };
+    });
+
+    // Calcular estatísticas
+    const estatisticas = {
+      total_locacoes: locacoes.length,
+      valor_total_periodo: locacoes.reduce((sum, loc) => sum + loc.valor_total, 0),
+      valor_medio_locacao: locacoes.length > 0 ? locacoes.reduce((sum, loc) => sum + loc.valor_total, 0) / locacoes.length : 0,
+      dias_medio_locacao: locacoes.length > 0 ? locacoes.reduce((sum, loc) => sum + loc.dias_locacao, 0) / locacoes.length : 0,
+      distribuicao_status: {
+        ativa: locacoes.filter(l => l.status === 'ativa').length,
+        finalizada: locacoes.filter(l => l.status === 'finalizada').length,
+        cancelada: locacoes.filter(l => l.status === 'cancelada').length,
+        pendente: locacoes.filter(l => l.status === 'pendente').length
+      }
+    };
+
+    return { data: locacoes, estatisticas };
+  };
+
+  // Configurações otimizadas para gráficos no mobile
+  const getChartOptions = (type: 'line' | 'bar' | 'doughnut' = 'line') => {
+    const baseOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      devicePixelRatio: isMobile ? 1 : 2,
+      interaction: {
+        intersect: false,
+        mode: 'index' as const,
+      },
+      plugins: {
+        legend: {
+          position: isMobile ? 'bottom' as const : 'top' as const,
+          labels: {
+            boxWidth: isMobile ? 12 : 20,
+            padding: isMobile ? 10 : 20,
+            font: {
+              size: isMobile ? 10 : 12,
+            },
+            usePointStyle: isMobile,
+          },
+        },
+        tooltip: {
+          enabled: true,
+          mode: 'index' as const,
+          intersect: false,
+          titleFont: {
+            size: isMobile ? 12 : 14,
+          },
+          bodyFont: {
+            size: isMobile ? 11 : 13,
+          },
+          padding: isMobile ? 8 : 12,
+        },
+      },
+    };
+
+    if (type === 'doughnut') {
+      return {
+        ...baseOptions,
+        plugins: {
+          ...baseOptions.plugins,
+          legend: {
+            ...baseOptions.plugins.legend,
+            position: 'bottom' as const,
+            maxWidth: isMobile ? 200 : 400,
+          },
+        },
+        cutout: isMobile ? '60%' : '50%',
+      };
+    }
+
+    return {
+      ...baseOptions,
+      scales: {
+        x: {
+          ticks: {
+            font: {
+              size: isMobile ? 10 : 12,
+            },
+            maxRotation: isMobile ? 45 : 0,
+            minRotation: isMobile ? 45 : 0,
+            maxTicksLimit: isMobile ? 6 : 12,
+          },
+          grid: {
+            display: !isMobile,
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            font: {
+              size: isMobile ? 10 : 12,
+            },
+            maxTicksLimit: isMobile ? 5 : 8,
+            callback: function(value: any) {
+              if (type === 'bar' && Number.isInteger(value)) {
+                return value;
+              }
+              return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 0,
+                notation: isMobile ? 'compact' : 'standard',
+              }).format(value as number);
+            },
+          },
+          grid: {
+            display: !isMobile,
+          },
+        },
+      },
+    };
   };
 
   const exportarRelatorio = () => {
@@ -1364,4 +1683,51 @@ export default function Relatorios() {
       )}
     </div>
   );
+}
+
+function formatDateForInput(dateString: string) {
+  if (!dateString) return '';
+  // Se contiver uma barra, é uma data dd/mm/yyyy
+  if (dateString.includes('/')) {
+    return dateString;
+  }
+  // Se contiver um hífen, é uma data yyyy-mm-dd do estado
+  if (dateString.includes('-')) {
+    const parts = dateString.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      const [year, month, day] = parts;
+      return `${day}/${month}/${year}`;
+    }
+  }
+  return dateString;
+}
+
+function formatDateFromInput(dateString: string) {
+  if (!dateString) return '';
+  // Convert from dd/mm/yyyy to yyyy-mm-dd for API
+  const [day, month, year] = dateString.split('/');
+  if (day && month && year) {
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return dateString;
+}
+
+function handleDateChange(value: string, setter: (value: string) => void) {
+  // Remove caracteres não numéricos exceto /
+  let cleaned = value.replace(/[^\d/]/g, '');
+  
+  // Adiciona barras automaticamente
+  if (cleaned.length >= 2 && !cleaned.includes('/')) {
+    cleaned = cleaned.substring(0, 2) + '/' + cleaned.substring(2);
+  }
+  if (cleaned.length >= 5 && cleaned.indexOf('/', 3) === -1) {
+    cleaned = cleaned.substring(0, 5) + '/' + cleaned.substring(5);
+  }
+  
+  // Limita a 10 caracteres (DD/MM/YYYY)
+  if (cleaned.length > 10) {
+    cleaned = cleaned.substring(0, 10);
+  }
+  
+  setter(cleaned);
 }

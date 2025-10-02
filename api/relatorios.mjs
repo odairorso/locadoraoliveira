@@ -134,7 +134,12 @@ async function handleFinanceiroReport(req, res) {
 
     // Evolução mensal
     const evolucaoMensal = movimentacoes.reduce((acc, mov) => {
-      const mes = new Date(mov.data).toISOString().substring(0, 7);
+      const data = new Date(mov.data);
+      if (isNaN(data.getTime())) {
+        console.warn('Data inválida encontrada:', mov.data);
+        return acc;
+      }
+      const mes = data.toISOString().substring(0, 7);
       if (!acc[mes]) {
         acc[mes] = { receitas: 0, despesas: 0 };
       }

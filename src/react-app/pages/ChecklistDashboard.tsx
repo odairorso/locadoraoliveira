@@ -70,7 +70,13 @@ const ChecklistDashboard: React.FC = () => {
               {vistoriasPendentes.map((vistoria) => (
                 <div
                   key={vistoria.id}
-                  onClick={() => navigate(`/checklist/editar/${vistoria.id}`)}
+                  onClick={() => {
+                    // Constrói a URL para a página de 'novo' checklist, passando os dados da vistoria pendente
+                    const params = new URLSearchParams();
+                    params.set('tipo', 'saida');
+                    params.set('locacaoId', vistoria.locacao_id); // Assumindo que a API retorna locacao_id
+                    navigate(`/checklist/novo?${params.toString()}`);
+                  }}
                   className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-orange-100 dark:hover:bg-gray-600 transition-colors"
                 >
                   <div className="font-semibold text-gray-900 dark:text-white flex items-center">
@@ -188,4 +194,3 @@ const ChecklistDashboard: React.FC = () => {
 };
 
 export default ChecklistDashboard;
-
