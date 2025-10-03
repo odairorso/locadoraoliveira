@@ -54,19 +54,8 @@ const apiPlugin = (): any => ({
             });
           }
           
-          let apiPath;
-          if (pathParts.length === 1) {
-            // /api/dashboard -> api/index.mjs (consolidated main API)
-            apiPath = path.join(process.cwd(), 'api', 'index.mjs');
-          } else if (pathParts.length >= 2) {
-            // For GET requests with ID, use main API (supports ID in query)
-            // For PUT/POST/DELETE with ID, use slug API (ID-specific operations)
-            if (req.method === 'GET') {
-              apiPath = path.join(process.cwd(), 'api', 'index.mjs');
-            } else {
-              apiPath = path.join(process.cwd(), 'api', '[...slug].mjs');
-            }
-          }
+          // Always use the consolidated API router
+          const apiPath = path.join(process.cwd(), 'api', 'index.mjs');
           
           console.log('Looking for API file:', apiPath);
           

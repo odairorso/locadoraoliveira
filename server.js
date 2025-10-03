@@ -27,98 +27,40 @@ app.get('/', (req, res) => {
   res.sendFile(join(__dirname, 'index.html'));
 });
 
-// Função para carregar e executar arquivos .mjs da pasta api
+// Função para carregar o roteador consolidado da API
 const loadApiRoutes = async () => {
-  const apiDir = join(__dirname, 'api');
-  
-  // Função recursiva para carregar arquivos de subpastas
-  const loadFromDirectory = async (dir, basePath = '') => {
-    const items = fs.readdirSync(dir, { withFileTypes: true });
+  try {
+    // Importar o roteador consolidado
+    const apiRouter = await import(`file://${join(__dirname, 'api', 'index.mjs')}`);
     
-    for (const item of items) {
-      if (item.isDirectory()) {
-        // Carregar arquivos de subpastas recursivamente
-        await loadFromDirectory(join(dir, item.name), basePath + item.name + '/');
-      } else if (item.name.endsWith('.mjs')) {
+    if (apiRouter.default) {
+      // Configurar rota catch-all para todas as requisições da API
+      app.all('/api/*', async (req, res) => {
+        console.log(`API Request: ${req.method} ${req.url}`);
+        console.log(`Looking for API file: ${join(__dirname, 'api', 'index.mjs')}`);
+        console.log('Found API file, importing...');
+        console.log('Executing API handler...');
+        
         try {
-          const routeName = basePath + item.name.replace('.mjs', '');
-          const modulePath = join(dir, item.name);
-          const module = await import(`file://${modulePath}`);
-          
-          if (module.default) {
-        // Configurar rotas para lidar com operações sem ID
-        app.all(`/api/${routeName}`, async (req, res) => {
-          console.log(`=== ${routeName.toUpperCase()} HANDLER ===`);
-          console.log(`Method: ${req.method}`);
-          console.log(`URL: ${req.url}`);
-          console.log(`Params: ${JSON.stringify(req.params)}`);
-          console.log(`========================`);
-          
-          try {
-            await module.default(req, res);
-          } catch (error) {
-            console.error(`Erro na API ${routeName}:`, error);
-            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
-          }
-        });
-        
-        // Configurar rotas para lidar com operações com ID
-        app.all(`/api/${routeName}/:id`, async (req, res) => {
-          console.log(`=== ${routeName.toUpperCase()} HANDLER COM ID ===`);
-          console.log(`Method: ${req.method}`);
-          console.log(`URL: ${req.url}`);
-          console.log(`Params: ${JSON.stringify(req.params)}`);
-          console.log(`========================`);
-          
-          try {
-            await module.default(req, res);
-          } catch (error) {
-            console.error(`Erro na API ${routeName} com ID:`, error);
-            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
-          }
-        });
-        
-        // Configurar rotas para contrato-data e contrato
-        app.all(`/api/${routeName}/:id/contrato-data`, async (req, res) => {
-          console.log(`=== ${routeName.toUpperCase()} CONTRATO-DATA ===`);
-          console.log(`Method: ${req.method}`);
-          console.log(`URL: ${req.url}`);
-          console.log(`Params: ${JSON.stringify(req.params)}`);
-          console.log(`========================`);
-          
-          try {
-            await module.default(req, res);
-          } catch (error) {
-            console.error(`Erro na API ${routeName} contrato-data:`, error);
-            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
-          }
-        });
-        
-        app.all(`/api/${routeName}/:id/contrato`, async (req, res) => {
-          console.log(`=== ${routeName.toUpperCase()} CONTRATO ===`);
-          console.log(`Method: ${req.method}`);
-          console.log(`URL: ${req.url}`);
-          console.log(`Params: ${JSON.stringify(req.params)}`);
-          console.log(`========================`);
-          
-          try {
-            await module.default(req, res);
-          } catch (error) {
-            console.error(`Erro na API ${routeName} contrato:`, error);
-            res.status(500).json({ success: false, error: 'Erro interno do servidor', details: error.message });
-          }
-        });
-            console.log(`✓ Rota carregada: /api/${routeName}`);
-          }
+          await apiRouter.default(req, res);
         } catch (error) {
-          console.error(`Erro ao carregar ${item.name}:`, error);
+          console.error('Erro no roteador consolidado da API:', error);
+          res.status(500).json({ 
+            success: false, 
+            error: 'Erro interno do servidor', 
+            details: error.message 
+          });
         }
-      }
+      });
+      
+      console.log('✓ Roteador consolidado da API carregado');
+    } else {
+      throw new Error('Roteador consolidado não encontrado');
     }
-  };
-  
-  // Carregar arquivos da pasta api e suas subpastas
-  await loadFromDirectory(apiDir);
+  } catch (error) {
+    console.error('Erro ao carregar roteador consolidado:', error);
+    throw error;
+  }
 };
 
 // Carregar rotas da API
