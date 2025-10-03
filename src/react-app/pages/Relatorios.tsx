@@ -118,9 +118,7 @@ export default function Relatorios() {
   const [clienteSelecionado, setClienteSelecionado] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Estados para mobile e tratamento de erros
-  const [isMobile, setIsMobile] = useState(false);
-  const [chartError, setChartError] = useState<string | null>(null);
+
   
   // Estados para dados dos relatórios
   const [dadosFinanceiro, setDadosFinanceiro] = useState<RelatorioFinanceiro[]>([]);
@@ -134,17 +132,7 @@ export default function Relatorios() {
   const [veiculos, setVeiculos] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
 
-  // Detectar dispositivo móvel
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+
 
   // Definir período padrão (incluindo dados de teste em 2025)
   useEffect(() => {
@@ -203,7 +191,7 @@ export default function Relatorios() {
       switch (tipoRelatorio) {
         case 'financeiro':
           data = await gerarRelatorioFinanceiro(dataInicioAPI, dataFimAPI);
-          setDadosFinanceiro(data || []);
+          setDadosFinanceiro((data as RelatorioFinanceiro[]) || []);
           break;
         case 'veiculos':
           data = await gerarRelatorioVeiculos(dataInicioAPI, dataFimAPI, veiculoSelecionado);
@@ -484,100 +472,7 @@ export default function Relatorios() {
     return { data: locacoes, estatisticas };
   };
 
-  // Configurações otimizadas para gráficos no mobile
-  const getChartOptions = (type: 'line' | 'bar' | 'doughnut' = 'line') => {
-    const baseOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      devicePixelRatio: isMobile ? 1 : 2,
-      interaction: {
-        intersect: false,
-        mode: 'index' as const,
-      },
-      plugins: {
-        legend: {
-          position: isMobile ? 'bottom' as const : 'top' as const,
-          labels: {
-            boxWidth: isMobile ? 12 : 20,
-            padding: isMobile ? 10 : 20,
-            font: {
-              size: isMobile ? 10 : 12,
-            },
-            usePointStyle: isMobile,
-          },
-        },
-        tooltip: {
-          enabled: true,
-          mode: 'index' as const,
-          intersect: false,
-          titleFont: {
-            size: isMobile ? 12 : 14,
-          },
-          bodyFont: {
-            size: isMobile ? 11 : 13,
-          },
-          padding: isMobile ? 8 : 12,
-        },
-      },
-    };
 
-    if (type === 'doughnut') {
-      return {
-        ...baseOptions,
-        plugins: {
-          ...baseOptions.plugins,
-          legend: {
-            ...baseOptions.plugins.legend,
-            position: 'bottom' as const,
-            maxWidth: isMobile ? 200 : 400,
-          },
-        },
-        cutout: isMobile ? '60%' : '50%',
-      };
-    }
-
-    return {
-      ...baseOptions,
-      scales: {
-        x: {
-          ticks: {
-            font: {
-              size: isMobile ? 10 : 12,
-            },
-            maxRotation: isMobile ? 45 : 0,
-            minRotation: isMobile ? 45 : 0,
-            maxTicksLimit: isMobile ? 6 : 12,
-          },
-          grid: {
-            display: !isMobile,
-          },
-        },
-        y: {
-          beginAtZero: true,
-          ticks: {
-            font: {
-              size: isMobile ? 10 : 12,
-            },
-            maxTicksLimit: isMobile ? 5 : 8,
-            callback: function(value: any) {
-              if (type === 'bar' && Number.isInteger(value)) {
-                return value;
-              }
-              return new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-                minimumFractionDigits: 0,
-                notation: isMobile ? 'compact' : 'standard',
-              }).format(value as number);
-            },
-          },
-          grid: {
-            display: !isMobile,
-          },
-        },
-      },
-    };
-  };
 
   const exportarRelatorio = () => {
     // Implementar exportação para CSV/PDF
@@ -1683,51 +1578,4 @@ export default function Relatorios() {
       )}
     </div>
   );
-}
-
-function formatDateForInput(dateString: string) {
-  if (!dateString) return '';
-  // Se contiver uma barra, é uma data dd/mm/yyyy
-  if (dateString.includes('/')) {
-    return dateString;
-  }
-  // Se contiver um hífen, é uma data yyyy-mm-dd do estado
-  if (dateString.includes('-')) {
-    const parts = dateString.split('-');
-    if (parts.length === 3 && parts[0].length === 4) {
-      const [year, month, day] = parts;
-      return `${day}/${month}/${year}`;
-    }
-  }
-  return dateString;
-}
-
-function formatDateFromInput(dateString: string) {
-  if (!dateString) return '';
-  // Convert from dd/mm/yyyy to yyyy-mm-dd for API
-  const [day, month, year] = dateString.split('/');
-  if (day && month && year) {
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  }
-  return dateString;
-}
-
-function handleDateChange(value: string, setter: (value: string) => void) {
-  // Remove caracteres não numéricos exceto /
-  let cleaned = value.replace(/[^\d/]/g, '');
-  
-  // Adiciona barras automaticamente
-  if (cleaned.length >= 2 && !cleaned.includes('/')) {
-    cleaned = cleaned.substring(0, 2) + '/' + cleaned.substring(2);
-  }
-  if (cleaned.length >= 5 && cleaned.indexOf('/', 3) === -1) {
-    cleaned = cleaned.substring(0, 5) + '/' + cleaned.substring(5);
-  }
-  
-  // Limita a 10 caracteres (DD/MM/YYYY)
-  if (cleaned.length > 10) {
-    cleaned = cleaned.substring(0, 10);
-  }
-  
-  setter(cleaned);
 }
