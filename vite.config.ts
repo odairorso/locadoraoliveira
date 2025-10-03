@@ -56,11 +56,16 @@ const apiPlugin = (): any => ({
           
           let apiPath;
           if (pathParts.length === 1) {
-            // /api/vistorias -> api/vistorias.mjs
-            apiPath = path.join(process.cwd(), 'api', `${pathParts[0]}.mjs`);
-          } else if (pathParts.length === 2) {
-            // /api/vistorias/1 -> api/vistorias/[id].mjs
-            apiPath = path.join(process.cwd(), 'api', pathParts[0], '[id].mjs');
+            // /api/dashboard -> api/index.mjs (consolidated main API)
+            apiPath = path.join(process.cwd(), 'api', 'index.mjs');
+          } else if (pathParts.length >= 2) {
+            // For GET requests with ID, use main API (supports ID in query)
+            // For PUT/POST/DELETE with ID, use slug API (ID-specific operations)
+            if (req.method === 'GET') {
+              apiPath = path.join(process.cwd(), 'api', 'index.mjs');
+            } else {
+              apiPath = path.join(process.cwd(), 'api', '[...slug].mjs');
+            }
           }
           
           console.log('Looking for API file:', apiPath);
@@ -68,9 +73,10 @@ const apiPlugin = (): any => ({
           if (apiPath && fs.existsSync(apiPath)) {
              console.log('Found API file, importing...');
              
-             // Preparar req.query para APIs que precisam do ID
-             if (pathParts.length === 2) {
-               req.query = { ...req.query, id: pathParts[1] };
+             // Preparar req.params para a nova estrutura
+             req.params = {};
+             if (pathParts.length >= 2) {
+               req.params.slug = pathParts;
              }
              
              res.status = function(code: number) {
