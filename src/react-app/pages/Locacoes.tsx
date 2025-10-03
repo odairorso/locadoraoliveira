@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, Edit, Trash2, FileText, Calendar, DollarSign, User, Car, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useApi, useMutation } from '@/react-app/hooks/useApi';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
@@ -18,17 +18,23 @@ export default function LocacoesPage() {
     valor_diaria: 0,
     valor_total: 0,
     valor_caucao: 0,
+    valor_seguro: 0,
     status: 'ativa',
     observacoes: '',
   });
 
-  const queryParams = new URLSearchParams();
-  if (search) queryParams.set('search', search);
-  if (statusFilter) queryParams.set('status', statusFilter);
+  const apiUrl = useMemo(() => {
+    const queryParams = new URLSearchParams();
+    if (search) queryParams.set('search', search);
+    if (statusFilter) queryParams.set('status', statusFilter);
+    return `/api/locacoes?${queryParams.toString()}`;
+  }, [search, statusFilter]);
 
-  const { data: locacoes, loading, error, refetch } = useApi<(Locacao & { cliente_nome: string; veiculo_info: string })[]>(`/api/locacoes?${queryParams.toString()}`);
+  const { data: locacoes, loading, error, refetch } = useApi<(Locacao & { cliente_nome: string; veiculo_info: string })[]>(apiUrl);
   const { data: clientes, loading: loadingClientes } = useApi<Cliente[]>('/api/clientes?limit=100');
-  const { data: veiculosDisponiveis, loading: loadingVeiculos } = useApi<Veiculo[]>('/api/veiculos?status=disponivel');
+  const { data: veiculosDisponiveis, loading: loadingVeiculos } = useApi<Veiculo[]>(
+    editingLocacao ? '/api/veiculos' : '/api/veiculos?status=disponivel'
+  );
   const { mutate: createLocacao, loading: creating } = useMutation<Locacao, LocacaoCreate>();
   const { mutate: updateLocacao, loading: updating } = useMutation<Locacao, Partial<LocacaoCreate>>();
   const { mutate: deleteLocacao, loading: deleting } = useMutation();
@@ -62,16 +68,19 @@ export default function LocacoesPage() {
   };
 
   useEffect(() => {
-    calculateTotal();
-  }, [formData.data_locacao, formData.data_entrega, formData.valor_diaria]);
+    // Só calcula automaticamente quando não está editando uma locação existente
+    if (!editingLocacao) {
+      calculateTotal();
+    }
+  }, [formData.data_locacao, formData.data_entrega, formData.valor_diaria, editingLocacao]);
 
   const handleVeiculoChange = (veiculoId: number) => {
     const veiculo = veiculosDisponiveis?.find(v => v.id === veiculoId);
-    if (veiculo && veiculo.valor_diaria) {
+    if (veiculo) {
       setFormData(prev => ({
         ...prev,
         veiculo_id: veiculoId,
-        valor_diaria: veiculo.valor_diaria || 0
+        valor_diaria: veiculo.valor_diaria || prev.valor_diaria
       }));
     }
   };
@@ -86,7 +95,7 @@ export default function LocacoesPage() {
 
     let result;
     if (editingLocacao) {
-      result = await updateLocacao(`/api/locacoes/${editingLocacao.id}?id=${editingLocacao.id}`, formData, 'PUT');
+      result = await updateLocacao(`/api/locacoes/${editingLocacao.id}`, formData, 'PUT');
     } else {
       result = await createLocacao('/api/locacoes', formData);
     }
@@ -107,6 +116,7 @@ export default function LocacoesPage() {
       valor_diaria: locacao.valor_diaria,
       valor_total: locacao.valor_total,
       valor_caucao: locacao.valor_caucao || 0,
+      valor_seguro: locacao.valor_seguro || 0,
       status: locacao.status,
       observacoes: locacao.observacoes || '',
     });
@@ -157,6 +167,7 @@ export default function LocacoesPage() {
       valor_diaria: 0,
       valor_total: 0,
       valor_caucao: 0,
+      valor_seguro: 0,
       status: 'ativa',
       observacoes: '',
     });
@@ -445,7 +456,7 @@ export default function LocacoesPage() {
                     </label>
                     <select
                       required
-                      disabled={loadingVeiculos || editingLocacao !== null}
+                      disabled={loadingVeiculos}
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
                       value={formData.veiculo_id}
                       onChange={(e) => handleVeiculoChange(parseInt(e.target.value))}
@@ -555,10 +566,13 @@ export default function LocacoesPage() {
                       Valor Total (R$)
                     </label>
                     <input
-                      type="text"
-                      disabled
-                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-600 font-bold text-green-600 dark:text-green-400 text-base sm:text-sm"
-                      value={formatCurrency(formData.valor_total)}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 font-bold text-green-600 dark:text-green-400 text-base sm:text-sm"
+                      value={formData.valor_total}
+                      onChange={(e) => setFormData({ ...formData, valor_total: parseFloat(e.target.value) || 0 })}
+                      placeholder="Valor total da locação"
                     />
                   </div>
 
@@ -574,6 +588,22 @@ export default function LocacoesPage() {
                       value={formData.valor_caucao || ''}
                       onChange={(e) => setFormData({ ...formData, valor_caucao: parseFloat(e.target.value) || 0 })}
                       placeholder="Ex: 500.00"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Deixe 0 se isento</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Valor do Seguro (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
+                      value={formData.valor_seguro || ''}
+                      onChange={(e) => setFormData({ ...formData, valor_seguro: parseFloat(e.target.value) || 0 })}
+                      placeholder="Ex: 100.00"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Deixe 0 se isento</p>
                   </div>

@@ -1,4 +1,4 @@
-import { Car, Users, FileText, DollarSign, Wallet, TrendingUp, Award, BarChart3, Calendar } from 'lucide-react';
+import { Car, Users, FileText, DollarSign, Wallet, TrendingUp, Award, BarChart3, Calendar, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardCard from '@/react-app/components/DashboardCard';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
@@ -94,7 +94,7 @@ export default function Home() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <DashboardCard
           title="Locações Ativas"
           value={stats?.locacoesAtivas || 0}
@@ -125,6 +125,13 @@ export default function Home() {
           icon={DollarSign}
           color="purple"
           subtitle="faturamento atual"
+        />
+        <DashboardCard
+          title="Receita Seguros"
+          value={`R$ ${(stats?.receitaSeguro || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          icon={Shield}
+          color="blue"
+          subtitle="seguros do mês"
         />
         <DashboardCard
           title="Saldo do Caixa"

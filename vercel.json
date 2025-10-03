@@ -52,6 +52,14 @@
       "destination": "/api/receita-por-veiculo.mjs"
     },
     {
+      "source": "/api/vistorias",
+      "destination": "/api/vistorias.mjs"
+    },
+    {
+      "source": "/api/vistorias/(.*)",
+      "destination": "/api/vistorias/[id].mjs?id=$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

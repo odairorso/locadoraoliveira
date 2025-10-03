@@ -49,7 +49,7 @@ const VistoriaDetalhes: React.FC = () => {
 
   const carregarVistoria = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/vistorias/${id}`);
+      const response = await fetch(`/api/vistorias/${id}`);
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -68,7 +68,7 @@ const VistoriaDetalhes: React.FC = () => {
 
   const excluirVistoria = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/vistorias/${id}`, {
+      const response = await fetch(`/api/vistorias/${id}`, {
         method: 'DELETE',
       });
       

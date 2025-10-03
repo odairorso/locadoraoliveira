@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ApiResponse } from '@/shared/types';
 
 interface UseApiOptions {
@@ -13,7 +13,7 @@ export function useApi<T>(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const execute = async (fetchOptions?: RequestInit) => {
+  const execute = useCallback(async (fetchOptions?: RequestInit) => {
     setLoading(true);
     setError(null);
     
@@ -44,7 +44,7 @@ export function useApi<T>(
     } finally {
       setLoading(false);
     }
-  };
+  }, [url]);
 
   const post = async (body: any) => {
     return execute({
@@ -70,7 +70,7 @@ export function useApi<T>(
     if (options.immediate) {
       execute();
     }
-  }, [url, options.immediate]);
+  }, [execute, options.immediate]);
 
   return {
     data,

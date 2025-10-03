@@ -67,7 +67,7 @@ async function handleBasicStats(supabase, response) {
   // Busca todas as movimentações para calcular a receita e o saldo de caixa manualmente
   const { data: movimentacoes, error: movimentacoesError } = await supabase
     .from('movimentacoes_financeiras')
-    .select('tipo, valor, data_movimentacao');
+    .select('tipo, valor, data_movimentacao, categoria');
 
   if (movimentacoesError) {
     console.error('Erro ao buscar movimentações financeiras:', movimentacoesError);
@@ -114,11 +114,17 @@ async function handleBasicStats(supabase, response) {
     })
     .reduce((acc, mov) => acc + mov.valor, 0);
 
+  // Calcula a receita de seguros (sem filtro de data para depuração)
+  const receitaSeguro = movimentacoes
+    .filter(mov => mov.tipo === 'entrada' && mov.categoria === 'seguro')
+    .reduce((acc, mov) => acc + mov.valor, 0);
+
   const stats = {
     locacoesAtivas: activeRentals || 0,
     veiculosDisponiveis: availableVehicles || 0,
     veiculosLocados: rentedVehicles || 0,
     receitaMes: totalRevenue || 0,
+    receitaSeguro: receitaSeguro || 0,
     saldoCaixa: saldoCaixa || 0
   };
 

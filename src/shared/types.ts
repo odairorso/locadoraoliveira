@@ -63,6 +63,7 @@ export const LocacaoSchema = z.object({
   valor_diaria: z.number().positive("Valor da diária deve ser positivo"),
   valor_total: z.number().positive("Valor total deve ser positivo"),
   valor_caucao: z.number().min(0, "Valor da caução deve ser positivo ou zero").default(0),
+  valor_seguro: z.number().min(0, "Valor do seguro deve ser positivo ou zero").default(0),
   status: z.enum(["ativa", "finalizada", "cancelada"]).default("ativa"),
   observacoes: z.string().optional().nullable(),
   created_at: z.string().optional(),
@@ -111,6 +112,7 @@ export interface DashboardStats {
   veiculosDisponiveis: number;
   veiculosLocados: number;
   receitaMes: number;
+  receitaSeguro: number;
   saldoCaixa?: number;
 }
 

@@ -54,6 +54,18 @@ const tiposManutencao = [
   'Transmissão',
   'Motor',
   'Carroceria',
+  'Insufilme',
+  'Lavagem e Enceramento',
+  'Alinhamento e Balanceamento',
+  'Troca de Filtros',
+  'Bateria',
+  'Embreagem',
+  'Radiador',
+  'Escapamento',
+  'Vidros e Espelhos',
+  'Estofamento',
+  'Som e Multimídia',
+  'Documentação',
   'Outros'
 ];
 
@@ -77,6 +89,7 @@ export default function Manutencao() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [showResumo, setShowResumo] = useState(false);
+  const [tipoPersonalizado, setTipoPersonalizado] = useState('');
 
   // Função para formatar data para exibição (dd/mm/yyyy)
   const formatarData = (data: string) => {
@@ -131,17 +144,29 @@ export default function Manutencao() {
     });
     setEditingId(null);
     setShowForm(false);
+    setTipoPersonalizado('');
   };
 
   // Abrir formulário para edição
   const handleEdit = (manutencao: Manutencao) => {
+    // Verificar se o tipo de manutenção está na lista predefinida
+    const tipoExiste = tiposManutencao.includes(manutencao.tipo_manutencao);
+    
     setFormData({
       veiculo_id: manutencao.veiculo_id.toString(),
       data_manutencao: formatarDataParaExibicao(manutencao.data_manutencao),
-      tipo_manutencao: manutencao.tipo_manutencao,
+      tipo_manutencao: tipoExiste ? manutencao.tipo_manutencao : 'Outros',
       valor: manutencao.valor.toString(),
       descricao: manutencao.descricao || ''
     });
+    
+    // Se não existe na lista, é um tipo personalizado
+    if (!tipoExiste) {
+      setTipoPersonalizado(manutencao.tipo_manutencao);
+    } else {
+      setTipoPersonalizado('');
+    }
+    
     setEditingId(manutencao.id);
     setShowForm(true);
   };
@@ -149,6 +174,13 @@ export default function Manutencao() {
   // Submeter formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar tipo personalizado
+    if (formData.tipo_manutencao === 'Outros' && !tipoPersonalizado.trim()) {
+      alert('Por favor, especifique o tipo de manutenção.');
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
@@ -166,7 +198,7 @@ export default function Manutencao() {
         body: JSON.stringify({
           veiculo_id: parseInt(formData.veiculo_id),
           data_manutencao: dataManutencao,
-          tipo_manutencao: formData.tipo_manutencao,
+          tipo_manutencao: formData.tipo_manutencao === 'Outros' ? tipoPersonalizado : formData.tipo_manutencao,
           valor: parseFloat(formData.valor),
           descricao: formData.descricao || null
         }),
@@ -367,6 +399,24 @@ export default function Manutencao() {
                     ))}
                   </select>
                 </div>
+
+                {/* Campo personalizado para "Outros" */}
+                {formData.tipo_manutencao === 'Outros' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Wrench className="inline h-4 w-4 mr-1" />
+                      Especifique o tipo de manutenção *
+                    </label>
+                    <input
+                      type="text"
+                      value={tipoPersonalizado}
+                      onChange={(e) => setTipoPersonalizado(e.target.value)}
+                      placeholder="Digite o tipo de manutenção..."
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                    />
+                  </div>
+                )}
 
                 {/* Valor */}
                 <div>

@@ -138,7 +138,7 @@ export default function Checklist() {
 
   const carregarClientes = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/clientes');
+      const response = await fetch('/api/clientes');
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -151,7 +151,7 @@ export default function Checklist() {
 
   const carregarVeiculos = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/veiculos');
+      const response = await fetch('/api/veiculos');
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -164,7 +164,7 @@ export default function Checklist() {
 
   const carregarLocacoes = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/locacoes');
+      const response = await fetch('/api/locacoes');
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -180,7 +180,7 @@ export default function Checklist() {
       console.log('carregarDadosVistoriaEntrada - Iniciando com entradaId:', entradaId, 'veiculoId:', veiculoId);
       
       // Buscar dados da vistoria de entrada
-      const vistoriaResponse = await fetch(`http://localhost:3000/api/vistorias/${entradaId}`);
+      const vistoriaResponse = await fetch(`/api/vistorias/${entradaId}`);
       const vistoriaResult = await vistoriaResponse.json();
       
       console.log('Resposta da vistoria:', vistoriaResult);
@@ -190,7 +190,7 @@ export default function Checklist() {
         console.log('Dados da vistoria de entrada:', vistoriaEntrada);
         
         // Buscar dados do veículo
-        const veiculoResponse = await fetch(`http://localhost:3000/api/veiculos/${veiculoId}`);
+        const veiculoResponse = await fetch(`/api/veiculos/${veiculoId}`);
         const veiculoResult = await veiculoResponse.json();
         
         console.log('Resposta do veículo:', veiculoResult);
@@ -201,7 +201,7 @@ export default function Checklist() {
           setSelectedVeiculo(veiculo);
           
           // Buscar dados do cliente
-          const clienteResponse = await fetch(`http://localhost:3000/api/clientes/${vistoriaEntrada.cliente_id}`);
+          const clienteResponse = await fetch(`/api/clientes/${vistoriaEntrada.cliente_id}`);
           const clienteResult = await clienteResponse.json();
           
           console.log('Resposta do cliente:', clienteResult);
@@ -238,7 +238,7 @@ export default function Checklist() {
       console.log('carregarDadosVistoriaPorLocacao - Iniciando com locacaoId:', locacaoId);
       
       // Buscar dados da locação
-      const locacaoResponse = await fetch(`http://localhost:3000/api/locacoes/${locacaoId}`);
+      const locacaoResponse = await fetch(`/api/locacoes/${locacaoId}`);
       const locacaoResult = await locacaoResponse.json();
       
       console.log('Resposta da locação:', locacaoResult);
@@ -248,7 +248,7 @@ export default function Checklist() {
         console.log('Dados da locação:', locacao);
         
         // Buscar vistoria de entrada pelo veículo da locação
-        const vistoriasResponse = await fetch(`http://localhost:3000/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`);
+        const vistoriasResponse = await fetch(`/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`);
         const vistoriasResult = await vistoriasResponse.json();
         
         console.log('Resposta das vistorias:', vistoriasResult);
@@ -405,7 +405,7 @@ export default function Checklist() {
         data_vistoria: new Date().toISOString()
       };
 
-      const response = await fetch('http://localhost:3000/api/vistorias', {
+      const response = await fetch('/api/vistorias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

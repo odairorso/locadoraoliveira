@@ -26,6 +26,8 @@ export default async function handler(req, res) {
         return await handleLocacoesReport(req, res);
       case 'veiculos':
         return await handleVeiculosReport(req, res);
+      case 'despesas':
+        return await handleDespesasReport(req, res);
       default:
         return res.status(400).json({ error: 'Tipo de relatório não especificado ou inválido' });
     }
@@ -45,13 +47,13 @@ async function handleClientesReport(req, res) {
         id,
         nome,
         email,
-        telefone,
+        celular,
         cpf,
         created_at,
         locacoes:locacoes(
           id,
-          data_inicio,
-          data_fim,
+          data_locacao,
+          data_entrega,
           valor_total,
           status
         )
@@ -80,7 +82,7 @@ async function handleClientesReport(req, res) {
         valor_total_gasto: valorTotalGasto,
         locacoes_ativas: locacoesAtivas,
         ultima_locacao: cliente.locacoes.length > 0 ? 
-          Math.max(...cliente.locacoes.map(l => new Date(l.data_inicio).getTime())) : null
+          Math.max(...cliente.locacoes.map(l => new Date(l.data_locacao).getTime())) : null
       };
     });
 
@@ -181,12 +183,12 @@ async function handleLocacoesReport(req, res) {
       .from('locacoes')
       .select(`
         *,
-        cliente:clientes(nome, email, telefone),
+        cliente:clientes(nome, email, celular),
         veiculo:veiculos(marca, modelo, placa, ano)
       `);
 
     if (periodo_inicio && periodo_fim) {
-      query = query.gte('data_inicio', periodo_inicio).lte('data_fim', periodo_fim);
+      query = query.gte('data_locacao', periodo_inicio).lte('data_entrega', periodo_fim);
     }
 
     if (status) {
@@ -197,7 +199,7 @@ async function handleLocacoesReport(req, res) {
       query = query.eq('veiculo_id', veiculo_id);
     }
 
-    const { data: locacoes, error } = await query.order('data_inicio', { ascending: false });
+    const { data: locacoes, error } = await query.order('data_locacao', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar locações:', error);
@@ -216,8 +218,8 @@ async function handleLocacoesReport(req, res) {
 
     // Duração média das locações
     const duracaoMedia = locacoes.reduce((sum, l) => {
-      const inicio = new Date(l.data_inicio);
-      const fim = new Date(l.data_fim);
+      const inicio = new Date(l.data_locacao);
+      const fim = new Date(l.data_entrega);
       const dias = Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24));
       return sum + dias;
     }, 0) / totalLocacoes;
@@ -247,16 +249,16 @@ async function handleVeiculosReport(req, res) {
       .select(`
         veiculo_id,
         valor_total,
-        data_inicio,
-        data_fim,
+        data_locacao,
+        data_entrega,
         status,
         veiculo:veiculos(marca, modelo, placa, ano, cor)
       `);
 
     if (periodo_inicio && periodo_fim) {
       queryLocacoes = queryLocacoes
-        .gte('data_inicio', periodo_inicio)
-        .lte('data_fim', periodo_fim);
+        .gte('data_locacao', periodo_inicio)
+        .lte('data_entrega', periodo_fim);
     }
 
     const { data: locacoes, error: errorLocacoes } = await queryLocacoes;
@@ -341,6 +343,158 @@ async function handleVeiculosReport(req, res) {
     });
   } catch (error) {
     console.error('Erro no relatório de veículos:', error);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+async function handleDespesasReport(req, res) {
+  const { periodo_inicio, periodo_fim, veiculo_id, tipo_manutencao } = req.query;
+
+  try {
+    // Query base para buscar manutenções com informações do veículo
+    let query = supabase
+      .from('manutencoes')
+      .select(`
+        id,
+        data_manutencao,
+        tipo_manutencao,
+        valor,
+        descricao,
+        created_at,
+        veiculos (
+          id,
+          marca,
+          modelo,
+          placa,
+          ano
+        )
+      `)
+      .order('data_manutencao', { ascending: false });
+
+    // Aplicar filtros
+    if (periodo_inicio && periodo_fim) {
+      query = query.gte('data_manutencao', periodo_inicio).lte('data_manutencao', periodo_fim);
+    }
+
+    if (veiculo_id) {
+      query = query.eq('veiculo_id', veiculo_id);
+    }
+
+    if (tipo_manutencao) {
+      query = query.eq('tipo_manutencao', tipo_manutencao);
+    }
+
+    const { data: manutencoes, error } = await query;
+
+    if (error) {
+      console.error('Erro ao buscar manutenções:', error);
+      return res.status(500).json({ error: 'Erro ao buscar dados de manutenções' });
+    }
+
+    // Processar dados para o relatório
+    const despesasPorMes = {};
+    const despesasPorVeiculo = {};
+    const despesasPorTipo = {};
+    let totalGeral = 0;
+
+    manutencoes.forEach(manutencao => {
+      const valor = parseFloat(manutencao.valor) || 0;
+      totalGeral += valor;
+
+      // Agrupar por mês
+      const mes = new Date(manutencao.data_manutencao).toISOString().substring(0, 7); // YYYY-MM
+      if (!despesasPorMes[mes]) {
+        despesasPorMes[mes] = { mes, total: 0, quantidade: 0 };
+      }
+      despesasPorMes[mes].total += valor;
+      despesasPorMes[mes].quantidade += 1;
+
+      // Agrupar por veículo
+      const veiculoKey = `${manutencao.veiculos.marca} ${manutencao.veiculos.modelo} (${manutencao.veiculos.placa})`;
+      if (!despesasPorVeiculo[veiculoKey]) {
+        despesasPorVeiculo[veiculoKey] = {
+          veiculo: manutencao.veiculos,
+          total: 0,
+          quantidade: 0,
+          manutencoes: []
+        };
+      }
+      despesasPorVeiculo[veiculoKey].total += valor;
+      despesasPorVeiculo[veiculoKey].quantidade += 1;
+      despesasPorVeiculo[veiculoKey].manutencoes.push(manutencao);
+
+      // Agrupar por tipo de manutenção
+      if (!despesasPorTipo[manutencao.tipo_manutencao]) {
+        despesasPorTipo[manutencao.tipo_manutencao] = {
+          tipo: manutencao.tipo_manutencao,
+          total: 0,
+          quantidade: 0
+        };
+      }
+      despesasPorTipo[manutencao.tipo_manutencao].total += valor;
+      despesasPorTipo[manutencao.tipo_manutencao].quantidade += 1;
+    });
+
+    // Converter objetos em arrays e ordenar
+    const despesasPorMesArray = Object.values(despesasPorMes).sort((a, b) => a.mes.localeCompare(b.mes));
+    const despesasPorVeiculoArray = Object.values(despesasPorVeiculo).sort((a, b) => b.total - a.total);
+    const despesasPorTipoArray = Object.values(despesasPorTipo).sort((a, b) => b.total - a.total);
+
+    // Transformar dados para o formato esperado pelo frontend
+    const dadosFormatados = manutencoes.map(manutencao => ({
+      id: manutencao.id,
+      veiculo: `${manutencao.veiculos.marca} ${manutencao.veiculos.modelo}`,
+      placa: manutencao.veiculos.placa,
+      data_manutencao: manutencao.data_manutencao,
+      tipo_manutencao: manutencao.tipo_manutencao,
+      valor: parseFloat(manutencao.valor),
+      descricao: manutencao.descricao
+    }));
+
+    // Estatísticas no formato esperado pelo frontend
+    const estatisticas = {
+      total_despesas: manutencoes.length,
+      valor_total_periodo: totalGeral,
+      valor_medio_manutencao: manutencoes.length > 0 ? totalGeral / manutencoes.length : 0,
+      total_manutencoes: manutencoes.length,
+      distribuicao_por_tipo: despesasPorTipoArray.map(item => ({
+        tipo: item.tipo,
+        quantidade: item.quantidade,
+        valor_total: item.total
+      })),
+      evolucao_mensal: despesasPorMesArray.map(item => ({
+        mes: item.mes,
+        total_manutencoes: item.quantidade,
+        valor_total: item.total
+      })),
+      despesas_por_veiculo: despesasPorVeiculoArray.map(item => ({
+        veiculo: `${item.veiculo.marca} ${item.veiculo.modelo}`,
+        placa: item.veiculo.placa,
+        total_manutencoes: item.quantidade,
+        valor_total: item.total
+      }))
+    };
+
+    return res.status(200).json({
+      data: dadosFormatados,
+      estatisticas: estatisticas,
+      // Manter dados originais para compatibilidade
+      manutencoes,
+      resumo: {
+        total_geral: totalGeral,
+        quantidade_total: manutencoes.length,
+        valor_medio: manutencoes.length > 0 ? totalGeral / manutencoes.length : 0,
+        periodo: {
+          inicio: periodo_inicio,
+          fim: periodo_fim
+        }
+      },
+      despesas_por_mes: despesasPorMesArray,
+      despesas_por_veiculo: despesasPorVeiculoArray,
+      despesas_por_tipo: despesasPorTipoArray
+    });
+  } catch (error) {
+    console.error('Erro no relatório de despesas:', error);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }

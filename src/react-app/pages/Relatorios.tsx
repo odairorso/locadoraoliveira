@@ -108,14 +108,48 @@ interface EstatisticasLocacoes {
   }>;
 }
 
+interface RelatorioDespesa {
+  id: number;
+  veiculo: string;
+  placa: string;
+  data_manutencao: string;
+  tipo_manutencao: string;
+  valor: number;
+  descricao: string;
+}
+
+interface EstatisticasDespesas {
+  total_despesas: number;
+  valor_total_periodo: number;
+  valor_medio_manutencao: number;
+  total_manutencoes: number;
+  distribuicao_por_tipo: Array<{
+    tipo: string;
+    quantidade: number;
+    valor_total: number;
+  }>;
+  evolucao_mensal: Array<{
+    mes: string;
+    total_manutencoes: number;
+    valor_total: number;
+  }>;
+  despesas_por_veiculo: Array<{
+    veiculo: string;
+    placa: string;
+    total_manutencoes: number;
+    valor_total: number;
+  }>;
+}
+
 
 
 export default function Relatorios() {
-  const [tipoRelatorio, setTipoRelatorio] = useState<'financeiro' | 'veiculos' | 'clientes' | 'locacoes'>('financeiro');
+  const [tipoRelatorio, setTipoRelatorio] = useState<'financeiro' | 'veiculos' | 'clientes' | 'locacoes' | 'despesas'>('financeiro');
   const [periodoInicio, setPeriodoInicio] = useState('');
   const [periodoFim, setPeriodoFim] = useState('');
   const [veiculoSelecionado, setVeiculoSelecionado] = useState('');
   const [clienteSelecionado, setClienteSelecionado] = useState('');
+  const [tipoManutencaoSelecionado, setTipoManutencaoSelecionado] = useState('');
   const [loading, setLoading] = useState(false);
   
 
@@ -125,12 +159,15 @@ export default function Relatorios() {
   const [dadosVeiculos, setDadosVeiculos] = useState<RelatorioVeiculo[]>([]);
   const [dadosClientes, setDadosClientes] = useState<RelatorioCliente[]>([]);
   const [dadosLocacoes, setDadosLocacoes] = useState<RelatorioLocacao[]>([]);
+  const [dadosDespesas, setDadosDespesas] = useState<RelatorioDespesa[]>([]);
   const [estatisticasClientes, setEstatisticasClientes] = useState<EstatisticasClientes | null>(null);
   const [estatisticasLocacoes, setEstatisticasLocacoes] = useState<EstatisticasLocacoes | null>(null);
+  const [estatisticasDespesas, setEstatisticasDespesas] = useState<EstatisticasDespesas | null>(null);
   
   // Estados para listas de filtros
   const [veiculos, setVeiculos] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [tiposManutencao, setTiposManutencao] = useState<string[]>([]);
 
 
 
@@ -145,9 +182,10 @@ export default function Relatorios() {
   useEffect(() => {
     const carregarFiltros = async () => {
       try {
-        const [veiculosRes, clientesRes] = await Promise.all([
+        const [veiculosRes, clientesRes, manutencoesRes] = await Promise.all([
           fetch('/api/veiculos'),
-          fetch('/api/clientes')
+          fetch('/api/clientes'),
+          fetch('/api/manutencoes')
         ]);
         
         if (veiculosRes.ok) {
@@ -158,6 +196,13 @@ export default function Relatorios() {
         if (clientesRes.ok) {
           const clientesData = await clientesRes.json();
           setClientes(clientesData.data || []);
+        }
+
+        if (manutencoesRes.ok) {
+          const manutencoesData = await manutencoesRes.json();
+          // Extrair tipos únicos de manutenção
+          const tipos = [...new Set(manutencoesData.data?.map((m: any) => m.tipo_manutencao) || [])];
+          setTiposManutencao(tipos);
         }
       } catch (error) {
         console.error('Erro ao carregar filtros:', error);
@@ -207,6 +252,11 @@ export default function Relatorios() {
           setDadosLocacoes(data?.data || []);
           setEstatisticasLocacoes(data?.estatisticas || {});
           break;
+        case 'despesas':
+          data = await gerarRelatorioDespesas(dataInicioAPI, dataFimAPI, veiculoSelecionado, tipoManutencaoSelecionado);
+          setDadosDespesas(data?.data || []);
+          setEstatisticasDespesas(data?.estatisticas || {});
+          break;
         default:
           throw new Error('Tipo de relatório não suportado');
       }
@@ -245,6 +295,18 @@ export default function Relatorios() {
       throw new Error('Erro ao buscar dados de manutenções: ' + errorMan.message);
     }
 
+    // Buscar locações para calcular locações ativas por mês
+    // Buscar todas as locações que podem estar ativas no período
+    const { data: locacoes, error: errorLoc } = await supabase
+      .from('locacoes')
+      .select('id, data_locacao, data_entrega, status')
+      .lte('data_locacao', dataFim)
+      .order('data_locacao', { ascending: true });
+
+    if (errorLoc) {
+      throw new Error('Erro ao buscar dados de locações: ' + errorLoc.message);
+    }
+
     // Agrupar movimentações financeiras por mês
     const dadosAgrupados = (movimentacoes || []).reduce((acc: any, mov: any) => {
       const mes = new Date(mov.data_movimentacao).toLocaleDateString('pt-BR', { 
@@ -277,6 +339,45 @@ export default function Relatorios() {
       }
       
       dadosAgrupados[mes].despesas += parseFloat(manutencao.valor);
+    });
+
+    // Calcular locações ativas por mês
+    (locacoes || []).forEach((locacao: any) => {
+      const dataInicioLocacao = new Date(locacao.data_locacao);
+      const dataFimLocacao = locacao.data_entrega ? new Date(locacao.data_entrega) : new Date();
+      
+      // Para cada mês no período do relatório, verificar se a locação estava ativa
+      const dataInicioRelatorio = new Date(dataInicio);
+      const dataFimRelatorio = new Date(dataFim);
+      
+      let mesAtual = new Date(dataInicioRelatorio.getFullYear(), dataInicioRelatorio.getMonth(), 1);
+      const ultimoMesRelatorio = new Date(dataFimRelatorio.getFullYear(), dataFimRelatorio.getMonth(), 1);
+      
+      while (mesAtual <= ultimoMesRelatorio) {
+        const chave = mesAtual.toLocaleDateString('pt-BR', { 
+          year: 'numeric', 
+          month: '2-digit' 
+        });
+        
+        const primeiroDiaMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), 1);
+        const ultimoDiaMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0);
+        
+        // Verificar se a locação estava ativa durante este mês
+        const locacaoAtivaNoMes = (
+          dataInicioLocacao <= ultimoDiaMes && // Locação começou antes ou durante o mês
+          dataFimLocacao >= primeiroDiaMes     // Locação terminou depois ou durante o mês
+        );
+        
+        if (locacaoAtivaNoMes) {
+          if (!dadosAgrupados[chave]) {
+            dadosAgrupados[chave] = { mes: chave, receitas: 0, despesas: 0, lucro: 0, locacoes_ativas: 0 };
+          }
+          dadosAgrupados[chave].locacoes_ativas++;
+        }
+        
+        // Próximo mês
+        mesAtual.setMonth(mesAtual.getMonth() + 1);
+      }
     });
 
     // Calcular lucro para todos os meses
@@ -472,11 +573,91 @@ export default function Relatorios() {
     return { data: locacoes, estatisticas };
   };
 
+  // Função para gerar relatório de despesas de manutenção
+  const gerarRelatorioDespesas = async (dataInicio: string, dataFim: string, veiculoId?: string, tipoManutencao?: string) => {
+    try {
+      const params = new URLSearchParams({
+        tipo: 'despesas',
+        dataInicio,
+        dataFim
+      });
 
+      if (veiculoId) params.append('veiculoId', veiculoId);
+      if (tipoManutencao) params.append('tipoManutencao', tipoManutencao);
+
+      const response = await fetch(`/api/relatorios?${params}`);
+      if (!response.ok) {
+        throw new Error('Erro ao buscar dados do relatório de despesas');
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Erro ao gerar relatório de despesas:', error);
+      throw error;
+    }
+  };
 
   const exportarRelatorio = () => {
-    // Implementar exportação para CSV/PDF
-    alert('Funcionalidade de exportação será implementada em breve');
+    let csvContent = '';
+    let filename = '';
+
+    switch (tipoRelatorio) {
+      case 'financeiro':
+        csvContent = 'Mês,Receita Total,Despesas Totais,Lucro Líquido\n';
+        dadosFinanceiro.forEach(item => {
+          csvContent += `${item.mes},${item.receita_total},${item.despesas_totais},${item.lucro_liquido}\n`;
+        });
+        filename = 'relatorio_financeiro.csv';
+        break;
+
+      case 'veiculos':
+        csvContent = 'Veículo,Placa,Receita Total,Quilometragem Total,Dias Locados,Taxa de Ocupação\n';
+        dadosVeiculos.forEach(item => {
+          csvContent += `${item.veiculo},${item.placa},${item.receita_total},${item.quilometragem_total},${item.dias_locados},${item.taxa_ocupacao}%\n`;
+        });
+        filename = 'relatorio_veiculos.csv';
+        break;
+
+      case 'clientes':
+        csvContent = 'Cliente,Email,Total Locações,Valor Total,Última Locação\n';
+        dadosClientes.forEach(item => {
+          csvContent += `${item.cliente},${item.email},${item.total_locacoes},${item.valor_total},${item.ultima_locacao}\n`;
+        });
+        filename = 'relatorio_clientes.csv';
+        break;
+
+      case 'locacoes':
+        csvContent = 'Data Início,Data Fim,Cliente,Veículo,Valor Total,Status\n';
+        dadosLocacoes.forEach(item => {
+          csvContent += `${item.data_inicio},${item.data_fim},${item.cliente},${item.veiculo},${item.valor_total},${item.status}\n`;
+        });
+        filename = 'relatorio_locacoes.csv';
+        break;
+
+      case 'despesas':
+        csvContent = 'Data,Veículo,Placa,Tipo de Manutenção,Valor,Descrição\n';
+        dadosDespesas.forEach(item => {
+          csvContent += `${new Date(item.data_manutencao).toLocaleDateString('pt-BR')},${item.veiculo},${item.placa},${item.tipo_manutencao},${item.valor},${item.descricao}\n`;
+        });
+        filename = 'relatorio_despesas_manutencao.csv';
+        break;
+
+      default:
+        alert('Tipo de relatório não suportado para exportação');
+        return;
+    }
+
+    // Criar e baixar o arquivo CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const formatarMoeda = (valor: number) => {
@@ -572,6 +753,7 @@ export default function Relatorios() {
               <option value="veiculos">Performance de Veículos</option>
               <option value="clientes">Análise de Clientes</option>
               <option value="locacoes">Relatório de Locações</option>
+              <option value="despesas">Despesas de Manutenção</option>
             </select>
           </div>
 
@@ -606,7 +788,7 @@ export default function Relatorios() {
           </div>
 
           {/* Filtro por Veículo */}
-          {(tipoRelatorio === 'veiculos' || tipoRelatorio === 'locacoes') && (
+          {(tipoRelatorio === 'veiculos' || tipoRelatorio === 'locacoes' || tipoRelatorio === 'despesas') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Veículo (Opcional)
@@ -641,6 +823,27 @@ export default function Relatorios() {
                 {clientes.map((cliente) => (
                   <option key={cliente.id} value={cliente.id}>
                     {cliente.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Filtro por Tipo de Manutenção */}
+          {tipoRelatorio === 'despesas' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tipo de Manutenção (Opcional)
+              </label>
+              <select
+                value={tipoManutencaoSelecionado}
+                onChange={(e) => setTipoManutencaoSelecionado(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Todos os tipos</option>
+                {tiposManutencao.map((tipo) => (
+                  <option key={tipo} value={tipo}>
+                    {tipo}
                   </option>
                 ))}
               </select>
@@ -1559,12 +1762,228 @@ export default function Relatorios() {
         </div>
       )}
 
+      {/* Relatório de Despesas de Manutenção */}
+      {!loading && tipoRelatorio === 'despesas' && dadosDespesas.length > 0 && (
+        <div className="space-y-6">
+          {/* Estatísticas de Despesas */}
+          {estatisticasDespesas && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-red-100 dark:bg-red-900">
+                    <DollarSign className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Despesas</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      R$ {estatisticasDespesas.valor_total_periodo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+                    <BarChart3 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Manutenções</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {estatisticasDespesas.total_manutencoes}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
+                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Valor Médio</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      R$ {estatisticasDespesas.valor_medio_manutencao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
+                    <PieChart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tipos Diferentes</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {estatisticasDespesas.distribuicao_por_tipo.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Gráficos de Despesas */}
+          {estatisticasDespesas && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Evolução Mensal */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Evolução Mensal de Despesas
+                </h3>
+                <Bar
+                  data={{
+                    labels: estatisticasDespesas.evolucao_mensal.map(item => item.mes),
+                    datasets: [
+                      {
+                        label: 'Valor Total (R$)',
+                        data: estatisticasDespesas.evolucao_mensal.map(item => item.valor_total),
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        position: 'top' as const,
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: function(value) {
+                            return 'R$ ' + Number(value).toLocaleString('pt-BR');
+                          }
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Distribuição por Tipo */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Distribuição por Tipo de Manutenção
+                </h3>
+                <Doughnut
+                  data={{
+                    labels: estatisticasDespesas.distribuicao_por_tipo.map(item => item.tipo),
+                    datasets: [
+                      {
+                        data: estatisticasDespesas.distribuicao_por_tipo.map(item => item.valor_total),
+                        backgroundColor: [
+                          'rgba(239, 68, 68, 0.8)',
+                          'rgba(59, 130, 246, 0.8)',
+                          'rgba(16, 185, 129, 0.8)',
+                          'rgba(245, 158, 11, 0.8)',
+                          'rgba(139, 92, 246, 0.8)',
+                          'rgba(236, 72, 153, 0.8)',
+                        ],
+                        borderColor: [
+                          'rgba(239, 68, 68, 1)',
+                          'rgba(59, 130, 246, 1)',
+                          'rgba(16, 185, 129, 1)',
+                          'rgba(245, 158, 11, 1)',
+                          'rgba(139, 92, 246, 1)',
+                          'rgba(236, 72, 153, 1)',
+                        ],
+                        borderWidth: 1,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        position: 'bottom' as const,
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            return context.label + ': R$ ' + Number(context.parsed).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                          }
+                        }
+                      }
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tabela de Despesas */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Detalhes das Manutenções
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Veículo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Tipo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Valor
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Descrição
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {dadosDespesas.map((despesa) => (
+                    <tr key={despesa.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {new Date(despesa.data_manutencao).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <div>
+                          <div className="font-medium">{despesa.veiculo}</div>
+                          <div className="text-gray-500 dark:text-gray-400">{despesa.placa}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {despesa.tipo_manutencao}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        R$ {despesa.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                        {despesa.descricao}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mensagem quando não há dados */}
       {!loading && (
         (tipoRelatorio === 'financeiro' && dadosFinanceiro.length === 0) ||
         (tipoRelatorio === 'veiculos' && dadosVeiculos.length === 0) ||
         (tipoRelatorio === 'clientes' && dadosClientes.length === 0) ||
-        (tipoRelatorio === 'locacoes' && dadosLocacoes.length === 0)
+        (tipoRelatorio === 'locacoes' && dadosLocacoes.length === 0) ||
+        (tipoRelatorio === 'despesas' && dadosDespesas.length === 0)
       ) && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
           <PieChart className="h-16 w-16 text-gray-400 mx-auto mb-4" />
