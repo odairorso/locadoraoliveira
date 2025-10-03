@@ -1,1 +1,7 @@
-Redeploy trigger: commit this file to force a new deployment on Vercel via GitHub
+Trigger redeploy - 2024-12-30 - URGENT: Configure environment variables in Vercel dashboard
+
+REQUIRED VERCEL ENVIRONMENT VARIABLES:
+- SUPABASE_URL=https://uvqyxpwlgltnskjdbwzt.supabase.co
+- SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0
+
+These must be added in Vercel Dashboard > Settings > Environment Variables
