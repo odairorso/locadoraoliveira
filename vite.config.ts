@@ -11,10 +11,10 @@ dotenv.config({ path: '.env' });
 dotenv.config({ path: '.env.local' });
 
 // Plugin para servir APIs
-const apiPlugin = () => ({
+const apiPlugin = (): any => ({
   name: 'api-plugin',
-  configureServer(server) {
-    server.middlewares.use((req, res, next) => {
+  configureServer(server: any) {
+    server.middlewares.use((req: any, res: any, next: any) => {
       if (!req.url?.startsWith('/api/')) {
         return next();
       }
@@ -38,11 +38,11 @@ const apiPlugin = () => ({
           // Processar body para POST/PUT/PATCH
           if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
             let body = '';
-            req.on('data', chunk => {
+            req.on('data', (chunk: any) => {
               body += chunk.toString();
             });
             
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
               req.on('end', () => {
                 try {
                   req.body = body ? JSON.parse(body) : {};
@@ -73,20 +73,18 @@ const apiPlugin = () => ({
                req.query = { ...req.query, id: pathParts[1] };
              }
              
-             // Wrapper para compatibilizar response.status() com Node.js
-             const originalStatus = res.status;
-             res.status = function(code) {
+             res.status = function(code: number) {
                res.statusCode = code;
                return {
-                 json: (data) => {
+                 json: (data: any) => {
                    res.setHeader('Content-Type', 'application/json');
                    res.end(JSON.stringify(data));
                  },
-                 end: (data) => {
+                 end: (data: any) => {
                    if (data) res.write(data);
                    res.end();
                  },
-                 send: (data) => {
+                 send: (data: any) => {
                    if (typeof data === 'object') {
                      res.setHeader('Content-Type', 'application/json');
                      res.end(JSON.stringify(data));
@@ -113,7 +111,7 @@ const apiPlugin = () => ({
           console.error('API Error:', error);
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Internal Server Error', details: error.message }));
+          res.end(JSON.stringify({ error: 'Internal Server Error', details: (error as Error).message }));
         }
       })();
     });
@@ -125,7 +123,7 @@ export default defineConfig(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [/*...mochaPlugins(process.env as any),*/ react(), apiPlugin()/*, cloudflare()*/],
   server: {
-    allowedHosts: true
+
   },
   build: {
     chunkSizeWarningLimit: 5000,

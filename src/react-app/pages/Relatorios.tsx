@@ -202,7 +202,7 @@ export default function Relatorios() {
           const manutencoesData = await manutencoesRes.json();
           // Extrair tipos únicos de manutenção
           const tipos = [...new Set(manutencoesData.data?.map((m: any) => m.tipo_manutencao) || [])];
-          setTiposManutencao(tipos);
+          setTiposManutencao(tipos as string[]);
         }
       } catch (error) {
         console.error('Erro ao carregar filtros:', error);
@@ -604,17 +604,17 @@ export default function Relatorios() {
 
     switch (tipoRelatorio) {
       case 'financeiro':
-        csvContent = 'Mês,Receita Total,Despesas Totais,Lucro Líquido\n';
+        csvContent = 'Mês,Receitas,Despesas,Lucro\n';
         dadosFinanceiro.forEach(item => {
-          csvContent += `${item.mes},${item.receita_total},${item.despesas_totais},${item.lucro_liquido}\n`;
+          csvContent += `${item.mes},${item.receitas},${item.despesas},${item.lucro}\n`;
         });
         filename = 'relatorio_financeiro.csv';
         break;
 
       case 'veiculos':
-        csvContent = 'Veículo,Placa,Receita Total,Quilometragem Total,Dias Locados,Taxa de Ocupação\n';
+        csvContent = 'Veículo,Placa,Receita Total,Dias Locado,Taxa de Ocupação\n';
         dadosVeiculos.forEach(item => {
-          csvContent += `${item.veiculo},${item.placa},${item.receita_total},${item.quilometragem_total},${item.dias_locados},${item.taxa_ocupacao}%\n`;
+          csvContent += `${item.marca} ${item.modelo},${item.placa},${item.receita_total},${item.dias_locado},${item.taxa_ocupacao}%\n`;
         });
         filename = 'relatorio_veiculos.csv';
         break;
@@ -622,7 +622,7 @@ export default function Relatorios() {
       case 'clientes':
         csvContent = 'Cliente,Email,Total Locações,Valor Total,Última Locação\n';
         dadosClientes.forEach(item => {
-          csvContent += `${item.cliente},${item.email},${item.total_locacoes},${item.valor_total},${item.ultima_locacao}\n`;
+          csvContent += `${item.nome},${item.email},${item.total_locacoes},${item.valor_total_gasto},${item.ultima_locacao}\n`;
         });
         filename = 'relatorio_clientes.csv';
         break;
@@ -630,7 +630,7 @@ export default function Relatorios() {
       case 'locacoes':
         csvContent = 'Data Início,Data Fim,Cliente,Veículo,Valor Total,Status\n';
         dadosLocacoes.forEach(item => {
-          csvContent += `${item.data_inicio},${item.data_fim},${item.cliente},${item.veiculo},${item.valor_total},${item.status}\n`;
+          csvContent += `${item.data_locacao},${item.data_entrega},${item.cliente},${item.veiculo},${item.valor_total},${item.status}\n`;
         });
         filename = 'relatorio_locacoes.csv';
         break;
