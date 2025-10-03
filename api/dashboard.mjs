@@ -114,17 +114,9 @@ async function handleBasicStats(supabase, response) {
     })
     .reduce((acc, mov) => acc + mov.valor, 0);
 
-  // Calcula a receita de seguros do mês atual
+  // Calcula a receita de seguros (sem filtro de data para depuração)
   const receitaSeguro = movimentacoes
-    .filter(mov => {
-      const dataMov = new Date(mov.data_movimentacao);
-      return (
-        mov.tipo === 'entrada' &&
-        mov.categoria === 'seguro' &&
-        dataMov.getFullYear() === anoAtual &&
-        dataMov.getMonth() === mesAtual
-      );
-    })
+    .filter(mov => mov.tipo === 'entrada' && mov.categoria === 'seguro')
     .reduce((acc, mov) => acc + mov.valor, 0);
 
   const stats = {
