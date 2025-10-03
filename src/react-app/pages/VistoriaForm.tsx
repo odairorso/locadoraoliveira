@@ -257,24 +257,32 @@ const VistoriaForm: React.FC = () => {
               
               if (result.success && result.data) {
                 const vistoria = result.data;
+                const clienteNome = vistoria.clientes?.nome || '';
+                const veiculoPlaca = vistoria.veiculos?.placa || '';
+                const veiculoModelo = vistoria.veiculos?.modelo || '';
+
                 setFormData({
-                  cliente: vistoria.cliente?.nome || '',
+                  cliente: clienteNome,
                   clienteId: vistoria.cliente_id,
-                  placa: vistoria.veiculo?.placa || '',
+                  placa: veiculoPlaca,
                   veiculoId: vistoria.veiculo_id,
-                  modelo: vistoria.veiculo?.modelo || '',
-                  cor: vistoria.veiculo?.cor || '',
+                  modelo: veiculoModelo,
+                  cor: vistoria.veiculos?.cor || '',
                   quilometragem: vistoria.quilometragem?.toString() || '',
-                  condutor: vistoria.condutor || '',
-                  telefone: vistoria.telefone || '',
-                  dataHora: new Date(vistoria.data_hora).toLocaleString('pt-BR'),
+                  condutor: vistoria.nome_condutor || '',
+                  telefone: vistoria.clientes?.telefone || '',
+                  dataHora: new Date(vistoria.created_at).toLocaleString('pt-BR'),
                   tipoVistoria: vistoria.tipo_vistoria,
-                  combustivel: vistoria.combustivel || 'vazio',
+                  combustivel: vistoria.nivel_combustivel || 'vazio',
                   observacoes: vistoria.observacoes || '',
                   checklist: vistoria.checklist || {},
                   avarias: vistoria.avarias || [],
                   fotos: vistoria.fotos || []
                 });
+
+                // Atualiza os campos de busca para exibir os dados carregados
+                setClientSearchTerm(clienteNome);
+                setVehicleSearchTerm(`${veiculoModelo} - ${veiculoPlaca}`);
               }
             } catch (error) {
               console.error('Erro ao carregar vistoria:', error);
