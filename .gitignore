@@ -69,3 +69,5 @@ tmp/
 
 # Local Netlify folder
 .netlify
+
+.vercel

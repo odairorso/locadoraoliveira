@@ -1,18 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Import all handlers
-import clientesHandler from './handlers/clientes.mjs';
-import veiculosHandler from './handlers/veiculos.mjs';
-import locacoesHandler from './handlers/locacoes.mjs';
-import manutencoesHandler from './handlers/manutencoes.mjs';
-import vistoriasHandler from './handlers/vistorias.mjs';
-import movimentacoesHandler from './handlers/movimentacoes.mjs';
-import dashboardHandler from './handlers/dashboard.mjs';
-import relatoriosHandler from './handlers/relatorios.mjs';
-import receitaPorVeiculoHandler from './handlers/receita-por-veiculo.mjs';
-import locacoesIdHandler from './handlers/locacoes-id.mjs';
-import manutencoesIdHandler from './handlers/manutencoes-id.mjs';
-import vistoriasIdHandler from './handlers/vistorias-id.mjs';
+import clientesHandler from '../src/api-handlers/clientes.mjs';
+import veiculosHandler from '../src/api-handlers/veiculos.mjs';
+import locacoesHandler from '../src/api-handlers/locacoes.mjs';
+import manutencoesHandler from '../src/api-handlers/manutencoes.mjs';
+import vistoriasHandler from '../src/api-handlers/vistorias.mjs';
+import movimentacoesHandler from '../src/api-handlers/movimentacoes.mjs';
+import dashboardHandler from '../src/api-handlers/dashboard.mjs';
+import relatoriosHandler from '../src/api-handlers/relatorios.mjs';
+import receitaPorVeiculoHandler from '../src/api-handlers/receita-por-veiculo.mjs';
+import locacoesIdHandler from '../src/api-handlers/locacoes-id.mjs';
+import manutencoesIdHandler from '../src/api-handlers/manutencoes-id.mjs';
+import vistoriasIdHandler from '../src/api-handlers/vistorias-id.mjs';
 
 export default async function handler(request, response) {
   // Set CORS headers
