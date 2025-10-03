@@ -124,11 +124,15 @@ export default function Checklist() {
     // Verificar se há parâmetros de URL para vistoria de saída
     const entradaId = searchParams.get('entrada_id');
     const veiculoId = searchParams.get('veiculo_id');
+    const locacaoId = searchParams.get('locacaoId');
     const tipoVistoria = searchParams.get('tipo');
 
     if (entradaId && veiculoId && tipoVistoria === 'saida') {
       setForm(prev => ({ ...prev, tipo_vistoria: 'saida' }));
       carregarDadosVistoriaEntrada(entradaId, veiculoId);
+    } else if (locacaoId) {
+      setForm(prev => ({ ...prev, tipo_vistoria: 'saida' }));
+      carregarDadosVistoriaPorLocacao(locacaoId);
     }
   }, [searchParams]);
 
@@ -224,6 +228,116 @@ export default function Checklist() {
       }
     } catch (error) {
       console.error('Erro ao carregar dados da vistoria de entrada:', error);
+      // Em caso de erro, mostrar seleção manual
+      setShowLocacaoSelection(true);
+    }
+  };
+
+  const carregarDadosVistoriaPorLocacao = async (locacaoId: string) => {
+    try {
+      console.log('carregarDadosVistoriaPorLocacao - Iniciando com locacaoId:', locacaoId);
+      
+      // Buscar dados da locação
+      const locacaoResponse = await fetch(`http://localhost:3000/api/locacoes/${locacaoId}`);
+      const locacaoResult = await locacaoResponse.json();
+      
+      console.log('Resposta da locação:', locacaoResult);
+      
+      if (locacaoResult.success && locacaoResult.data) {
+        const locacao = locacaoResult.data;
+        console.log('Dados da locação:', locacao);
+        
+        // Buscar vistoria de entrada pelo veículo da locação
+        const vistoriasResponse = await fetch(`http://localhost:3000/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`);
+        const vistoriasResult = await vistoriasResponse.json();
+        
+        console.log('Resposta das vistorias:', vistoriasResult);
+        
+        if (vistoriasResult.success && vistoriasResult.data && vistoriasResult.data.vistorias && vistoriasResult.data.vistorias.length > 0) {
+          const vistoriaEntrada = vistoriasResult.data.vistorias[0];
+          console.log('Vistoria de entrada encontrada:', vistoriaEntrada);
+          
+          // Definir cliente e veículo selecionados
+          if (locacao.clientes) {
+            setSelectedCliente({
+              id: locacao.cliente_id,
+              nome: locacao.clientes.nome,
+              cpf: locacao.clientes.cpf,
+              celular: locacao.clientes.celular || ''
+            });
+          }
+          
+          if (locacao.veiculos) {
+            setSelectedVeiculo({
+              id: locacao.veiculo_id,
+              modelo: locacao.veiculos.modelo,
+              marca: locacao.veiculos.marca,
+              placa: locacao.veiculos.placa,
+              cor: locacao.veiculos.cor
+            });
+          }
+          
+          setSelectedLocacao(locacao);
+          
+          // Preencher o formulário com os dados
+          setForm(prev => ({
+            ...prev,
+            veiculo_id: locacao.veiculo_id,
+            cliente_id: locacao.cliente_id,
+            locacao_id: parseInt(locacaoId),
+            nome_condutor: locacao.clientes?.nome || '',
+            quilometragem: vistoriaEntrada.quilometragem || '',
+            combustivel: vistoriaEntrada.combustivel || ''
+          }));
+          
+          console.log('Formulário preenchido com dados da locação, ocultando seleção de locação');
+          // Não mostrar seleção de locação pois já temos os dados
+          setShowLocacaoSelection(false);
+        } else {
+          console.log('Nenhuma vistoria de entrada encontrada para o veículo da locação');
+          alert(`Vistoria de entrada não encontrada para o veículo ${locacao.veiculos?.marca} ${locacao.veiculos?.modelo} - ${locacao.veiculos?.placa}. Você precisará preencher os dados manualmente.`);
+          
+          // Mesmo sem vistoria de entrada, podemos preencher os dados básicos da locação
+          if (locacao.clientes) {
+            setSelectedCliente({
+              id: locacao.cliente_id,
+              nome: locacao.clientes.nome,
+              cpf: locacao.clientes.cpf,
+              celular: locacao.clientes.celular || ''
+            });
+          }
+          
+          if (locacao.veiculos) {
+            setSelectedVeiculo({
+              id: locacao.veiculo_id,
+              modelo: locacao.veiculos.modelo,
+              marca: locacao.veiculos.marca,
+              placa: locacao.veiculos.placa,
+              cor: locacao.veiculos.cor
+            });
+          }
+          
+          setSelectedLocacao(locacao);
+          
+          // Preencher o formulário com os dados básicos
+          setForm(prev => ({
+            ...prev,
+            veiculo_id: locacao.veiculo_id,
+            cliente_id: locacao.cliente_id,
+            locacao_id: parseInt(locacaoId),
+            nome_condutor: locacao.clientes?.nome || ''
+          }));
+          
+          // Ocultar seleção de locação mesmo sem vistoria de entrada
+          setShowLocacaoSelection(false);
+        }
+      } else {
+        console.log('Locação não encontrada');
+        alert('Locação não encontrada.');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados da vistoria por locação:', error);
+      alert('Erro ao carregar dados da locação: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
       // Em caso de erro, mostrar seleção manual
       setShowLocacaoSelection(true);
     }

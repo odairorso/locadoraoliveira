@@ -69,14 +69,14 @@ const VistoriaForm: React.FC = () => {
 
   // Use useApi for client search
   const { loading: loadingClients } = useApi<any[]>(
-    `http://localhost:3000/api/clientes`,
+    `/api/clientes`,
     { immediate: false }
   );
 
   const debouncedClientSearch = useRef(debounce(async (term: string) => {
     if (term.length > 2) {
       try {
-        const response = await fetch(`http://localhost:3000/api/clientes?search=${encodeURIComponent(term)}`);
+        const response = await fetch(`/api/clientes?search=${encodeURIComponent(term)}`);
         const result = await response.json();
         if (result.success && result.data) {
           setClientSearchResults(result.data);
@@ -172,7 +172,7 @@ const VistoriaForm: React.FC = () => {
 
       const carregarDadosLocacao = async (locacaoId: string) => {
         try {
-          const response = await fetch(`http://localhost:3000/api/locacoes/${locacaoId}`);
+          const response = await fetch(`/api/locacoes/${locacaoId}`);
           const result = await response.json();
           if (result.success && result.data) {
             const locacao = result.data;
@@ -252,7 +252,7 @@ const VistoriaForm: React.FC = () => {
         if (isEditing && id) {
           const carregarVistoria = async () => {
             try {
-              const response = await fetch(`http://localhost:3000/api/vistorias/${id}`);
+              const response = await fetch(`/api/vistorias/${id}`);
               const result = await response.json();
               
               if (result.success && result.data) {
@@ -291,14 +291,14 @@ const VistoriaForm: React.FC = () => {
   
         // Use useApi for vehicle search
         const { loading: loadingVehicles } = useApi<any[]>(
-          `http://localhost:3000/api/veiculos`,
+          `/api/veiculos`,
           { immediate: false }
         );
   
         const debouncedVehicleSearch = useRef(debounce(async (term: string) => {
           if (term.length > 2) {
             try {
-              const response = await fetch(`http://localhost:3000/api/veiculos?search=${encodeURIComponent(term)}`);
+              const response = await fetch(`/api/veiculos?search=${encodeURIComponent(term)}`);
               const result = await response.json();
               if (result.success && result.data) {
                 setVehicleSearchResults(result.data);
@@ -405,8 +405,8 @@ const VistoriaForm: React.FC = () => {
           console.log('Combustível sendo enviado:', formData.combustivel);
   
           const url = isEditing 
-            ? `http://localhost:3000/api/vistorias/${id}`
-            : 'http://localhost:3000/api/vistorias';
+            ? `/api/vistorias/${id}`
+            : '/api/vistorias';
           const method = isEditing ? 'PUT' : 'POST';
           
           const result = await mutate(url, payload, method);

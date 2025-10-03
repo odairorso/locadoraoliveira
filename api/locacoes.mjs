@@ -313,6 +313,38 @@ export default async function handler(request, response) {
         return response.status(200).send(htmlContent);
       }
 
+      // Se há um ID específico na URL, buscar apenas essa locação
+      if (finalId) {
+        console.log('DEBUG: Buscando locação específica com ID:', finalId);
+        
+        const { data: locacao, error: locacaoError } = await supabase
+          .from('locacoes')
+          .select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, cliente:clientes ( id, nome, cpf ), veiculo:veiculos ( id, marca, modelo, placa, ano )')
+          .eq('id', parseInt(finalId))
+          .single();
+        
+        console.log('DEBUG: Resultado da busca locação específica:', { locacao, locacaoError });
+
+        if (locacaoError) {
+          console.error('Erro ao buscar locação:', locacaoError);
+          return response.status(500).json({ success: false, error: "Erro ao buscar dados da locação.", details: locacaoError.message });
+        }
+
+        if (!locacao) {
+          return response.status(404).json({ success: false, error: "Locação não encontrada" });
+        }
+
+        const formattedLocacao = {
+          ...locacao,
+          cliente_nome: locacao.cliente?.nome,
+          veiculo_info: `${locacao.veiculo?.marca} ${locacao.veiculo?.modelo} - ${locacao.veiculo?.placa}`,
+          clientes: locacao.cliente,
+          veiculos: locacao.veiculo
+        };
+
+        return response.status(200).json({ success: true, data: formattedLocacao });
+      }
+
       let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, cliente:clientes ( id, nome, cpf ), veiculo:veiculos ( id, marca, modelo, placa, ano )');
       if (status) {
         query = query.eq('status', status);

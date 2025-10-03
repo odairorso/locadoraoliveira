@@ -16,7 +16,7 @@ const ChecklistDashboard: React.FC = () => {
   const carregarVistorias = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/vistorias');
+      const response = await fetch('/api/vistorias');
       const result = await response.json();
       
       if (result.success && result.data.vistorias) {
@@ -70,13 +70,7 @@ const ChecklistDashboard: React.FC = () => {
               {vistoriasPendentes.map((vistoria) => (
                 <div
                   key={vistoria.id}
-                  onClick={() => {
-                    // Constrói a URL para a página de 'novo' checklist, passando os dados da vistoria pendente
-                    const params = new URLSearchParams();
-                    params.set('tipo', 'saida');
-                    params.set('locacaoId', vistoria.locacao_id); // Assumindo que a API retorna locacao_id
-                    navigate(`/checklist/novo?${params.toString()}`);
-                  }}
+                  onClick={() => navigate(`/checklist/editar/${vistoria.id}`)}
                   className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-orange-100 dark:hover:bg-gray-600 transition-colors"
                 >
                   <div className="font-semibold text-gray-900 dark:text-white flex items-center">
@@ -84,7 +78,15 @@ const ChecklistDashboard: React.FC = () => {
                     {vistoria.placa} - {vistoria.modelo}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Cliente: {vistoria.nome_condutor}
+                    Cliente: <span 
+                      className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/checklist/editar/${vistoria.id}`);
+                      }}
+                    >
+                      {vistoria.nome_condutor}
+                    </span>
                   </div>
                    <div className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-semibold">
                     Clique para preencher e finalizar a vistoria

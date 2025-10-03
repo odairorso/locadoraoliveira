@@ -79,24 +79,17 @@ export default function Home() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-gray-900 rounded-xl p-8 text-white shadow-2xl border border-slate-700">
-        <div className="flex items-center space-x-6">
-          <div className="bg-white bg-opacity-10 p-4 rounded-xl backdrop-blur-sm border border-white border-opacity-20">
-            <img
-              src="https://mocha-cdn.com/01988471-cbda-7e3e-9eda-75676806ade8/ChatGPT-Image-6-de-ago.-de-2025,-07_.png"
-              alt="Logo Oliveira Veículos"
-              className="h-12 w-12 object-contain"
-            />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-white mb-2">Sistema Oliveira Veículos</h1>
-            <p className="text-gray-300 text-lg mb-1">
-              Gestão completa de locação e venda de veículos
-            </p>
-            <p className="text-gray-400 text-sm">
-              Contato: (67) 99622.9840 | veiculos.oliveira@gmail.com
-            </p>
-          </div>
+      <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-gray-900 rounded-xl p-4 sm:p-6 md:p-8 text-white shadow-2xl border border-slate-700">
+        <div className="text-center">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 md:mb-3">
+            Sistema Oliveira Veículos
+          </h1>
+          <p className="text-gray-300 text-base sm:text-lg mb-1 md:mb-2">
+            Gestão completa de locação e venda de veículos
+          </p>
+          <p className="text-gray-400 text-xs sm:text-sm">
+            Contato: (67) 99622.9840 | veiculos.oliveira@gmail.com
+          </p>
         </div>
       </div>
 

@@ -53,7 +53,7 @@ export default async function handler(request, response) {
 
         return response.status(200).json({
           success: true,
-          data: { vistoria }
+          data: vistoria
         });
       }
       
