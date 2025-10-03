@@ -23,17 +23,15 @@ export default async function handler(request, response) {
   try {
     const { method } = request;
 
+    // Extrai o ID da URL para ser usado por GET (específico), PUT e DELETE
+    const url = new URL(request.url, `http://${request.headers.host}`);
+    const pathParts = url.pathname.split('/').filter(p => p);
+    const lastPart = pathParts[pathParts.length - 1];
+    const id = /^[0-9]+$/.test(lastPart) ? lastPart : null;
+
     if (method === 'GET') {
-      const url = new URL(request.url, `http://${request.headers.host}`);
-      const veiculosComEntrada = url.searchParams.get('veiculos_com_entrada');
-
-      // Extrai o ID da URL, se for o último segmento numérico
-      const pathParts = url.pathname.split('/').filter(p => p);
-      const lastPart = pathParts[pathParts.length - 1];
-      const vistoriaId = /^[0-9]+$/.test(lastPart) ? lastPart : null;
-
       // Se um ID foi encontrado na URL, busca a vistoria específica
-      if (vistoriaId) {
+      if (id) {
         const { data: vistoria, error: vistoriaError } = await supabase
           .from('vistorias')
           .select(`
@@ -41,7 +39,7 @@ export default async function handler(request, response) {
             clientes:cliente_id(nome, cpf, telefone),
             veiculos:veiculo_id(marca, modelo, placa, cor, ano)
           `)
-          .eq('id', parseInt(vistoriaId))
+          .eq('id', parseInt(id))
           .single();
 
         if (vistoriaError) {
@@ -57,6 +55,7 @@ export default async function handler(request, response) {
         });
       }
       
+      const veiculosComEntrada = url.searchParams.get('veiculos_com_entrada');
       if (veiculosComEntrada === 'true') {
         // Buscar vistorias de entrada que não têm vistoria de saída correspondente
         const { data: vistoriasEntrada, error: entradaError } = await supabase
@@ -209,7 +208,7 @@ export default async function handler(request, response) {
     }
 
     if (method === 'PUT') {
-      const { id } = request.query;
+      // O 'id' agora é extraído da URL no início do handler
       const vistoriaData = request.body;
 
       if (!id) {

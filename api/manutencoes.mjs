@@ -6,7 +6,12 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   const { method } = req;
-  const { id } = req.params || {};
+
+  // Extrai o ID da URL, se for o último segmento numérico
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathParts = url.pathname.split('/').filter(p => p);
+  const lastPart = pathParts[pathParts.length - 1];
+  const id = /^[0-9]+$/.test(lastPart) ? lastPart : null;
 
   try {
     switch (method) {
