@@ -7,7 +7,7 @@ export default async function handler(request, response) {
   }
 
   try {
-    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY; // Usar a SERVICE_KEY para ter permissões de escrita
 
     if (!supabaseUrl || !supabaseKey) {
