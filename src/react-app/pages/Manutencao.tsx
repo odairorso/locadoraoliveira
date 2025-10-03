@@ -88,10 +88,27 @@ export default function Manutencao() {
   // Função para formatar data para input (aaaa-mm-dd)
   const formatarDataInput = (data: string) => {
     if (!data) return '';
-    const [dia, mes, ano] = data.split('/');
-    if (dia && mes && ano) {
+    // Remove todos os caracteres não numéricos
+    const digits = data.replace(/\D/g, '');
+
+    // Verifica se temos uma data no formato ddmmyyyy
+    if (digits.length === 8) {
+      const dia = digits.substring(0, 2);
+      const mes = digits.substring(2, 4);
+      const ano = digits.substring(4, 8);
       return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
     }
+
+    // Tenta o formato original com barras (dd/mm/yyyy)
+    const parts = data.split('/');
+    if (parts.length === 3) {
+      const [dia, mes, ano] = parts;
+      if (dia && mes && ano && ano.length === 4) {
+        return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+      }
+    }
+    
+    // Se nada funcionar, retorna o valor original, que provavelmente causará o erro esperado
     return data;
   };
 
