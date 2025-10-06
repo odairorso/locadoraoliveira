@@ -372,8 +372,17 @@ const VistoriaForm: React.FC = () => {
                 }
               })(),
             });
-            
-            setVistoriaSaida(vistoriaSaida);
+
+            // Preencher apenas quilometragem e combustível no form principal, sem sobrescrever checklist/avarias
+            setFormData(prev => ({
+              ...prev,
+              quilometragem: prev.quilometragem && prev.quilometragem !== '' 
+                ? prev.quilometragem 
+                : (vSaida.quilometragem?.toString() || prev.quilometragem || ''),
+              combustivel: prev.combustivel && prev.combustivel !== '' 
+                ? prev.combustivel 
+                : (vSaida.nivel_combustivel || prev.combustivel || 'vazio'),
+            }));
             
             console.log('VistoriaForm - Dados da vistoria de saída carregados para comparação no estado vistoriaSaida');
           } else {
@@ -416,7 +425,8 @@ const VistoriaForm: React.FC = () => {
                   observacoes: vistoria.observacoes || '',
                   checklist: vistoria.checklist || {},
                   avarias: vistoria.avarias || [],
-                  fotos: vistoria.fotos || []
+                  fotos: vistoria.fotos || [],
+                  nomeVistoriador: vistoria.nome_vistoriador || ''
                 });
 
                 // Atualiza os campos de busca para exibir os dados carregados

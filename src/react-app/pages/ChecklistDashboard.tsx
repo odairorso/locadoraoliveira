@@ -42,16 +42,6 @@ const ChecklistDashboard: React.FC = () => {
     }
   };
 
-  const vistoriasFiltradas = vistoriasRealizadas.filter(vistoria =>
-    vistoria.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vistoria.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vistoria.nome_condutor.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const formatarData = (dataString: string) => {
-    return new Date(dataString).toLocaleString('pt-BR');
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
