@@ -6,7 +6,6 @@ const ChecklistDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [vistoriasPendentes, setVistoriasPendentes] = useState<any[]>([]); // Vistorias de saída pendentes
   const [vistoriasEntradaPendentes, setVistoriasEntradaPendentes] = useState<any[]>([]); // Vistorias de entrada pendentes
-  const [vistoriasRealizadas, setVistoriasRealizadas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -28,12 +27,7 @@ const ChecklistDashboard: React.FC = () => {
           v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'saida');
         const pendentesEntrada = todasVistorias.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => 
           v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'entrada');
-        const realizadas = todasVistorias.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => v.nome_vistoriador !== 'Sistema');
 
-        // Separar corretamente as vistorias pendentes
-        setVistoriasPendentes(pendentesSaida); // Lado esquerdo: vistorias de saída pendentes
-        setVistoriasEntradaPendentes(pendentesEntrada); // Lado direito: vistorias de entrada pendentes
-        setVistoriasRealizadas(realizadas);
       }
     } catch (error) {
       console.error('Erro ao carregar vistorias:', error);

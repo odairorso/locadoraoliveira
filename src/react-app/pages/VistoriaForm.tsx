@@ -21,6 +21,23 @@ const checklistItems = [
   'Documentos do veículo', 'Veículo higienizado'
 ];
 
+// Mapeamento entre rótulos da UI e chaves do banco de dados
+const uiToDbChecklistMap: Record<string, string> = {
+  'Calota': 'calota',
+  'Pneus (estado geral)': 'pneu',
+  'Antena': 'antena',
+  'Bateria': 'bateria',
+  'Estepe': 'estepe',
+  'Macaco': 'macaco',
+  'Chave de Roda': 'chave_roda',
+  'Triângulo': 'triangulo',
+  'Extintor': 'extintor',
+  'Tapetes': 'tapetes',
+  'Som/Sistema de áudio': 'som',
+  'Documentos do veículo': 'documentos',
+  'Veículo higienizado': 'higienizacao',
+};
+
 const avariaLegendas = {
   'A': 'Amassado',
   'R': 'Risco',
@@ -538,7 +555,8 @@ const VistoriaForm: React.FC = () => {
   
           const checklistData: Record<string, boolean> = {};
           Object.keys(formData.checklist).forEach(key => {
-            const dbKey = key.toLowerCase()
+            const dbKey = uiToDbChecklistMap[key] || key.toLowerCase()
+                             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                              .replace(/\s*\([^)]*\)\s*/g, '')
                              .replace(/[\s\/]/g, '_')
                              .replace(/_$/, '');
