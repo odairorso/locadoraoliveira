@@ -71,7 +71,7 @@ export default async function handler(request, response) {
       
       case 'vistorias':
         // Check if this is an ID-specific operation that needs special handling
-        if (id && (request.method === 'PUT' || request.method === 'DELETE')) {
+        if (id && (request.method === 'GET' || request.method === 'PUT' || request.method === 'DELETE')) {
           return await vistoriasIdHandler(request, response);
         }
         return await vistoriasHandler(request, response);

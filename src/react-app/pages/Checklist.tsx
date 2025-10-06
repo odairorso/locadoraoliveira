@@ -402,7 +402,9 @@ export default function Checklist() {
       const vistoriaData = {
         ...form,
         assinatura,
-        data_vistoria: new Date().toISOString()
+        data_vistoria: new Date().toISOString(),
+        // Para vistorias de entrada, marcar como 'Sistema' para aparecer nas pendentes
+        nomeVistoriador: form.tipo_vistoria === 'entrada' ? 'Sistema' : ''
       };
 
       const response = await fetch('/api/vistorias', {

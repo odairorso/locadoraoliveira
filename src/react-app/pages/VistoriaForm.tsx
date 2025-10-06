@@ -49,6 +49,7 @@ const VistoriaForm: React.FC = () => {
     tipoVistoria: 'entrada' as 'entrada' | 'saida', // Added tipoVistoria
     combustivel: 'vazio' as string,
     observacoes: '',
+    nomeVistoriador: '', // Added nome do vistoriador
     checklist: {} as Record<string, boolean>,
     avarias: [] as Array<{id: string, x: number, y: number, type: 'A' | 'R' | 'T' | 'Q' | 'F'}>,
     fotos: [] as Array<{id: string, file: File, preview: string, description?: string}>
@@ -57,6 +58,17 @@ const VistoriaForm: React.FC = () => {
   const [avarias, setAvarias] = useState<Array<{id: string, x: number, y: number, type: 'A' | 'R' | 'T' | 'Q' | 'F'}>>([]);
   const [selectedDamageType, setSelectedDamageType] = useState<'A' | 'R' | 'T' | 'Q' | 'F'>('A');
   const [photos, setPhotos] = useState<Array<{id: string, file: File, preview: string, description?: string}>>([]);
+  const [vistoriaSaida, setVistoriaSaida] = useState<any>(null); // State for comparison data
+
+  const [confrontoState, setConfrontoState] = useState<Record<string, boolean>>({});
+
+  const handleConfrontoChange = (item: string) => {
+    setConfrontoState(prev => ({
+      ...prev,
+      [item]: !prev[item]
+    }));
+  };
+
 
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [clientSearchResults, setClientSearchResults] = useState<any[]>([]);
@@ -172,10 +184,13 @@ const VistoriaForm: React.FC = () => {
 
       const carregarDadosLocacao = async (locacaoId: string) => {
         try {
+          console.log('VistoriaForm - Carregando dados da locação:', locacaoId);
           const response = await fetch(`/api/locacoes/${locacaoId}`);
           const result = await response.json();
           if (result.success && result.data) {
             const locacao = result.data;
+            console.log('VistoriaForm - Dados da locação carregados:', locacao);
+            
             setFormData(prev => ({
               ...prev,
               cliente: locacao.cliente_nome,
@@ -189,6 +204,44 @@ const VistoriaForm: React.FC = () => {
             // Also update search terms to reflect the loaded data
             setClientSearchTerm(locacao.cliente_nome);
             setVehicleSearchTerm(`${locacao.veiculo_modelo} - ${locacao.veiculo_placa}`);
+            
+            // For exit inspections, also load entry inspection data for comparison
+            const tipo = searchParams.get('tipo');
+            console.log('VistoriaForm - Tipo de vistoria detectado:', tipo);
+            console.log('VistoriaForm - SearchParams completos:', Object.fromEntries(searchParams.entries()));
+            
+            if (tipo === 'saida') {
+              console.log('VistoriaForm - É vistoria de saída! Buscando vistoria de entrada por locação:', locacaoId);
+              
+              try {
+                // Buscar diretamente por locacao_id e tipo=entrada (a API retorna um array)
+                const apiUrl = `/api/vistorias?locacao_id=${locacaoId}&tipo=entrada`;
+                console.log('VistoriaForm - URL da API (entrada por locação):', apiUrl);
+                
+                const vistoriasResponse = await fetch(apiUrl);
+                const vistoriasResult = await vistoriasResponse.json();
+                
+                console.log('VistoriaForm - Resposta da API de vistorias (entrada por locação):', vistoriasResult);
+                
+                if (vistoriasResult.success && Array.isArray(vistoriasResult.data) && vistoriasResult.data.length > 0) {
+                  const vistoriaEntrada = vistoriasResult.data[0];
+                  console.log('VistoriaForm - ✅ Vistoria de entrada encontrada para a locação! Preenchendo dados:', vistoriaEntrada);
+                  // Preencher dados da entrada para comparação
+                  setFormData(prev => ({
+                    ...prev,
+                    quilometragem: vistoriaEntrada.quilometragem?.toString() || prev.quilometragem,
+                    combustivel: vistoriaEntrada.nivel_combustivel || prev.combustivel,
+                  }));
+                  console.log('VistoriaForm - Dados preenchidos - Quilometragem:', vistoriaEntrada.quilometragem, 'Combustível:', vistoriaEntrada.nivel_combustivel);
+                } else {
+                  console.log('VistoriaForm - ❌ Nenhuma vistoria de entrada encontrada para esta locação');
+                }
+              } catch (error) {
+                console.error('VistoriaForm - ❌ Erro ao buscar vistoria de entrada:', error);
+              }
+            } else {
+              console.log('VistoriaForm - Não é vistoria de saída, pulando busca de vistoria de entrada');
+            }
           } else {
             console.error('Erro ao carregar dados da locação:', result.error);
           }
@@ -225,16 +278,39 @@ const VistoriaForm: React.FC = () => {
           console.log('VistoriaForm - Resposta da API:', result);
           
           if (result.success && result.data) {
-            const vistoriaEntrada = result.data;
-            console.log('VistoriaForm - Dados da vistoria de entrada:', vistoriaEntrada);
+            const v = result.data;
+            console.log('VistoriaForm - Dados da vistoria de entrada:', v);
+            
+            // Montar checklist a partir das colunas da base
+            const checklistFromDB = {
+              calota: !!v.item_calota,
+              pneu: !!v.item_pneu,
+              antena: !!v.item_antena,
+              bateria: !!v.item_bateria,
+              estepe: !!v.item_estepe,
+              macaco: !!v.item_macaco,
+              chaveRoda: !!v.item_chave_roda,
+              triangulo: !!v.item_triangulo,
+              extintor: !!v.item_extintor,
+              tapetes: !!v.item_tapetes,
+              som: !!v.item_som,
+              documentos: !!v.item_documentos,
+              higienizacao: !!v.item_higienizacao,
+            };
+            
             setFormData(prev => ({
               ...prev,
-              cliente: vistoriaEntrada.cliente_nome || '',
-              clienteId: vistoriaEntrada.cliente_id,
-              placa: vistoriaEntrada.placa,
-              veiculoId: vistoriaEntrada.veiculo_id,
-              modelo: vistoriaEntrada.modelo,
-              telefone: vistoriaEntrada.telefone || '',
+              cliente: v.clientes?.nome || prev.cliente || '',
+              clienteId: v.cliente_id,
+              placa: v.veiculos?.placa || prev.placa || '',
+              veiculoId: v.veiculo_id,
+              modelo: v.veiculos?.modelo || prev.modelo || '',
+              telefone: v.clientes?.telefone || prev.telefone || '',
+              quilometragem: v.quilometragem?.toString() || prev.quilometragem,
+              combustivel: v.nivel_combustivel || prev.combustivel,
+              checklist: checklistFromDB,
+              avarias: v.avarias || prev.avarias,
+              fotos: v.fotos || prev.fotos,
             }));
             console.log('VistoriaForm - FormData atualizado com sucesso');
           } else {
@@ -242,6 +318,69 @@ const VistoriaForm: React.FC = () => {
           }
         } catch (error) {
           console.error('VistoriaForm - Erro ao carregar dados da vistoria de entrada:', error);
+        }
+      };
+
+      const carregarVistoriaSaidaParaComparacao = async (locacaoId: string) => {
+        try {
+          console.log('VistoriaForm - Buscando vistoria de saída para locação:', locacaoId);
+          const response = await fetch(`/api/vistorias?locacao_id=${locacaoId}&tipo=saida`);
+          const result = await response.json();
+          
+          console.log('VistoriaForm - Resposta da busca de vistoria de saída:', result);
+          
+          if (result.success && result.data && result.data.length > 0) {
+            const vSaida = result.data[0]; // Pega a primeira vistoria de saída encontrada
+            console.log('VistoriaForm - Dados da vistoria de saída para comparação:', vSaida);
+            
+            // Montar checklist da vistoria de saída a partir das colunas da base
+            const checklistSaida = {
+              calota: !!vSaida.item_calota,
+              pneu: !!vSaida.item_pneu,
+              antena: !!vSaida.item_antena,
+              bateria: !!vSaida.item_bateria,
+              estepe: !!vSaida.item_estepe,
+              macaco: !!vSaida.item_macaco,
+              chaveRoda: !!vSaida.item_chave_roda,
+              triangulo: !!vSaida.item_triangulo,
+              extintor: !!vSaida.item_extintor,
+              tapetes: !!vSaida.item_tapetes,
+              som: !!vSaida.item_som,
+              documentos: !!vSaida.item_documentos,
+              higienizacao: !!vSaida.item_higienizacao,
+            };
+
+            // Guardar dados da saída em estado separado para confronto na UI
+            setVistoriaSaida({
+              quilometragem: vSaida.quilometragem,
+              combustivel: vSaida.nivel_combustivel,
+              checklist: checklistSaida,
+              avarias: (() => {
+                try {
+                  if (typeof vSaida.avarias === 'string') return JSON.parse(vSaida.avarias);
+                  return vSaida.avarias || [];
+                } catch {
+                  return [];
+                }
+              })(),
+              fotos: (() => {
+                try {
+                  if (typeof vSaida.fotos === 'string') return JSON.parse(vSaida.fotos);
+                  return vSaida.fotos || [];
+                } catch {
+                  return [];
+                }
+              })(),
+            });
+            
+            setVistoriaSaida(vistoriaSaida);
+            
+            console.log('VistoriaForm - Dados da vistoria de saída carregados para comparação no estado vistoriaSaida');
+          } else {
+            console.log('VistoriaForm - Nenhuma vistoria de saída encontrada para a locação:', locacaoId);
+          }
+        } catch (error) {
+          console.error('VistoriaForm - Erro ao carregar vistoria de saída para comparação:', error);
         }
       };
 
@@ -283,6 +422,12 @@ const VistoriaForm: React.FC = () => {
                 // Atualiza os campos de busca para exibir os dados carregados
                 setClientSearchTerm(clienteNome);
                 setVehicleSearchTerm(`${veiculoModelo} - ${veiculoPlaca}`);
+
+                // Se for vistoria de entrada, carregar dados da vistoria de saída para comparação
+                if (vistoria.tipo_vistoria === 'entrada' && vistoria.locacao_id) {
+                  console.log('VistoriaForm - Carregando vistoria de saída para comparação, locacao_id:', vistoria.locacao_id);
+                  carregarVistoriaSaidaParaComparacao(vistoria.locacao_id);
+                }
               }
             } catch (error) {
               console.error('Erro ao carregar vistoria:', error);
@@ -376,8 +521,8 @@ const VistoriaForm: React.FC = () => {
 
         const handleSubmit = async (e: React.FormEvent) => {
           e.preventDefault();
-          if (!formData.clienteId || !formData.veiculoId || !formData.quilometragem || !formData.combustivel || !formData.condutor) {
-            alert('Por favor, preencha todos os campos obrigatórios (Cliente, Placa, Quilometragem, Combustível, Condutor).');
+          if (!formData.clienteId || !formData.veiculoId || !formData.quilometragem || !formData.combustivel || !formData.condutor || !formData.nomeVistoriador) {
+            alert('Por favor, preencha todos os campos obrigatórios (Cliente, Placa, Quilometragem, Combustível, Condutor, Nome do Vistoriador).');
             return;
           }
   
@@ -402,11 +547,13 @@ const VistoriaForm: React.FC = () => {
             placa: formData.placa,
             modelo: formData.modelo,
             cor: formData.cor,
+            nomeVistoriador: formData.nomeVistoriador || 'Sistema', // Include nome do vistoriador
             checklist: checklistData,
             avariasJson: avarias, // Use actual avarias state
             assinaturaClienteUrl: '',
             assinaturaVistoriadorUrl: '',
             fotos: photos, // Include photos in payload
+            confronto: confrontoState, // Include comparison data
           };
   
           console.log('Payload para API:', payload);
@@ -571,26 +718,87 @@ const VistoriaForm: React.FC = () => {
           <input name="quilometragem" value={formData.quilometragem} onChange={handleInputChange} placeholder="Quilometragem" type="number" className="p-2 border rounded" />
           <input name="condutor" value={formData.condutor} onChange={handleInputChange} placeholder="Nome do Condutor *" className="p-2 border rounded" required />
           <input name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="Telefone" className="p-2 border rounded" />
+          <input name="nomeVistoriador" value={formData.nomeVistoriador} onChange={handleInputChange} placeholder="Nome do Vistoriador *" className="p-2 border rounded" required />
           <input name="dataHora" value={formData.dataHora} placeholder="Data e Hora" className="p-2 border rounded bg-gray-100" readOnly />
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Checklist de Itens</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {checklistItems.map(item => (
-            <label key={item} className="flex items-start space-x-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
-              <input 
-                type="checkbox" 
-                checked={!!formData.checklist[item]} 
-                onChange={() => handleChecklistChange(item)} 
-                className="h-5 w-5 rounded mt-0.5 flex-shrink-0" 
-              />
-              <span className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed break-words">{item}</span>
-            </label>
-          ))}
+      {/* Checklist Comparison Table */}
+      {vistoriaSaida && (
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Confronto de Checklist (Saída vs. Entrada)</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-gray-700">
+                  <th className="p-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Item</th>
+                  <th className="p-3 text-center text-sm font-semibold text-gray-600 dark:text-gray-300">Vistoria de Saída</th>
+                  <th className="p-3 text-center text-sm font-semibold text-gray-600 dark:text-gray-300">Vistoria de Entrada</th>
+                  <th className="p-3 text-center text-sm font-semibold text-gray-600 dark:text-gray-300">Confrontado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {checklistItems.map(item => {
+                  // Normalize the key to match the database format if needed
+                  const itemKey = item.toLowerCase()
+                                     .replace(/\s*\([^)]*\)\s*/g, '')
+                                     .replace(/[\s\/]/g, '_')
+                                     .replace(/_$/, '');
+                  
+                  const saidaStatus = vistoriaSaida.checklist ? !!vistoriaSaida.checklist[itemKey] : false;
+                  
+                  return (
+                    <tr key={item} className="border-b border-gray-200 dark:border-gray-700">
+                      <td className="p-3 text-gray-800 dark:text-gray-200">{item}</td>
+                      <td className="p-3 text-center">
+                        {saidaStatus 
+                          ? <span className="text-green-500 font-bold">OK</span> 
+                          : <span className="text-red-500 font-bold">Não OK</span>}
+                      </td>
+                      <td className="p-3 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={!!formData.checklist[item]} 
+                          onChange={() => handleChecklistChange(item)} 
+                          className="h-6 w-6 rounded"
+                        />
+                      </td>
+                      <td className="p-3 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={!!confrontoState[item]} 
+                          onChange={() => handleConfrontoChange(item)} 
+                          className="h-6 w-6 rounded text-blue-500 focus:ring-blue-500"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Original Checklist (only shows if not in comparison mode) */}
+      {!vistoriaSaida && (
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Checklist de Itens</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {checklistItems.map(item => (
+              <label key={item} className="flex items-start space-x-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
+                <input 
+                  type="checkbox" 
+                  checked={!!formData.checklist[item]} 
+                  onChange={() => handleChecklistChange(item)} 
+                  className="h-5 w-5 rounded mt-0.5 flex-shrink-0" 
+                />
+                <span className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed break-words">{item}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Combustível e Avarias</h2>
