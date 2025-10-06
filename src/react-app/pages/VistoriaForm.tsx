@@ -767,13 +767,14 @@ const VistoriaForm: React.FC = () => {
               </thead>
               <tbody>
                 {checklistItems.map(item => {
-                  // Normalize the key to match the database format if needed
-                  const itemKey = item.toLowerCase()
+                  // Obter a chave do banco de dados mapeada para este item
+                  const dbKey = uiToDbChecklistMap[item] || item.toLowerCase()
+                                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                                      .replace(/\s*\([^)]*\)\s*/g, '')
                                      .replace(/[\s\/]/g, '_')
                                      .replace(/_$/, '');
                   
-                  const saidaStatus = vistoriaSaida.checklist ? !!vistoriaSaida.checklist[itemKey] : false;
+                  const saidaStatus = vistoriaSaida.checklist ? !!vistoriaSaida.checklist[dbKey] : false;
                   
                   return (
                     <tr key={item} className="border-b border-gray-200 dark:border-gray-700">

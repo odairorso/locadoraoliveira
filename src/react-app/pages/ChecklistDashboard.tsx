@@ -28,6 +28,10 @@ const ChecklistDashboard: React.FC = () => {
         const pendentesEntrada = todasVistorias.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => 
           v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'entrada');
 
+        // Atualiza os estados com as listas de pendências
+        setVistoriasPendentes(pendentesSaida);
+        setVistoriasEntradaPendentes(pendentesEntrada);
+
       }
     } catch (error) {
       console.error('Erro ao carregar vistorias:', error);
