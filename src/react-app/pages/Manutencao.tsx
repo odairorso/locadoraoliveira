@@ -263,6 +263,9 @@ export default function Manutencao() {
     );
   }
 
+  // Soma total dos valores de manutenção
+  const totalGeral = manutencoes?.data?.reduce((sum, m) => sum + (m.valor || 0), 0) || 0;
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -478,9 +481,16 @@ export default function Manutencao() {
       {/* Lista de Manutenções */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="px-4 md:px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Histórico de Manutenções ({manutencoes?.total || 0})
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Histórico de Manutenções ({manutencoes?.total || 0})
+            </h2>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              <span className="text-sm text-gray-600">Total:</span>
+              <span className="font-semibold text-green-700">{formatarValor(totalGeral)}</span>
+            </div>
+          </div>
         </div>
 
         {manutencoes?.data && manutencoes.data.length > 0 ? (
