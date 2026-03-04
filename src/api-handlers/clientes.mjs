@@ -111,7 +111,16 @@ export default async function handler(request, response) {
       let query = supabase.from('clientes').select('*');
       if (search) {
         const docCol = schema.docColumn;
-        query = query.or(`nome.ilike.%${search}%,${docCol}.ilike.%${search}%`);
+        const raw = String(search || '');
+        const digits = raw.replace(/\D/g, '');
+        const isDigits = digits.length > 0 && raw.replace(/\s/g, '') === digits;
+        if (isDigits) {
+          // Buscar por nome ou documento exato (sem máscara)
+          query = query.or(`nome.ilike.%${raw}%,${docCol}.eq.${digits}`);
+        } else {
+          // Buscar apenas por nome para evitar ilike em colunas numéricas
+          query = query.ilike('nome', `%${raw}%`);
+        }
       }
       if (limit && /^\d+$/.test(String(limit))) {
         query = query.limit(parseInt(limit));
