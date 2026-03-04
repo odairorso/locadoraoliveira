@@ -1,5 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
+async function detectClienteColumns(supabase) {
+  let docColumn = 'cpf_cnpj';
+  let hasTipoPessoa = true;
+
+  const checkColumn = async (col) => {
+    const { error } = await supabase.from('clientes').select(col).limit(1);
+    return !error;
+  };
+
+  if (!(await checkColumn('cpf_cnpj'))) {
+    if (await checkColumn('cpf')) {
+      docColumn = 'cpf';
+    }
+  }
+  hasTipoPessoa = await checkColumn('tipo_pessoa');
+
+  return { docColumn, hasTipoPessoa };
+}
+
 function generateContractHTML(contractData) {
   // Helper for conditional rendering of observations
   const observacoesHTML = contractData.observacoes
@@ -237,6 +256,10 @@ export default async function handler(request, response) {
     console.log('isContratoHtml:', isContratoHtml);
 
     if (method === 'GET') {
+      const clienteSchema = await detectClienteColumns(supabase);
+      const clienteDocField = clienteSchema.docColumn;
+      const clienteTipoField = clienteSchema.hasTipoPessoa ? 'tipo_pessoa' : null;
+      const clienteSelect = ['id', 'nome', clienteDocField, clienteTipoField].filter(Boolean).join(', ');
       if (isContratoData || isContratoHtml) {
         if (!finalId) {
           return response.status(400).json({ success: false, error: 'ID da locação é obrigatório para contrato' });
@@ -246,7 +269,7 @@ export default async function handler(request, response) {
 
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
-          .select(`*, cliente:clientes (*), veiculo:veiculos (*)`)
+          .select(`*, cliente:clientes (${clienteSelect}), veiculo:veiculos (*)`)
           .eq('id', parseInt(finalId))
           .single();
 
@@ -286,8 +309,8 @@ export default async function handler(request, response) {
         const contractData = {
           id: locacao.id,
           cliente_nome: cliente.nome || '[Cliente não encontrado]',
-          cliente_cpf_cnpj: cliente.cpf_cnpj || '[CPF/CNPJ não encontrado]',
-          cliente_tipo_doc: cliente.tipo_pessoa === 'pj' ? 'CNPJ' : 'CPF',
+          cliente_cpf_cnpj: cliente[clienteDocField] || '[CPF/CNPJ não encontrado]',
+          cliente_tipo_doc: (clienteTipoField ? cliente[clienteTipoField] : 'pf') === 'pj' ? 'CNPJ' : 'CPF',
           endereco_completo: enderecoCompleto,
           veiculo_marca: veiculo.marca || '[Marca não encontrada]',
           veiculo_modelo: veiculo.modelo || '[Modelo não encontrado]',
@@ -320,7 +343,7 @@ export default async function handler(request, response) {
 
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
-          .select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( id, nome, cpf_cnpj, tipo_pessoa ), veiculo:veiculos ( id, marca, modelo, placa, ano )')
+          .select(`id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( ${clienteSelect} ), veiculo:veiculos ( id, marca, modelo, placa, ano )`)
           .eq('id', parseInt(finalId))
           .single();
 
@@ -346,7 +369,7 @@ export default async function handler(request, response) {
         return response.status(200).json({ success: true, data: formattedLocacao });
       }
 
-      let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( id, nome, cpf_cnpj, tipo_pessoa ), veiculo:veiculos ( id, marca, modelo, placa, ano )');
+      let query = supabase.from('locacoes').select(`id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( ${clienteSelect} ), veiculo:veiculos ( id, marca, modelo, placa, ano )`);
       if (status) {
         query = query.eq('status', status);
       }
