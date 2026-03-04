@@ -52,6 +52,21 @@ async function fetchVeiculoById(supabase, id) {
   return data;
 }
 
+function formatCpfCnpj(value, tipoDocGuess) {
+  if (!value) return '';
+  const digits = String(value).replace(/\D/g, '');
+  const isCnpj = tipoDocGuess === 'CNPJ' || digits.length === 14;
+  if (isCnpj && digits.length === 14) {
+    return digits
+      .replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*$/, '$1.$2.$3/$4-$5');
+  }
+  if (!isCnpj && digits.length === 11) {
+    return digits
+      .replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*$/, '$1.$2.$3-$4');
+  }
+  return value;
+}
+
 function generateContractHTML(contractData) {
   // Helper for conditional rendering of observations
   const observacoesHTML = contractData.observacoes
@@ -353,13 +368,17 @@ export default async function handler(request, response) {
         const contractData = {
           id: locacao.id,
           cliente_nome: cliente.nome || '[Cliente não encontrado]',
-          cliente_cpf_cnpj: cliente[clienteDocField] || '[CPF/CNPJ não encontrado]',
           cliente_tipo_doc: (() => {
             if (!clienteTipoField) return 'CPF';
             const t = String(cliente[clienteTipoField] || '').toLowerCase();
             if (t === 'pj' || t === 'cnpj') return 'CNPJ';
             return 'CPF';
           })(),
+          cliente_cpf_cnpj: formatCpfCnpj(cliente[clienteDocField], (() => {
+            if (!clienteTipoField) return 'CPF';
+            const t = String(cliente[clienteTipoField] || '').toLowerCase();
+            return (t === 'pj' || t === 'cnpj') ? 'CNPJ' : 'CPF';
+          })()),
           endereco_completo: enderecoCompleto,
           veiculo_marca: veiculo.marca || '[Marca não encontrada]',
           veiculo_modelo: veiculo.modelo || '[Modelo não encontrado]',
