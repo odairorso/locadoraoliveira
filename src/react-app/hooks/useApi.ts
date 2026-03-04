@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ApiResponse } from '@/shared/types';
 
 interface UseApiOptions {
@@ -12,8 +12,16 @@ export function useApi<T>(
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const execute = useCallback(async (fetchOptions?: RequestInit) => {
+    // Abort previous in-flight request para evitar respostas fora de ordem
+    if (abortRef.current) {
+      try { abortRef.current.abort(); } catch {}
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     
@@ -23,6 +31,7 @@ export function useApi<T>(
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         ...fetchOptions,
       });
       
@@ -40,6 +49,10 @@ export function useApi<T>(
         setError(result.error || 'Erro desconhecido');
       }
     } catch (err) {
+      if ((err as any)?.name === 'AbortError') {
+        // Requisição anterior abortada: não altera estado de erro
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Erro de conexão');
     } finally {
       setLoading(false);
@@ -70,6 +83,11 @@ export function useApi<T>(
     if (options.immediate) {
       execute();
     }
+    return () => {
+      if (abortRef.current) {
+        try { abortRef.current.abort(); } catch {}
+      }
+    };
   }, [execute, options.immediate]);
 
   return {

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import compression from 'compression';
 
 // Carregar variáveis de ambiente do .env.local
 dotenv.config({ path: '.env.local' });
@@ -16,11 +17,20 @@ const PORT = 3000;
 
 // Middleware
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Servir arquivos estáticos
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  maxAge: '1d',
+  setHeaders: (res, filePath) => {
+    // Arquivos com hash no nome (ex: index-abc123.js) podem ser cacheados por mais tempo
+    if (/[.-][a-f0-9]{6,}\./i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
 // Rota para a página principal
 app.get('/', (req, res) => {
