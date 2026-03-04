@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  Car, 
-  User, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Car,
+  User,
+  CheckCircle2,
+  XCircle,
   Save,
   Search
 } from 'lucide-react';
@@ -13,7 +13,7 @@ import SignatureCanvas from 'react-signature-canvas';
 interface Cliente {
   id: number;
   nome: string;
-  cpf: string;
+  cpf_cnpj: string;
   celular: string;
 }
 
@@ -34,7 +34,7 @@ interface Locacao {
   status: string;
   clientes?: {
     nome: string;
-    cpf: string;
+    cpf_cnpj: string;
     celular: string;
   };
   veiculos?: {
@@ -140,7 +140,7 @@ export default function Checklist() {
     try {
       const response = await fetch('/api/clientes');
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         setClientes(result.data);
       }
@@ -153,7 +153,7 @@ export default function Checklist() {
     try {
       const response = await fetch('/api/veiculos');
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         setVeiculos(result.data);
       }
@@ -166,7 +166,7 @@ export default function Checklist() {
     try {
       const response = await fetch('/api/locacoes');
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         setLocacoes(result.data);
       }
@@ -178,39 +178,39 @@ export default function Checklist() {
   const carregarDadosVistoriaEntrada = async (entradaId: string, veiculoId: string) => {
     try {
       console.log('carregarDadosVistoriaEntrada - Iniciando com entradaId:', entradaId, 'veiculoId:', veiculoId);
-      
+
       // Buscar dados da vistoria de entrada
       const vistoriaResponse = await fetch(`/api/vistorias/${entradaId}`);
       const vistoriaResult = await vistoriaResponse.json();
-      
+
       console.log('Resposta da vistoria:', vistoriaResult);
-      
+
       if (vistoriaResult.success && vistoriaResult.data) {
         const vistoriaEntrada = vistoriaResult.data;
         console.log('Dados da vistoria de entrada:', vistoriaEntrada);
-        
+
         // Buscar dados do veículo
         const veiculoResponse = await fetch(`/api/veiculos/${veiculoId}`);
         const veiculoResult = await veiculoResponse.json();
-        
+
         console.log('Resposta do veículo:', veiculoResult);
-        
+
         if (veiculoResult.success && veiculoResult.data) {
           const veiculo = veiculoResult.data;
           console.log('Dados do veículo:', veiculo);
           setSelectedVeiculo(veiculo);
-          
+
           // Buscar dados do cliente
           const clienteResponse = await fetch(`/api/clientes/${vistoriaEntrada.cliente_id}`);
           const clienteResult = await clienteResponse.json();
-          
+
           console.log('Resposta do cliente:', clienteResult);
-          
+
           if (clienteResult.success && clienteResult.data) {
             const cliente = clienteResult.data;
             console.log('Dados do cliente:', cliente);
             setSelectedCliente(cliente);
-            
+
             // Preencher o formulário com os dados
             setForm(prev => ({
               ...prev,
@@ -219,7 +219,7 @@ export default function Checklist() {
               locacao_id: vistoriaEntrada.locacao_id,
               nome_condutor: cliente.nome
             }));
-            
+
             console.log('Formulário preenchido, ocultando seleção de locação');
             // Não mostrar seleção de locação pois já temos os dados
             setShowLocacaoSelection(false);
@@ -236,37 +236,37 @@ export default function Checklist() {
   const carregarDadosVistoriaPorLocacao = async (locacaoId: string) => {
     try {
       console.log('carregarDadosVistoriaPorLocacao - Iniciando com locacaoId:', locacaoId);
-      
+
       // Buscar dados da locação
       const locacaoResponse = await fetch(`/api/locacoes/${locacaoId}`);
       const locacaoResult = await locacaoResponse.json();
-      
+
       console.log('Resposta da locação:', locacaoResult);
-      
+
       if (locacaoResult.success && locacaoResult.data) {
         const locacao = locacaoResult.data;
         console.log('Dados da locação:', locacao);
-        
+
         // Buscar vistoria de entrada pelo veículo da locação
         const vistoriasResponse = await fetch(`/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`);
         const vistoriasResult = await vistoriasResponse.json();
-        
+
         console.log('Resposta das vistorias:', vistoriasResult);
-        
+
         if (vistoriasResult.success && vistoriasResult.data && vistoriasResult.data.vistorias && vistoriasResult.data.vistorias.length > 0) {
           const vistoriaEntrada = vistoriasResult.data.vistorias[0];
           console.log('Vistoria de entrada encontrada:', vistoriaEntrada);
-          
+
           // Definir cliente e veículo selecionados
           if (locacao.clientes) {
             setSelectedCliente({
               id: locacao.cliente_id,
               nome: locacao.clientes.nome,
-              cpf: locacao.clientes.cpf,
+              cpf_cnpj: locacao.clientes.cpf_cnpj,
               celular: locacao.clientes.celular || ''
             });
           }
-          
+
           if (locacao.veiculos) {
             setSelectedVeiculo({
               id: locacao.veiculo_id,
@@ -276,9 +276,9 @@ export default function Checklist() {
               cor: locacao.veiculos.cor
             });
           }
-          
+
           setSelectedLocacao(locacao);
-          
+
           // Preencher o formulário com os dados
           setForm(prev => ({
             ...prev,
@@ -289,24 +289,24 @@ export default function Checklist() {
             quilometragem: vistoriaEntrada.quilometragem || '',
             combustivel: vistoriaEntrada.combustivel || ''
           }));
-          
+
           console.log('Formulário preenchido com dados da locação, ocultando seleção de locação');
           // Não mostrar seleção de locação pois já temos os dados
           setShowLocacaoSelection(false);
         } else {
           console.log('Nenhuma vistoria de entrada encontrada para o veículo da locação');
           alert(`Vistoria de entrada não encontrada para o veículo ${locacao.veiculos?.marca} ${locacao.veiculos?.modelo} - ${locacao.veiculos?.placa}. Você precisará preencher os dados manualmente.`);
-          
+
           // Mesmo sem vistoria de entrada, podemos preencher os dados básicos da locação
           if (locacao.clientes) {
             setSelectedCliente({
               id: locacao.cliente_id,
               nome: locacao.clientes.nome,
-              cpf: locacao.clientes.cpf,
+              cpf_cnpj: locacao.clientes.cpf_cnpj,
               celular: locacao.clientes.celular || ''
             });
           }
-          
+
           if (locacao.veiculos) {
             setSelectedVeiculo({
               id: locacao.veiculo_id,
@@ -316,9 +316,9 @@ export default function Checklist() {
               cor: locacao.veiculos.cor
             });
           }
-          
+
           setSelectedLocacao(locacao);
-          
+
           // Preencher o formulário com os dados básicos
           setForm(prev => ({
             ...prev,
@@ -327,7 +327,7 @@ export default function Checklist() {
             locacao_id: parseInt(locacaoId),
             nome_condutor: locacao.clientes?.nome || ''
           }));
-          
+
           // Ocultar seleção de locação mesmo sem vistoria de entrada
           setShowLocacaoSelection(false);
         }
@@ -353,7 +353,7 @@ export default function Checklist() {
     setSelectedVeiculo(veiculo);
     setForm({ ...form, veiculo_id: veiculo.id });
     setSearchVeiculo('');
-    
+
     const locacaoAtiva = locacoes.find((l: Locacao) => l.veiculo_id === veiculo.id);
     if (locacaoAtiva) {
       setSelectedLocacao(locacaoAtiva);
@@ -364,21 +364,21 @@ export default function Checklist() {
   const selecionarLocacao = (locacao: Locacao) => {
     setSelectedLocacao(locacao);
     setForm(prev => ({ ...prev, locacao_id: locacao.id }));
-    
+
     // Buscar dados do cliente e veículo da locação
     const cliente = clientes.find(c => c.id === locacao.cliente_id);
     const veiculo = veiculos.find(v => v.id === locacao.veiculo_id);
-    
+
     if (cliente) {
       setSelectedCliente(cliente);
       setForm(prev => ({ ...prev, cliente_id: cliente.id, nome_condutor: cliente.nome }));
     }
-    
+
     if (veiculo) {
       setSelectedVeiculo(veiculo);
       setForm(prev => ({ ...prev, veiculo_id: veiculo.id }));
     }
-    
+
     setShowLocacaoSelection(false);
   };
 
@@ -398,11 +398,13 @@ export default function Checklist() {
     try {
       // Capturar assinatura
       const assinatura = signatureRef.current?.toDataURL() || '';
-      
+
       const vistoriaData = {
         ...form,
         assinatura,
-        data_vistoria: new Date().toISOString()
+        data_vistoria: new Date().toISOString(),
+        // Para vistorias de entrada, marcar como 'Sistema' para aparecer nas pendentes
+        nomeVistoriador: form.tipo_vistoria === 'entrada' ? 'Sistema' : ''
       };
 
       const response = await fetch('/api/vistorias', {
@@ -445,12 +447,12 @@ export default function Checklist() {
     }
   };
 
-  const clientesFiltrados = clientes.filter(c => 
+  const clientesFiltrados = clientes.filter(c =>
     c.nome.toLowerCase().includes(searchCliente.toLowerCase()) ||
-    c.cpf.includes(searchCliente)
+    c.cpf_cnpj.includes(searchCliente)
   );
 
-  const veiculosFiltrados = veiculos.filter(v => 
+  const veiculosFiltrados = veiculos.filter(v =>
     v.modelo.toLowerCase().includes(searchVeiculo.toLowerCase()) ||
     v.marca.toLowerCase().includes(searchVeiculo.toLowerCase()) ||
     v.placa.toLowerCase().includes(searchVeiculo.toLowerCase())
@@ -482,7 +484,7 @@ export default function Checklist() {
               locacoes.map((locacao) => {
                 const cliente = clientes.find(c => c.id === locacao.cliente_id);
                 const veiculo = veiculos.find(v => v.id === locacao.veiculo_id);
-                
+
                 return (
                   <div
                     key={locacao.id}
@@ -523,21 +525,19 @@ export default function Checklist() {
         <div className="flex gap-4">
           <button
             onClick={() => setForm({ ...form, tipo_vistoria: 'entrada' })}
-            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors ${
-              form.tipo_vistoria === 'entrada'
+            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors ${form.tipo_vistoria === 'entrada'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`}
+              }`}
           >
             Vistoria de Entrada
           </button>
           <button
             onClick={() => setForm({ ...form, tipo_vistoria: 'saida' })}
-            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors ${
-              form.tipo_vistoria === 'saida'
+            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors ${form.tipo_vistoria === 'saida'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`}
+              }`}
           >
             Vistoria de Saída
           </button>
@@ -546,126 +546,126 @@ export default function Checklist() {
 
       {/* Seleção de Cliente */}
       {!showLocacaoSelection && (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <User className="mr-2" size={24} />
-          Cliente
-        </h2>
-        
-        {!selectedCliente ? (
-          <div className="relative">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <User className="mr-2" size={24} />
+            Cliente
+          </h2>
+
+          {!selectedCliente ? (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Buscar cliente por nome ou CPF..."
-                value={searchCliente}
-                onChange={(e) => setSearchCliente(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            
-            {searchCliente && (
-              <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {clientesFiltrados.length > 0 ? (
-                  clientesFiltrados.map(cliente => (
-                    <button
-                      key={cliente.id}
-                      onClick={() => handleSelectCliente(cliente)}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
-                    >
-                      <div className="font-medium text-gray-900 dark:text-white">{cliente.nome}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{cliente.cpf} • {cliente.celular}</div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
-                    Nenhum cliente encontrado
-                  </div>
-                )}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Buscar cliente por nome ou CPF..."
+                  value={searchCliente}
+                  onChange={(e) => setSearchCliente(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="font-medium text-gray-900 dark:text-white">{selectedCliente.nome}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{selectedCliente.cpf}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{selectedCliente.celular}</div>
-              </div>
-              <button
-                onClick={() => setSelectedCliente(null)}
-                className="text-red-600 hover:text-red-700 dark:text-red-400"
-              >
-                <XCircle size={20} />
-              </button>
+
+              {searchCliente && (
+                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {clientesFiltrados.length > 0 ? (
+                    clientesFiltrados.map(cliente => (
+                      <button
+                        key={cliente.id}
+                        onClick={() => handleSelectCliente(cliente)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white">{cliente.nome}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{cliente.cpf_cnpj} • {cliente.celular}</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                      Nenhum cliente encontrado
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">{selectedCliente.nome}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{selectedCliente.cpf_cnpj}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{selectedCliente.celular}</div>
+                </div>
+                <button
+                  onClick={() => setSelectedCliente(null)}
+                  className="text-red-600 hover:text-red-700 dark:text-red-400"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Seleção de Veículo */}
       {!showLocacaoSelection && (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <Car className="mr-2" size={24} />
-          Veículos
-        </h2>
-        
-        {!selectedVeiculo ? (
-          <div className="relative">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <Car className="mr-2" size={24} />
+            Veículos
+          </h2>
+
+          {!selectedVeiculo ? (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Buscar veículo por marca, modelo ou placa..."
-                value={searchVeiculo}
-                onChange={(e) => setSearchVeiculo(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            
-            {searchVeiculo && (
-              <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {veiculosFiltrados.length > 0 ? (
-                  veiculosFiltrados.map(veiculo => (
-                    <button
-                      key={veiculo.id}
-                      onClick={() => handleSelectVeiculo(veiculo)}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
-                    >
-                      <div className="font-medium text-gray-900 dark:text-white">{veiculo.marca} {veiculo.modelo}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{veiculo.placa} • {veiculo.cor}</div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
-                    Nenhum veículo encontrado
-                  </div>
-                )}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Buscar veículo por marca, modelo ou placa..."
+                  value={searchVeiculo}
+                  onChange={(e) => setSearchVeiculo(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="font-medium text-gray-900 dark:text-white">{selectedVeiculo.marca} {selectedVeiculo.modelo}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{selectedVeiculo.placa}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Cor: {selectedVeiculo.cor}</div>
-              </div>
-              <button
-                onClick={() => setSelectedVeiculo(null)}
-                className="text-red-600 hover:text-red-700 dark:text-red-400"
-              >
-                <XCircle size={20} />
-              </button>
+
+              {searchVeiculo && (
+                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {veiculosFiltrados.length > 0 ? (
+                    veiculosFiltrados.map(veiculo => (
+                      <button
+                        key={veiculo.id}
+                        onClick={() => handleSelectVeiculo(veiculo)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-200 dark:border-gray-600 last:border-b-0"
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white">{veiculo.marca} {veiculo.modelo}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{veiculo.placa} • {veiculo.cor}</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center">
+                      Nenhum veículo encontrado
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">{selectedVeiculo.marca} {selectedVeiculo.modelo}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{selectedVeiculo.placa}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Cor: {selectedVeiculo.cor}</div>
+                </div>
+                <button
+                  onClick={() => setSelectedVeiculo(null)}
+                  className="text-red-600 hover:text-red-700 dark:text-red-400"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Dados da Locação Selecionada */}
@@ -731,7 +731,7 @@ export default function Checklist() {
                 placeholder="Ex: 50000"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Nível de Combustível
@@ -784,11 +784,10 @@ export default function Checklist() {
                   <button
                     type="button"
                     onClick={() => updateChecklistItem(item.id, 'ok')}
-                    className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
-                      item.status === 'ok'
+                    className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${item.status === 'ok'
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                      }`}
                   >
                     <CheckCircle2 className="inline mr-1" size={16} />
                     OK
@@ -796,11 +795,10 @@ export default function Checklist() {
                   <button
                     type="button"
                     onClick={() => updateChecklistItem(item.id, 'problema')}
-                    className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
-                      item.status === 'problema'
+                    className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${item.status === 'problema'
                         ? 'bg-red-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}
+                      }`}
                   >
                     <XCircle className="inline mr-1" size={16} />
                     Problema

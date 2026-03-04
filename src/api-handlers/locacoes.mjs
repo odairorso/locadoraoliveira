@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 function generateContractHTML(contractData) {
   // Helper for conditional rendering of observations
-  const observacoesHTML = contractData.observacoes 
+  const observacoesHTML = contractData.observacoes
     ? `<div style="margin: 20px 0;">
         <h3 style="font-weight: bold;">OBSERVAÇÕES:</h3>
         <p style="margin: 10px 0; text-align: justify;">${contractData.observacoes}</p>
@@ -49,7 +49,7 @@ function generateContractHTML(contractData) {
             CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:
           </p>
           <p style="margin: 10px 0; text-align: justify;">
-            <strong>${contractData?.cliente_nome || '[Nome do Cliente]'}</strong>, CPF n.º <strong>${contractData?.cliente_cpf || '[CPF]'}</strong>, 
+            <strong>${contractData?.cliente_nome || '[Nome do Cliente]'}</strong>, ${contractData?.cliente_tipo_doc || 'CPF'} n.º <strong>${contractData?.cliente_cpf_cnpj || '[CPF/CNPJ]'}</strong>, 
             residente em: <strong>${contractData?.endereco_completo || '[Endereço]'}</strong>,
             doravante denominado <strong>LOCATÁRIO</strong>.
           </p>
@@ -184,7 +184,7 @@ export default async function handler(request, response) {
   console.log('Method:', request.method);
   console.log('URL:', request.url);
   console.log('========================');
-  
+
   // Set CORS headers
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -196,7 +196,7 @@ export default async function handler(request, response) {
   }
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return response.status(500).json({ success: false, error: 'Missing Supabase URL or Anon Key' });
@@ -207,7 +207,7 @@ export default async function handler(request, response) {
   try {
     const { method } = request;
     const { search, status } = request.query;
-    
+
     // Derive ID from URL path for all methods for consistency
     const urlObj = new URL(request.url, 'http://localhost');
     const pathParts = urlObj.pathname.split('/').filter(p => p);
@@ -241,15 +241,15 @@ export default async function handler(request, response) {
         if (!finalId) {
           return response.status(400).json({ success: false, error: 'ID da locação é obrigatório para contrato' });
         }
-        
+
         console.log('DEBUG: Buscando locação com ID:', finalId);
-        
+
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
           .select(`*, cliente:clientes (*), veiculo:veiculos (*)`)
           .eq('id', parseInt(finalId))
           .single();
-        
+
         console.log('DEBUG: Resultado da busca locação:', { locacao, locacaoError });
 
         if (locacaoError) {
@@ -268,11 +268,11 @@ export default async function handler(request, response) {
         let endereco_parts = [];
         if (cliente.endereco) endereco_parts.push(cliente.endereco);
         if (cliente.bairro) endereco_parts.push(cliente.bairro);
-        
+
         let cidade_estado = [];
         if (cliente.cidade) cidade_estado.push(cliente.cidade);
         if (cliente.estado) cidade_estado.push(cliente.estado);
-        
+
         let enderecoCompleto = endereco_parts.join(', ');
         if (cidade_estado.length > 0) {
           enderecoCompleto += ' - ' + cidade_estado.join('/');
@@ -286,7 +286,8 @@ export default async function handler(request, response) {
         const contractData = {
           id: locacao.id,
           cliente_nome: cliente.nome || '[Cliente não encontrado]',
-          cliente_cpf: cliente.cpf || '[CPF não encontrado]',
+          cliente_cpf_cnpj: cliente.cpf_cnpj || '[CPF/CNPJ não encontrado]',
+          cliente_tipo_doc: cliente.tipo_pessoa === 'pj' ? 'CNPJ' : 'CPF',
           endereco_completo: enderecoCompleto,
           veiculo_marca: veiculo.marca || '[Marca não encontrada]',
           veiculo_modelo: veiculo.modelo || '[Modelo não encontrado]',
@@ -306,7 +307,7 @@ export default async function handler(request, response) {
         if (isContratoData) {
           return response.status(200).json({ success: true, data: contractData });
         }
-        
+
         // Se for contrato, retorna HTML
         const htmlContent = generateContractHTML(contractData);
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -316,13 +317,13 @@ export default async function handler(request, response) {
       // Se há um ID específico na URL, buscar apenas essa locação
       if (finalId) {
         console.log('DEBUG: Buscando locação específica com ID:', finalId);
-        
+
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
-          .select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( id, nome, cpf ), veiculo:veiculos ( id, marca, modelo, placa, ano )')
+          .select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( id, nome, cpf_cnpj, tipo_pessoa ), veiculo:veiculos ( id, marca, modelo, placa, ano )')
           .eq('id', parseInt(finalId))
           .single();
-        
+
         console.log('DEBUG: Resultado da busca locação específica:', { locacao, locacaoError });
 
         if (locacaoError) {
@@ -345,7 +346,7 @@ export default async function handler(request, response) {
         return response.status(200).json({ success: true, data: formattedLocacao });
       }
 
-      let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( id, nome, cpf ), veiculo:veiculos ( id, marca, modelo, placa, ano )');
+      let query = supabase.from('locacoes').select('id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( id, nome, cpf_cnpj, tipo_pessoa ), veiculo:veiculos ( id, marca, modelo, placa, ano )');
       if (status) {
         query = query.eq('status', status);
       }
@@ -353,9 +354,9 @@ export default async function handler(request, response) {
 
       if (error) throw error;
 
-      const formattedData = data.map(l => ({ 
-        ...l, 
-        cliente_nome: l.cliente?.nome, 
+      const formattedData = data.map(l => ({
+        ...l,
+        cliente_nome: l.cliente?.nome,
         veiculo_info: `${l.veiculo?.marca} ${l.veiculo?.modelo} - ${l.veiculo?.placa}`,
         clientes: l.cliente,
         veiculos: l.veiculo
@@ -421,7 +422,7 @@ export default async function handler(request, response) {
       // Criar automaticamente uma vistoria de saída quando um carro é locado
       console.log('=== INICIANDO CRIAÇÃO AUTOMÁTICA DE VISTORIA ===');
       console.log('newLocacao:', newLocacao);
-      
+
       if (newLocacao) {
         try {
           console.log('Buscando dados do veículo ID:', veiculo_id);
@@ -438,7 +439,7 @@ export default async function handler(request, response) {
           // Buscar dados do cliente para incluir o nome como condutor padrão
           const { data: cliente, error: clienteError } = await supabase
             .from('clientes')
-            .select('nome, cpf')
+            .select('nome, cpf_cnpj')
             .eq('id', newLocacao.cliente_id)
             .single();
 
@@ -481,7 +482,7 @@ export default async function handler(request, response) {
             };
 
             console.log('Dados da vistoria a serem inseridos:', vistoriaData);
-            
+
             const { data: vistoriaResult, error: vistoriaError } = await supabase
               .from('vistorias')
               .insert([vistoriaData])

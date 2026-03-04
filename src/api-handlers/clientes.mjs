@@ -12,7 +12,7 @@ export default async function handler(request, response) {
   }
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return response.status(500).json({ success: false, error: 'Missing Supabase URL or Anon Key' });
@@ -27,7 +27,7 @@ export default async function handler(request, response) {
     if (method === 'GET') {
       let query = supabase.from('clientes').select('*');
       if (search) {
-        query = query.or(`nome.ilike.%${search}%,cpf.ilike.%${search}%`);
+        query = query.or(`nome.ilike.%${search}%,cpf_cnpj.ilike.%${search}%`);
       }
       const { data, error } = await query.order('nome', { ascending: true });
       if (error) throw error;
@@ -35,16 +35,16 @@ export default async function handler(request, response) {
     }
 
     if (method === 'POST') {
-      const { cpf } = request.body;
+      const { cpf_cnpj } = request.body;
       const { data: existing, error: existingError } = await supabase
         .from('clientes')
         .select('id')
-        .eq('cpf', cpf)
+        .eq('cpf_cnpj', cpf_cnpj)
         .single();
 
       if (existingError && existingError.code !== 'PGRST116') throw existingError;
       if (existing) {
-        return response.status(400).json({ success: false, error: "CPF já cadastrado" });
+        return response.status(400).json({ success: false, error: "CPF/CNPJ já cadastrado" });
       }
 
       const { data: newCliente, error } = await supabase
@@ -65,7 +65,7 @@ export default async function handler(request, response) {
       const finalUpdateId = updateId && /^\d+$/.test(updateId) ? updateId : null;
 
       if (!finalUpdateId) return response.status(400).json({ success: false, error: 'Missing ID' });
-      
+
       // Verificar se o nome está presente no body
       if (!request.body.nome || request.body.nome.trim() === '') {
         return response.status(400).json({ success: false, error: 'Nome é obrigatório' });

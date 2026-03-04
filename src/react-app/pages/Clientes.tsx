@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Phone, Mail, MapPin } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Phone, Mail, MapPin, Building2, User } from 'lucide-react';
 import { useApi, useMutation } from '@/react-app/hooks/useApi';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import type { Cliente, ClienteCreate } from '@/shared/types';
@@ -10,7 +10,8 @@ export default function ClientesPage() {
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [formData, setFormData] = useState<ClienteCreate>({
     nome: '',
-    cpf: '',
+    tipo_pessoa: 'pf',
+    cpf_cnpj: '',
     celular: '',
     endereco: '',
     bairro: '',
@@ -37,14 +38,14 @@ export default function ClientesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     let result;
     if (editingClient) {
       result = await updateCliente(`/api/clientes/${editingClient.id}`, formData, 'PUT');
     } else {
       result = await createCliente('/api/clientes', formData);
     }
-    
+
     if (result) {
       resetForm();
       refetch();
@@ -55,7 +56,8 @@ export default function ClientesPage() {
     setEditingClient(cliente);
     setFormData({
       nome: cliente.nome,
-      cpf: cliente.cpf,
+      tipo_pessoa: cliente.tipo_pessoa || 'pf',
+      cpf_cnpj: cliente.cpf_cnpj,
       celular: cliente.celular,
       endereco: cliente.endereco,
       bairro: cliente.bairro || '',
@@ -81,7 +83,8 @@ export default function ClientesPage() {
     setEditingClient(null);
     setFormData({
       nome: '',
-      cpf: '',
+      tipo_pessoa: 'pf',
+      cpf_cnpj: '',
       celular: '',
       endereco: '',
       bairro: '',
@@ -101,6 +104,23 @@ export default function ClientesPage() {
       .replace(/(-\d{2})\d+?$/, '$1');
   };
 
+  const formatCNPJ = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{2})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1/$2')
+      .replace(/(\d{4})(\d)/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  const formatCpfCnpj = (value: string) => {
+    if (formData.tipo_pessoa === 'pj') {
+      return formatCNPJ(value);
+    }
+    return formatCPF(value);
+  };
+
   const formatPhone = (value: string) => {
     return value
       .replace(/\D/g, '')
@@ -114,6 +134,14 @@ export default function ClientesPage() {
       .replace(/\D/g, '')
       .replace(/(\d{5})(\d)/, '$1-$2')
       .replace(/(-\d{3})\d+?$/, '$1');
+  };
+
+  const handleTipoPessoaChange = (tipo: 'pf' | 'pj') => {
+    setFormData({ ...formData, tipo_pessoa: tipo, cpf_cnpj: '' });
+  };
+
+  const getCpfCnpjLabel = (tipo?: string) => {
+    return tipo === 'pj' ? 'CNPJ' : 'CPF';
   };
 
   return (
@@ -138,7 +166,7 @@ export default function ClientesPage() {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Pesquisar por nome ou CPF..."
+          placeholder="Pesquisar por nome, CPF ou CNPJ..."
           className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -153,11 +181,42 @@ export default function ClientesPage() {
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                 {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
               </h3>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Tipo de Pessoa */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tipo de Pessoa *
+                  </label>
+                  <div className="flex space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => handleTipoPessoaChange('pf')}
+                      className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-md border-2 text-sm font-medium transition-all ${formData.tipo_pessoa === 'pf'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+                        }`}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Pessoa Física
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTipoPessoaChange('pj')}
+                      className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-md border-2 text-sm font-medium transition-all ${formData.tipo_pessoa === 'pj'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+                        }`}
+                    >
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Pessoa Jurídica
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nome Completo *
+                    {formData.tipo_pessoa === 'pj' ? 'Razão Social / Nome Fantasia *' : 'Nome Completo *'}
                   </label>
                   <input
                     type="text"
@@ -171,16 +230,16 @@ export default function ClientesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      CPF *
+                      {getCpfCnpjLabel(formData.tipo_pessoa)} *
                     </label>
                     <input
                       type="text"
                       required
-                      maxLength={14}
+                      maxLength={formData.tipo_pessoa === 'pj' ? 18 : 14}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={formData.cpf}
-                      onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                      placeholder="000.000.000-00"
+                      value={formData.cpf_cnpj}
+                      onChange={(e) => setFormData({ ...formData, cpf_cnpj: formatCpfCnpj(e.target.value) })}
+                      placeholder={formData.tipo_pessoa === 'pj' ? '00.000.000/0000-00' : '000.000.000-00'}
                     />
                   </div>
 
@@ -362,10 +421,22 @@ export default function ClientesPage() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
+                      {cliente.tipo_pessoa === 'pj' ? (
+                        <Building2 className="h-4 w-4 text-purple-500" />
+                      ) : (
+                        <User className="h-4 w-4 text-blue-500" />
+                      )}
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{cliente.nome}</h3>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">CPF: {cliente.cpf}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {getCpfCnpjLabel(cliente.tipo_pessoa)}: {cliente.cpf_cnpj}
+                      </span>
+                      {cliente.tipo_pessoa === 'pj' && (
+                        <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-full">
+                          PJ
+                        </span>
+                      )}
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-300">
                       <div className="flex items-center space-x-2">
                         <Phone className="h-4 w-4" />
@@ -383,7 +454,7 @@ export default function ClientesPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex space-x-2 ml-4">
                     <button
                       onClick={() => handleEdit(cliente)}

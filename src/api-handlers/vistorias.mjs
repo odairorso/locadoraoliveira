@@ -12,7 +12,7 @@ export default async function handler(request, response) {
   }
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return response.status(500).json({ success: false, error: 'Missing Supabase URL or Anon Key' });
@@ -36,7 +36,7 @@ export default async function handler(request, response) {
           .from('vistorias')
           .select(`
             *,
-            clientes:cliente_id(nome, cpf, telefone),
+            clientes:cliente_id(nome, cpf_cnpj, telefone),
             veiculos:veiculo_id(marca, modelo, placa, cor, ano)
           `)
           .eq('id', parseInt(id))
@@ -54,7 +54,7 @@ export default async function handler(request, response) {
           data: vistoria
         });
       }
-      
+
       const veiculosComEntrada = url.searchParams.get('veiculos_com_entrada');
       if (veiculosComEntrada === 'true') {
         // Buscar vistorias de entrada que não têm vistoria de saída correspondente
@@ -100,10 +100,63 @@ export default async function handler(request, response) {
         });
       }
 
+      // Buscar vistorias por locacao_id e tipo (usado para buscar vistoria de saída por locação)
+      const locacaoId = url.searchParams.get('locacao_id');
+      const tipo = url.searchParams.get('tipo');
+
+      if (locacaoId && tipo) {
+        let query = supabase
+          .from('vistorias')
+          .select(`
+            *,
+            clientes:cliente_id(nome, cpf_cnpj),
+            veiculos:veiculo_id(marca, modelo, placa)
+          `)
+          .eq('locacao_id', parseInt(locacaoId))
+          .eq('tipo_vistoria', tipo)
+          .order('created_at', { ascending: false });
+
+        const { data: vistorias, error: vistoriasError } = await query;
+
+        if (vistoriasError) throw vistoriasError;
+
+        return response.status(200).json({
+          success: true,
+          data: vistorias || []
+        });
+      }
+
+      // Buscar vistorias por veiculo_id e tipo (usado pelo frontend para buscar vistoria de entrada)
+      const veiculoId = url.searchParams.get('veiculo_id');
+
+      if (veiculoId && tipo) {
+        let query = supabase
+          .from('vistorias')
+          .select(`
+            *,
+            clientes:cliente_id(nome, cpf_cnpj),
+            veiculos:veiculo_id(marca, modelo, placa)
+          `)
+          .eq('veiculo_id', parseInt(veiculoId))
+          .eq('tipo_vistoria', tipo)
+          .order('created_at', { ascending: false });
+
+        const { data: vistorias, error: vistoriasError } = await query;
+
+        if (vistoriasError) throw vistoriasError;
+
+        return response.status(200).json({
+          success: true,
+          data: {
+            vistorias: vistorias || []
+          }
+        });
+      }
+
       // Buscar clientes e veículos para o formulário
       const { data: clientes, error: clientesError } = await supabase
         .from('clientes')
-        .select('id, nome, cpf, celular')
+        .select('id, nome, cpf_cnpj, celular')
         .order('nome', { ascending: true });
 
       if (clientesError) throw clientesError;
@@ -220,7 +273,7 @@ export default async function handler(request, response) {
 
       // Preparar dados para atualização
       const updateData = {};
-      
+
       if (vistoriaData.quilometragem !== undefined) updateData.quilometragem = vistoriaData.quilometragem;
       if (vistoriaData.combustivel !== undefined) updateData.nivel_combustivel = vistoriaData.combustivel;
       if (vistoriaData.condutor !== undefined) updateData.nome_condutor = vistoriaData.condutor;

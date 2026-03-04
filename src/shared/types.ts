@@ -4,7 +4,8 @@ import z from "zod";
 export const ClienteSchema = z.object({
   id: z.number().optional(),
   nome: z.string().min(1, "Nome é obrigatório"),
-  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(14, "CPF inválido"),
+  tipo_pessoa: z.enum(["pf", "pj"]).default("pf"),
+  cpf_cnpj: z.string().min(11, "CPF/CNPJ inválido").max(18, "CPF/CNPJ inválido"),
   celular: z.string().min(10, "Celular é obrigatório"),
   endereco: z.string().min(1, "Endereço é obrigatório"),
   bairro: z.string().optional(),
@@ -16,10 +17,10 @@ export const ClienteSchema = z.object({
   updated_at: z.string().optional(),
 });
 
-export const ClienteCreateSchema = ClienteSchema.omit({ 
-  id: true, 
-  created_at: true, 
-  updated_at: true 
+export const ClienteCreateSchema = ClienteSchema.omit({
+  id: true,
+  created_at: true,
+  updated_at: true
 });
 
 export type Cliente = z.infer<typeof ClienteSchema>;
@@ -44,10 +45,10 @@ export const VeiculoSchema = z.object({
   updated_at: z.string().optional(),
 });
 
-export const VeiculoCreateSchema = VeiculoSchema.omit({ 
-  id: true, 
-  created_at: true, 
-  updated_at: true 
+export const VeiculoCreateSchema = VeiculoSchema.omit({
+  id: true,
+  created_at: true,
+  updated_at: true
 });
 
 export type Veiculo = z.infer<typeof VeiculoSchema>;
@@ -70,10 +71,10 @@ export const LocacaoSchema = z.object({
   updated_at: z.string().optional(),
 });
 
-export const LocacaoCreateSchema = LocacaoSchema.omit({ 
-  id: true, 
-  created_at: true, 
-  updated_at: true 
+export const LocacaoCreateSchema = LocacaoSchema.omit({
+  id: true,
+  created_at: true,
+  updated_at: true
 });
 
 export type Locacao = z.infer<typeof LocacaoSchema>;
@@ -92,9 +93,9 @@ export const VendaSchema = z.object({
   created_at: z.string().optional(),
 });
 
-export const VendaCreateSchema = VendaSchema.omit({ 
-  id: true, 
-  created_at: true 
+export const VendaCreateSchema = VendaSchema.omit({
+  id: true,
+  created_at: true
 });
 
 export type Venda = z.infer<typeof VendaSchema>;
@@ -132,9 +133,9 @@ export const MovimentacaoFinanceiraSchema = z.object({
   created_at: z.string().optional(),
 });
 
-export const MovimentacaoFinanceiraCreateSchema = MovimentacaoFinanceiraSchema.omit({ 
-  id: true, 
-  created_at: true 
+export const MovimentacaoFinanceiraCreateSchema = MovimentacaoFinanceiraSchema.omit({
+  id: true,
+  created_at: true
 });
 
 export type MovimentacaoFinanceira = z.infer<typeof MovimentacaoFinanceiraSchema>;

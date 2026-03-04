@@ -48,7 +48,7 @@ async function handleClientesReport(req, res) {
         nome,
         email,
         celular,
-        cpf,
+        cpf_cnpj,
         created_at,
         locacoes:locacoes(
           id,
@@ -81,7 +81,7 @@ async function handleClientesReport(req, res) {
         total_locacoes: totalLocacoes,
         valor_total_gasto: valorTotalGasto,
         locacoes_ativas: locacoesAtivas,
-        ultima_locacao: cliente.locacoes.length > 0 ? 
+        ultima_locacao: cliente.locacoes.length > 0 ?
           Math.max(...cliente.locacoes.map(l => new Date(l.data_locacao).getTime())) : null
       };
     });

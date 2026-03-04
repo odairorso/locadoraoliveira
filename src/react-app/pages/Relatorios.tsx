@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { 
-  Calendar, 
-  Users, 
-  DollarSign, 
+import {
+  Calendar,
+  Users,
+  DollarSign,
   Download,
   Filter,
   TrendingUp,
@@ -60,7 +60,7 @@ interface RelatorioVeiculo {
 interface RelatorioCliente {
   id: number;
   nome: string;
-  cpf: string;
+  cpf_cnpj: string;
   celular: string;
   email: string;
   total_locacoes: number;
@@ -151,9 +151,9 @@ export default function Relatorios() {
   const [clienteSelecionado, setClienteSelecionado] = useState('');
   const [tipoManutencaoSelecionado, setTipoManutencaoSelecionado] = useState('');
   const [loading, setLoading] = useState(false);
-  
 
-  
+
+
   // Estados para dados dos relatórios
   const [dadosFinanceiro, setDadosFinanceiro] = useState<RelatorioFinanceiro[]>([]);
   const [dadosVeiculos, setDadosVeiculos] = useState<RelatorioVeiculo[]>([]);
@@ -163,7 +163,7 @@ export default function Relatorios() {
   const [estatisticasClientes, setEstatisticasClientes] = useState<EstatisticasClientes | null>(null);
   const [estatisticasLocacoes, setEstatisticasLocacoes] = useState<EstatisticasLocacoes | null>(null);
   const [estatisticasDespesas, setEstatisticasDespesas] = useState<EstatisticasDespesas | null>(null);
-  
+
   // Estados para listas de filtros
   const [veiculos, setVeiculos] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
@@ -187,12 +187,12 @@ export default function Relatorios() {
           fetch('/api/clientes'),
           fetch('/api/manutencoes')
         ]);
-        
+
         if (veiculosRes.ok) {
           const veiculosData = await veiculosRes.json();
           setVeiculos(veiculosData.data || []);
         }
-        
+
         if (clientesRes.ok) {
           const clientesData = await clientesRes.json();
           setClientes(clientesData.data || []);
@@ -208,7 +208,7 @@ export default function Relatorios() {
         console.error('Erro ao carregar filtros:', error);
       }
     };
-    
+
     carregarFiltros();
   }, []);
 
@@ -230,9 +230,9 @@ export default function Relatorios() {
       // Converter datas do formato brasileiro (dd/mm/yyyy) para formato da API (yyyy-mm-dd)
       const dataInicioAPI = formatDateFromInput(periodoInicio);
       const dataFimAPI = formatDateFromInput(periodoFim);
-      
+
       let data;
-      
+
       switch (tipoRelatorio) {
         case 'financeiro':
           data = await gerarRelatorioFinanceiro(dataInicioAPI, dataFimAPI);
@@ -260,7 +260,7 @@ export default function Relatorios() {
         default:
           throw new Error('Tipo de relatório não suportado');
       }
-      
+
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
       alert('Erro ao gerar relatório: ' + (error as Error).message);
@@ -309,35 +309,35 @@ export default function Relatorios() {
 
     // Agrupar movimentações financeiras por mês
     const dadosAgrupados = (movimentacoes || []).reduce((acc: any, mov: any) => {
-      const mes = new Date(mov.data_movimentacao).toLocaleDateString('pt-BR', { 
-        year: 'numeric', 
-        month: '2-digit' 
+      const mes = new Date(mov.data_movimentacao).toLocaleDateString('pt-BR', {
+        year: 'numeric',
+        month: '2-digit'
       });
-      
+
       if (!acc[mes]) {
         acc[mes] = { mes, receitas: 0, despesas: 0, lucro: 0, locacoes_ativas: 0 };
       }
-      
+
       if (mov.tipo === 'entrada') {
         acc[mes].receitas += parseFloat(mov.valor);
       } else {
         acc[mes].despesas += parseFloat(mov.valor);
       }
-      
+
       return acc;
     }, {});
 
     // Adicionar manutenções como despesas
     (manutencoes || []).forEach((manutencao: any) => {
-      const mes = new Date(manutencao.data_manutencao).toLocaleDateString('pt-BR', { 
-        year: 'numeric', 
-        month: '2-digit' 
+      const mes = new Date(manutencao.data_manutencao).toLocaleDateString('pt-BR', {
+        year: 'numeric',
+        month: '2-digit'
       });
-      
+
       if (!dadosAgrupados[mes]) {
         dadosAgrupados[mes] = { mes, receitas: 0, despesas: 0, lucro: 0, locacoes_ativas: 0 };
       }
-      
+
       dadosAgrupados[mes].despesas += parseFloat(manutencao.valor);
     });
 
@@ -345,36 +345,36 @@ export default function Relatorios() {
     (locacoes || []).forEach((locacao: any) => {
       const dataInicioLocacao = new Date(locacao.data_locacao);
       const dataFimLocacao = locacao.data_entrega ? new Date(locacao.data_entrega) : new Date();
-      
+
       // Para cada mês no período do relatório, verificar se a locação estava ativa
       const dataInicioRelatorio = new Date(dataInicio);
       const dataFimRelatorio = new Date(dataFim);
-      
+
       let mesAtual = new Date(dataInicioRelatorio.getFullYear(), dataInicioRelatorio.getMonth(), 1);
       const ultimoMesRelatorio = new Date(dataFimRelatorio.getFullYear(), dataFimRelatorio.getMonth(), 1);
-      
+
       while (mesAtual <= ultimoMesRelatorio) {
-        const chave = mesAtual.toLocaleDateString('pt-BR', { 
-          year: 'numeric', 
-          month: '2-digit' 
+        const chave = mesAtual.toLocaleDateString('pt-BR', {
+          year: 'numeric',
+          month: '2-digit'
         });
-        
+
         const primeiroDiaMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), 1);
         const ultimoDiaMes = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0);
-        
+
         // Verificar se a locação estava ativa durante este mês
         const locacaoAtivaNoMes = (
           dataInicioLocacao <= ultimoDiaMes && // Locação começou antes ou durante o mês
           dataFimLocacao >= primeiroDiaMes     // Locação terminou depois ou durante o mês
         );
-        
+
         if (locacaoAtivaNoMes) {
           if (!dadosAgrupados[chave]) {
             dadosAgrupados[chave] = { mes: chave, receitas: 0, despesas: 0, lucro: 0, locacoes_ativas: 0 };
           }
           dadosAgrupados[chave].locacoes_ativas++;
         }
-        
+
         // Próximo mês
         mesAtual.setMonth(mesAtual.getMonth() + 1);
       }
@@ -415,10 +415,10 @@ export default function Relatorios() {
 
     // Processar dados dos veículos
     return data.map((veiculo: any) => {
-      const locacoes = veiculo.locacoes.filter((loc: any) => 
+      const locacoes = veiculo.locacoes.filter((loc: any) =>
         loc.data_locacao >= dataInicio && loc.data_locacao <= dataFim
       );
-      
+
       const totalLocacoes = locacoes.length;
       const receitaTotal = locacoes.reduce((sum: number, loc: any) => sum + parseFloat(loc.valor_total), 0);
       const diasLocado = locacoes.reduce((sum: number, loc: any) => {
@@ -426,7 +426,7 @@ export default function Relatorios() {
         const fim = new Date(loc.data_entrega);
         return sum + Math.ceil((fim.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
       }, 0);
-      
+
       const diasPeriodo = Math.ceil((new Date(dataFim).getTime() - new Date(dataInicio).getTime()) / (1000 * 60 * 60 * 24));
       const taxaOcupacao = diasPeriodo > 0 ? (diasLocado / diasPeriodo) * 100 : 0;
 
@@ -470,25 +470,25 @@ export default function Relatorios() {
 
     // Processar dados dos clientes
     const clientes = data.map((cliente: any) => {
-      const locacoes = cliente.locacoes.filter((loc: any) => 
+      const locacoes = cliente.locacoes.filter((loc: any) =>
         loc.data_locacao >= dataInicio && loc.data_locacao <= dataFim
       );
-      
+
       const totalLocacoes = locacoes.length;
       const valorTotalGasto = locacoes.reduce((sum: number, loc: any) => sum + parseFloat(loc.valor_total), 0);
       const valorMedioLocacao = totalLocacoes > 0 ? valorTotalGasto / totalLocacoes : 0;
-      
-      const ultimaLocacao = locacoes.length > 0 
+
+      const ultimaLocacao = locacoes.length > 0
         ? Math.max(...locacoes.map((loc: any) => new Date(loc.data_locacao).getTime()))
         : null;
-      
-      const statusCliente = ultimaLocacao && (Date.now() - ultimaLocacao) < (90 * 24 * 60 * 60 * 1000) 
+
+      const statusCliente = ultimaLocacao && (Date.now() - ultimaLocacao) < (90 * 24 * 60 * 60 * 1000)
         ? 'ativo' : 'inativo';
 
       return {
         id: cliente.id,
         nome: cliente.nome,
-        cpf: cliente.cpf,
+        cpf_cnpj: cliente.cpf_cnpj,
         celular: cliente.celular,
         email: cliente.email,
         total_locacoes: totalLocacoes,
@@ -526,7 +526,7 @@ export default function Relatorios() {
     if (veiculoId) {
       query = query.eq('veiculo_id', veiculoId);
     }
-    
+
     if (clienteId) {
       query = query.eq('cliente_id', clienteId);
     }
@@ -702,7 +702,7 @@ export default function Relatorios() {
   const handleDateChange = (value: string, setter: (value: string) => void) => {
     // Remove caracteres não numéricos exceto /
     let cleaned = value.replace(/[^\d/]/g, '');
-    
+
     // Adiciona barras automaticamente
     if (cleaned.length >= 2 && !cleaned.includes('/')) {
       cleaned = cleaned.substring(0, 2) + '/' + cleaned.substring(2);
@@ -711,7 +711,7 @@ export default function Relatorios() {
       const parts = cleaned.split('/');
       cleaned = parts[0] + '/' + parts[1].substring(0, 2) + '/' + parts[1].substring(2);
     }
-    
+
     // Limita o tamanho
     if (cleaned.length <= 10) {
       setter(cleaned);
@@ -737,7 +737,7 @@ export default function Relatorios() {
           <Filter className="h-5 w-5 text-gray-600 dark:text-gray-400 mr-2" />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Filtros</h2>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Tipo de Relatório */}
           <div>
@@ -866,7 +866,7 @@ export default function Relatorios() {
               </>
             )}
           </button>
-          
+
           <button
             onClick={exportarRelatorio}
             className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
@@ -935,7 +935,7 @@ export default function Relatorios() {
                       y: {
                         beginAtZero: true,
                         ticks: {
-                          callback: function(value) {
+                          callback: function (value) {
                             return new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',
@@ -1085,7 +1085,7 @@ export default function Relatorios() {
                       y: {
                         beginAtZero: true,
                         ticks: {
-                          callback: function(value) {
+                          callback: function (value) {
                             return new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',
@@ -1151,7 +1151,7 @@ export default function Relatorios() {
                       },
                       tooltip: {
                         callbacks: {
-                          label: function(context) {
+                          label: function (context) {
                             return `${context.label}: ${context.parsed}%`;
                           },
                         },
@@ -1317,7 +1317,7 @@ export default function Relatorios() {
                       y: {
                         beginAtZero: true,
                         ticks: {
-                          callback: function(value) {
+                          callback: function (value) {
                             return new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',
@@ -1368,7 +1368,7 @@ export default function Relatorios() {
                       },
                       tooltip: {
                         callbacks: {
-                          label: function(context) {
+                          label: function (context) {
                             const total = dadosClientes.length;
                             const percentage = ((context.parsed / total) * 100).toFixed(1);
                             return `${context.label}: ${context.parsed} (${percentage}%)`;
@@ -1381,7 +1381,7 @@ export default function Relatorios() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Análise Detalhada de Clientes
@@ -1419,7 +1419,7 @@ export default function Relatorios() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         <div>
                           <div className="font-medium">{cliente.nome}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{cliente.cpf}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{cliente.cpf_cnpj}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
@@ -1441,11 +1441,10 @@ export default function Relatorios() {
                         {formatarData(cliente.ultima_locacao)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          cliente.status_cliente === 'ativo' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' 
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${cliente.status_cliente === 'ativo'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                             : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                        }`}>
+                          }`}>
                           {cliente.status_cliente}
                         </span>
                       </td>
@@ -1510,7 +1509,7 @@ export default function Relatorios() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 dark:bg-blue-700 p-4 rounded-lg">
                   <div className="flex items-center justify-between">
@@ -1589,7 +1588,7 @@ export default function Relatorios() {
                       },
                       tooltip: {
                         callbacks: {
-                          label: function(context) {
+                          label: function (context) {
                             if (context.datasetIndex === 1) {
                               return `${context.dataset.label}: ${new Intl.NumberFormat('pt-BR', {
                                 style: 'currency',
@@ -1674,7 +1673,7 @@ export default function Relatorios() {
                       },
                       tooltip: {
                         callbacks: {
-                          label: function(context) {
+                          label: function (context) {
                             const total = estatisticasLocacoes?.total_locacoes || 0;
                             const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : '0';
                             return `${context.label}: ${context.parsed} (${percentage}%)`;
@@ -1687,7 +1686,7 @@ export default function Relatorios() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Detalhes das Locações
@@ -1741,15 +1740,14 @@ export default function Relatorios() {
                         {formatarMoeda(locacao.valor_total)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          locacao.status === 'finalizada' 
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${locacao.status === 'finalizada'
                             ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                             : locacao.status === 'ativa'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
-                            : locacao.status === 'cancelada'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
-                        }`}>
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                              : locacao.status === 'cancelada'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
+                          }`}>
                           {locacao.status}
                         </span>
                       </td>
@@ -1858,7 +1856,7 @@ export default function Relatorios() {
                       y: {
                         beginAtZero: true,
                         ticks: {
-                          callback: function(value) {
+                          callback: function (value) {
                             return 'R$ ' + Number(value).toLocaleString('pt-BR');
                           }
                         }
@@ -1907,7 +1905,7 @@ export default function Relatorios() {
                       },
                       tooltip: {
                         callbacks: {
-                          label: function(context) {
+                          label: function (context) {
                             return context.label + ': R$ ' + Number(context.parsed).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                           }
                         }
@@ -1985,16 +1983,16 @@ export default function Relatorios() {
         (tipoRelatorio === 'locacoes' && dadosLocacoes.length === 0) ||
         (tipoRelatorio === 'despesas' && dadosDespesas.length === 0)
       ) && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-          <PieChart className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Nenhum dado encontrado
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            Clique em "Gerar Relatório" para visualizar os dados do período selecionado.
-          </p>
-        </div>
-      )}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
+            <PieChart className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Nenhum dado encontrado
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Clique em "Gerar Relatório" para visualizar os dados do período selecionado.
+            </p>
+          </div>
+        )}
     </div>
   );
 }

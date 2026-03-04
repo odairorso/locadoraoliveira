@@ -16,7 +16,7 @@ interface VistoriaDetalhes {
   avarias: string;
   fotos: string; // JSON string containing photos array
   created_at: string;
-  clientes: { nome: string; cpf: string };
+  clientes: { nome: string; cpf_cnpj: string };
   veiculos: { marca: string; modelo: string; placa: string };
   // Checklist items
   item_calota: boolean;
@@ -51,7 +51,7 @@ const VistoriaDetalhes: React.FC = () => {
     try {
       const response = await fetch(`/api/vistorias/${id}`);
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         setVistoria(result.data);
       } else {
@@ -71,9 +71,9 @@ const VistoriaDetalhes: React.FC = () => {
       const response = await fetch(`/api/vistorias/${id}`, {
         method: 'DELETE',
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         navigate('/checklist');
       } else {
@@ -148,11 +148,10 @@ const VistoriaDetalhes: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Detalhes da Vistoria
             </h1>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              vistoria.tipo_vistoria === 'entrada' 
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${vistoria.tipo_vistoria === 'entrada'
                 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                 : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-            }`}>
+              }`}>
               {vistoria.tipo_vistoria === 'entrada' ? 'Vistoria de Entrada' : 'Vistoria de Saída'}
             </span>
           </div>
@@ -198,7 +197,7 @@ const VistoriaDetalhes: React.FC = () => {
             <div><span className="font-medium">Nome:</span> {vistoria.nome_condutor}</div>
             <div><span className="font-medium">RG:</span> {vistoria.rg_condutor}</div>
             <div><span className="font-medium">Cliente:</span> {vistoria.clientes?.nome}</div>
-            <div><span className="font-medium">CPF:</span> {vistoria.clientes?.cpf}</div>
+            <div><span className="font-medium">CPF/CNPJ:</span> {vistoria.clientes?.cpf_cnpj}</div>
             <div><span className="font-medium">Data:</span> {formatarData(vistoria.created_at)}</div>
           </div>
         </div>
@@ -286,10 +285,10 @@ const VistoriaDetalhes: React.FC = () => {
               {(() => {
                 try {
                   // Se avarias é uma string JSON, parse ela
-                  const avariasData = typeof vistoria.avarias === 'string' 
-                    ? JSON.parse(vistoria.avarias) 
+                  const avariasData = typeof vistoria.avarias === 'string'
+                    ? JSON.parse(vistoria.avarias)
                     : vistoria.avarias;
-                  
+
                   // Se é um array de avarias
                   if (Array.isArray(avariasData) && avariasData.length > 0) {
                     const avariaLegendas = {
@@ -299,7 +298,7 @@ const VistoriaDetalhes: React.FC = () => {
                       'Q': 'Quebrado',
                       'F': 'Falta'
                     };
-                    
+
                     return (
                       <div className="space-y-2">
                         {avariasData.map((avaria: any, index: number) => (
@@ -308,7 +307,7 @@ const VistoriaDetalhes: React.FC = () => {
                               {avaria.type}
                             </span>
                             <span>
-                              {avariaLegendas[avaria.type as keyof typeof avariaLegendas] || avaria.type} 
+                              {avariaLegendas[avaria.type as keyof typeof avariaLegendas] || avaria.type}
                               - Posição: ({avaria.x}, {avaria.y})
                             </span>
                           </div>

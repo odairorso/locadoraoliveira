@@ -9,7 +9,7 @@ export default function LocacoesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingLocacao, setEditingLocacao] = useState<Locacao | null>(null);
-  
+
   const [formData, setFormData] = useState<LocacaoCreate>({
     cliente_id: 0,
     veiculo_id: 0,
@@ -87,7 +87,7 @@ export default function LocacoesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.valor_total <= 0) {
       alert('Valor total deve ser maior que zero');
       return;
@@ -99,7 +99,7 @@ export default function LocacoesPage() {
     } else {
       result = await createLocacao('/api/locacoes', formData);
     }
-    
+
     if (result) {
       resetForm();
       refetch();
@@ -141,7 +141,7 @@ export default function LocacoesPage() {
     if (confirm('Tem certeza que deseja finalizar esta locação?')) {
       try {
         const result = await updateLocacao(`/api/locacoes/${locacao.id}`, { status: 'finalizada' }, 'PUT');
-        
+
         if (result) {
           console.log('✅ Finalização bem-sucedida, atualizando lista...');
           refetch();
@@ -259,14 +259,14 @@ export default function LocacoesPage() {
       console.log('Carregando contrato para locação:', locacao.id);
       console.log('Estado atual showContractPreview:', showContractPreview);
       console.log('Estado atual contractData:', contractData);
-      
+
       const response = await fetch(`/api/locacoes/${locacao.id}/contrato-data`);
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
-      
+
       const data = await response.json();
       console.log('Dados recebidos do contrato:', data);
-      
+
       if (data.success) {
         console.log('Dados do contrato:', data.data);
         console.log('Definindo contractData...');
@@ -385,9 +385,9 @@ export default function LocacoesPage() {
       {(!clientes?.length || !veiculosDisponiveis?.length) && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md p-4">
           <p className="text-yellow-800 dark:text-yellow-200">
-            {!clientes?.length && !veiculosDisponiveis?.length 
+            {!clientes?.length && !veiculosDisponiveis?.length
               ? 'É necessário cadastrar clientes e veículos antes de criar locações.'
-              : !clientes?.length 
+              : !clientes?.length
                 ? 'É necessário cadastrar clientes antes de criar locações.'
                 : 'É necessário ter veículos disponíveis para criar locações.'
             }
@@ -427,7 +427,7 @@ export default function LocacoesPage() {
               <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white mb-4">
                 {editingLocacao ? 'Editar Locação' : 'Nova Locação'}
               </h3>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -444,7 +444,7 @@ export default function LocacoesPage() {
                       <option value={0}>Selecione um cliente</option>
                       {clientes?.map(cliente => (
                         <option key={cliente.id} value={cliente.id}>
-                          {cliente.nome} - {cliente.cpf}
+                          {cliente.nome} - {cliente.cpf_cnpj}
                         </option>
                       ))}
                     </select>
@@ -486,7 +486,7 @@ export default function LocacoesPage() {
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, '');
                         const formattedValue = rawValue.replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
-                        
+
                         if (rawValue.length === 8) {
                           const formattedDate = formatDateFromInput(formattedValue);
                           setFormData({ ...formData, data_locacao: formattedDate });
@@ -511,7 +511,7 @@ export default function LocacoesPage() {
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, '');
                         const formattedValue = rawValue.replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2}\/\d{2})(\d)/, '$1/$2');
-                        
+
                         if (rawValue.length === 8) {
                           const formattedDate = formatDateFromInput(formattedValue);
                           setFormData({ ...formData, data_entrega: formattedDate });
@@ -691,7 +691,7 @@ export default function LocacoesPage() {
                         <span className="ml-1">{getStatusText(locacao.status)}</span>
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center space-x-2">
                         <User className="h-4 w-4 text-blue-500 flex-shrink-0" />
@@ -717,7 +717,7 @@ export default function LocacoesPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 sm:ml-4 overflow-x-auto sm:overflow-x-visible">
                     <button
                       onClick={() => viewContract(locacao)}
@@ -727,7 +727,7 @@ export default function LocacoesPage() {
                       <span className="hidden sm:inline">Ver Contrato</span>
                       <span className="sm:hidden">Ver</span>
                     </button>
-                    
+
                     <button
                       onClick={() => downloadContract(locacao)}
                       className="inline-flex items-center px-2 sm:px-3 py-2 sm:py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0 whitespace-nowrap"
@@ -736,7 +736,7 @@ export default function LocacoesPage() {
                       <span className="hidden sm:inline">Baixar</span>
                       <span className="sm:hidden">PDF</span>
                     </button>
-                    
+
                     {locacao.status === 'ativa' && (
                       <button
                         onClick={() => handleFinishLocacao(locacao)}
@@ -747,7 +747,7 @@ export default function LocacoesPage() {
                         <span className="sm:hidden">Fim</span>
                       </button>
                     )}
-                    
+
                     <div className="flex space-x-1">
                       <button
                         onClick={() => handleEdit(locacao)}
@@ -793,157 +793,157 @@ export default function LocacoesPage() {
                 </button>
               </div>
             </div>
-            
+
             <div id="contract-content" className="contract-preview bg-white text-black p-2 sm:p-4 md:p-8" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.4', fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
               <div className="contract-page">
-              <div className="text-center mb-4 sm:mb-8">
-                <h1 className="text-2xl font-bold">Oliveira Veiculos</h1>
-                <p>Av. Campo Grande, 707 - Centro, Navirai - MS, 79947-033</p>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 mt-4">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
-              </div>
+                <div className="text-center mb-4 sm:mb-8">
+                  <h1 className="text-2xl font-bold">Oliveira Veiculos</h1>
+                  <p>Av. Campo Grande, 707 - Centro, Navirai - MS, 79947-033</p>
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 mt-4">CONTRATO DE LOCAÇÃO DE VEÍCULO</h1>
+                </div>
 
-              <div style={{ color: '#000', fontSize: window.innerWidth < 640 ? '10px' : '12px', lineHeight: '1.4' }}>
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
-                  <strong>Entre:</strong> a pessoa jurídica L DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58, 
-                  com sede em Av campo grande 707 centro, neste ato representada, conforme poderes especialmente 
-                  conferidos, por: João Roberto dos Santos de Oliveira, na qualidade de: Administrador, 
-                  CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:
-                </p>
-                
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
-                  <strong>{contractData?.cliente_nome || '[Nome do Cliente]'}</strong>, CPF n.º <strong>{contractData?.cliente_cpf || '[CPF]'}</strong>, 
-                  residente em: <strong>{contractData?.endereco_completo || '[Endereço]'}</strong>,
-                  doravante denominado <strong>LOCATÁRIO</strong>.
-                </p>
+                <div style={{ color: '#000', fontSize: window.innerWidth < 640 ? '10px' : '12px', lineHeight: '1.4' }}>
+                  <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
+                    <strong>Entre:</strong> a pessoa jurídica L DOS SANTOS DE OLIVEIRA LTDA, inscrita sob o CNPJ n.º 17.909.442/0001-58,
+                    com sede em Av campo grande 707 centro, neste ato representada, conforme poderes especialmente
+                    conferidos, por: João Roberto dos Santos de Oliveira, na qualidade de: Administrador,
+                    CPF n.º 008.714.291-01, carteira de identidade n.º 1447272 doravante denominada <strong>LOCADORA</strong>, e:
+                  </p>
 
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0' }}>As partes acima identificadas têm entre si justo e acertado o presente contrato de locação de veículo, ficando desde já aceito nas cláusulas e condições abaixo descritas.</p>
+                  <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>
+                    <strong>{contractData?.cliente_nome || '[Nome do Cliente]'}</strong>, {contractData?.cliente_tipo_doc || 'CPF'} n.º <strong>{contractData?.cliente_cpf_cnpj || '[CPF/CNPJ]'}</strong>,
+                    residente em: <strong>{contractData?.endereco_completo || '[Endereço]'}</strong>,
+                    doravante denominado <strong>LOCATÁRIO</strong>.
+                  </p>
 
-                <h3 style={{ margin: window.innerWidth < 640 ? '15px 0 8px 0' : '20px 0 10px 0', fontWeight: 'bold', fontSize: window.innerWidth < 640 ? '11px' : '12px' }}>CLÁUSULA 1ª – DO OBJETO</h3>
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Por meio deste contrato, que firmam entre si a LOCADORA e o LOCATÁRIO, regula-se a locação do veículo:</p>
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}><strong>{contractData?.veiculo_marca || '[Marca]'} {contractData?.veiculo_modelo || '[Modelo]'} ano {contractData?.veiculo_ano || '[Ano]'}</strong></p>
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Com placa <strong>{contractData?.veiculo_placa || '[Placa]'}</strong>, e com o valor de mercado aproximado em <strong>{contractData?.valor_veiculo_formatted || '[Valor]'}</strong>.</p>
-                <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
+                  <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0' }}>As partes acima identificadas têm entre si justo e acertado o presente contrato de locação de veículo, ficando desde já aceito nas cláusulas e condições abaixo descritas.</p>
 
-                <h3 style={{ margin: window.innerWidth < 640 ? '15px 0 8px 0' : '20px 0 10px 0', fontWeight: 'bold', fontSize: window.innerWidth < 640 ? '11px' : '12px' }}>CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>. O valor total da locação é de <strong>{contractData?.valor_total_formatted || '[Valor Total]'}</strong> para o período estabelecido.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. O LOCATÁRIO deverá efetuar o pagamento do valor acordado, por meio de pix, utilizando a chave 17909442000158, ou em espécie, ou cartão.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Em caso de atraso no pagamento do aluguel, será aplicada multa de 5% (cinco por cento), sobre o valor devido, bem como juros de mora de 3% (três por cento) ao mês, mais correção monetária, apurada conforme variação do IGP-M no período.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. O LOCATÁRIO, não vindo a efetuar o pagamento do aluguel por um período de atraso superior à 7 (sete) dias, fica sujeito a ter a posse do veículo configurada como Apropriação Indébita, implicando também a possibilidade de adoção de medidas judiciais, inclusive a Busca e Apreensão do veículo e/ou lavratura de Boletim de Ocorrência, cabendo ao LOCATÁRIO ressarcir a LOCADORA das despesas oriundas da retenção indevida do bem, arcando ainda com as despesas judiciais e/ou extrajudiciais que a LOCADORA venha a ter para efetuar a busca, apreensão e efetiva reintegração da posse do veículo.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. Será de responsabilidade do LOCATÁRIO as despesas referentes à utilização do veículo.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 5º. O valor do aluguel firmado neste contrato será reajustado a cada 12 (doze) meses, tendo como base o índice IGP. Em caso de falta deste índice, o reajuste do valor da locação terá por base a média da variação dos índices inflacionários do ano corrente ao da execução da locação.</p>
+                  <h3 style={{ margin: window.innerWidth < 640 ? '15px 0 8px 0' : '20px 0 10px 0', fontWeight: 'bold', fontSize: window.innerWidth < 640 ? '11px' : '12px' }}>CLÁUSULA 1ª – DO OBJETO</h3>
+                  <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Por meio deste contrato, que firmam entre si a LOCADORA e o LOCATÁRIO, regula-se a locação do veículo:</p>
+                  <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}><strong>{contractData?.veiculo_marca || '[Marca]'} {contractData?.veiculo_modelo || '[Modelo]'} ano {contractData?.veiculo_ano || '[Ano]'}</strong></p>
+                  <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Com placa <strong>{contractData?.veiculo_placa || '[Placa]'}</strong>, e com o valor de mercado aproximado em <strong>{contractData?.valor_veiculo_formatted || '[Valor]'}</strong>.</p>
+                  <p style={{ margin: window.innerWidth < 640 ? '5px 0' : '10px 0', textAlign: 'justify' }}>Parágrafo único. O presente contrato é acompanhado de um laudo de vistoria, que descreve o veículo e o seu estado de conservação no momento em que o mesmo foi entregue ao LOCATÁRIO.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 3ª – DO PRAZO DO ALUGUEL</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O prazo de locação do referido veículo é de <strong>{contractData?.data_locacao_formatted || '[Data Início]'} a {contractData?.data_entrega_formatted || '[Data Fim]'}</strong>.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Ao final do prazo estipulado, caso as partes permaneçam inertes, a locação prorrogar-se-á automaticamente por tempo indeterminado.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso a LOCADORA não queira prorrogar a locação ao terminar o prazo estipulado neste contrato, e o referido veículo não for devolvido, será cobrado o valor do aluguel proporcional aos dias de atraso acumulado de multa diária de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. Finda a locação, o LOCATÁRIO deverá devolver o veículo nas mesmas condições em que recebeu, salvo os desgastes decorrentes do uso normal, sob pena de indenização por perdas e danos a ser apurada.</p>
+                  <h3 style={{ margin: window.innerWidth < 640 ? '15px 0 8px 0' : '20px 0 10px 0', fontWeight: 'bold', fontSize: window.innerWidth < 640 ? '11px' : '12px' }}>CLÁUSULA 2ª – DO VALOR DO ALUGUEL</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>O valor da diária do aluguel, livremente ajustado pelas partes, é de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>. O valor total da locação é de <strong>{contractData?.valor_total_formatted || '[Valor Total]'}</strong> para o período estabelecido.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. O LOCATÁRIO deverá efetuar o pagamento do valor acordado, por meio de pix, utilizando a chave 17909442000158, ou em espécie, ou cartão.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Em caso de atraso no pagamento do aluguel, será aplicada multa de 5% (cinco por cento), sobre o valor devido, bem como juros de mora de 3% (três por cento) ao mês, mais correção monetária, apurada conforme variação do IGP-M no período.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. O LOCATÁRIO, não vindo a efetuar o pagamento do aluguel por um período de atraso superior à 7 (sete) dias, fica sujeito a ter a posse do veículo configurada como Apropriação Indébita, implicando também a possibilidade de adoção de medidas judiciais, inclusive a Busca e Apreensão do veículo e/ou lavratura de Boletim de Ocorrência, cabendo ao LOCATÁRIO ressarcir a LOCADORA das despesas oriundas da retenção indevida do bem, arcando ainda com as despesas judiciais e/ou extrajudiciais que a LOCADORA venha a ter para efetuar a busca, apreensão e efetiva reintegração da posse do veículo.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. Será de responsabilidade do LOCATÁRIO as despesas referentes à utilização do veículo.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 5º. O valor do aluguel firmado neste contrato será reajustado a cada 12 (doze) meses, tendo como base o índice IGP. Em caso de falta deste índice, o reajuste do valor da locação terá por base a média da variação dos índices inflacionários do ano corrente ao da execução da locação.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 4ª – DO COMBUSTÍVEL</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O veículo será entregue ao LOCATÁRIO com um tanque de combustível completo, e sua quantidade será marcada no laudo de vistoria no momento da retirada.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Ao final do prazo estipulado, o LOCATÁRIO deverá devolver o veículo à LOCADORA com o tanque de combustível completo.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso não ocorra o cumprimento do parágrafo anterior, será cobrado o valor correspondente a leitura do marcador em oitavos, com base em tabela própria, e o valor do litro será informado no momento da retirada pela LOCADORA.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. Caso seja constatado a utilização de combustível adulterado, o LOCATÁRIO responderá pelo mesmo e pelos danos decorrentes de tal utilização.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. Fica desde já acordado que o LOCATÁRIO não terá direito a ressarcimento caso devolva o veículo com uma quantidade de combustível superior a que recebeu.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 3ª – DO PRAZO DO ALUGUEL</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>O prazo de locação do referido veículo é de <strong>{contractData?.data_locacao_formatted || '[Data Início]'} a {contractData?.data_entrega_formatted || '[Data Fim]'}</strong>.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Ao final do prazo estipulado, caso as partes permaneçam inertes, a locação prorrogar-se-á automaticamente por tempo indeterminado.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso a LOCADORA não queira prorrogar a locação ao terminar o prazo estipulado neste contrato, e o referido veículo não for devolvido, será cobrado o valor do aluguel proporcional aos dias de atraso acumulado de multa diária de <strong>{contractData?.valor_diaria_formatted || '[Valor da Diária]'}</strong>.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. Finda a locação, o LOCATÁRIO deverá devolver o veículo nas mesmas condições em que recebeu, salvo os desgastes decorrentes do uso normal, sob pena de indenização por perdas e danos a ser apurada.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 5ª – DA LIMPEZA</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O veículo será entregue ao LOCATÁRIO limpo e deverá ser devolvido à LOCADORA nas mesmas condições higiênicas que foi retirado.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Caso o veículo seja devolvido sujo, interna ou externamente, será cobrada uma taxa de lavagem simples ou especial, dependendo do estado do veículo na devolução.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso haja a necessidade de lavagem especial, será cobrada, além da taxa de lavagem, o valor mínimo de (uma) diária de locação, ou quantas diárias forem necessárias até a disponibilização do veículo para locação, limitado a 5 (cinco) diárias do veículo com base na tarifa vigente.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 4ª – DO COMBUSTÍVEL</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>O veículo será entregue ao LOCATÁRIO com um tanque de combustível completo, e sua quantidade será marcada no laudo de vistoria no momento da retirada.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Ao final do prazo estipulado, o LOCATÁRIO deverá devolver o veículo à LOCADORA com o tanque de combustível completo.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso não ocorra o cumprimento do parágrafo anterior, será cobrado o valor correspondente a leitura do marcador em oitavos, com base em tabela própria, e o valor do litro será informado no momento da retirada pela LOCADORA.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. Caso seja constatado a utilização de combustível adulterado, o LOCATÁRIO responderá pelo mesmo e pelos danos decorrentes de tal utilização.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. Fica desde já acordado que o LOCATÁRIO não terá direito a ressarcimento caso devolva o veículo com uma quantidade de combustível superior a que recebeu.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 6ª – DA UTILIZAÇÃO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Deverá também o LOCATÁRIO utilizar o veículo alugado sempre de acordo com os regulamentos estabelecidos pelo Conselho Nacional de Trânsito (CONTRAN) e pelo Departamento Estadual de Trânsito (DETRAN).</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. A utilização do veículo de forma diferente do descrito acima estará sujeita à cobrança de multa, assim como poderá a LOCADORA dar por rescindido o presente contrato independente de qualquer notificação, e sem maiores formalidades poderá também proceder com o recolhimento do veículo sem que seja ensejada qualquer pretensão para ação indenizatória, reparatória ou compensatória pelo LOCATÁRIO.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. Qualquer modificação no veículo só poderá ser feita com a autorização expressa da LOCADORA.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. O LOCATÁRIO declara estar ciente que quaisquer danos causados, materiais ou pessoais, decorrente da utilização do veículo ora locado, será de sua responsabilidade.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 5ª – DA LIMPEZA</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>O veículo será entregue ao LOCATÁRIO limpo e deverá ser devolvido à LOCADORA nas mesmas condições higiênicas que foi retirado.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Caso o veículo seja devolvido sujo, interna ou externamente, será cobrada uma taxa de lavagem simples ou especial, dependendo do estado do veículo na devolução.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Caso haja a necessidade de lavagem especial, será cobrada, além da taxa de lavagem, o valor mínimo de (uma) diária de locação, ou quantas diárias forem necessárias até a disponibilização do veículo para locação, limitado a 5 (cinco) diárias do veículo com base na tarifa vigente.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 7ª – RESTRIÇÃO TERRITORIAL</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O LOCATÁRIO se compromete a utilizar o veículo exclusivamente dentro do território nacional brasileiro, sendo expressamente proibida sua saída para qualquer outro país. O descumprimento desta cláusula implicará em multa de R$ 280,00 (duzentos e oitenta reais) e rescisão imediata do presente contrato, sem prejuízo das demais medidas legais cabíveis.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 6ª – DA UTILIZAÇÃO</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Deverá também o LOCATÁRIO utilizar o veículo alugado sempre de acordo com os regulamentos estabelecidos pelo Conselho Nacional de Trânsito (CONTRAN) e pelo Departamento Estadual de Trânsito (DETRAN).</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. A utilização do veículo de forma diferente do descrito acima estará sujeita à cobrança de multa, assim como poderá a LOCADORA dar por rescindido o presente contrato independente de qualquer notificação, e sem maiores formalidades poderá também proceder com o recolhimento do veículo sem que seja ensejada qualquer pretensão para ação indenizatória, reparatória ou compensatória pelo LOCATÁRIO.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. Qualquer modificação no veículo só poderá ser feita com a autorização expressa da LOCADORA.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. O LOCATÁRIO declara estar ciente que quaisquer danos causados, materiais ou pessoais, decorrente da utilização do veículo ora locado, será de sua responsabilidade.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 8ª – DAS MULTAS E INFRAÇÕES</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>As multas ou quaisquer outras infrações às leis de trânsito, cometidas durante o período da locação do veículo, serão de responsabilidade do LOCATÁRIO, devendo ser liquidadas quando da notificação pelos órgãos competentes ou no final do contrato, o que ocorrer primeiro.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Em caso de apreensão do veículo, serão cobradas do LOCATÁRIO todas as despesas de serviço dos profissionais envolvidos para liberação do veículo alugado, assim como todas as taxas cobradas pelos órgãos competentes, e também quantas diárias forem necessárias até a disponibilização do veículo para locação.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. O LOCATÁRIO declara-se ciente e concorda que se ocorrer qualquer multa ou infração de trânsito durante a vigência deste contrato, seu nome poderá ser indicado pela LOCADORA junto ao Órgão de Trânsito autuante, na qualidade de condutor do veículo, tendo assim a pontuação recebida transferida para sua carteira de habilitação.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. A LOCADORA poderá preencher os dados relativos à "apresentação do Condutor", previsto na Resolução 404/12 do CONTRAN, caso tenha sido lavrada autuação por infrações de trânsito enquanto o veículo esteve em posse e responsabilidade do LOCATÁRIO, situação na qual a LOCADORA apresentará para o Órgão de Trânsito competente a cópia do presente contrato celebrado com o LOCATÁRIO.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. Descabe qualquer discussão sobre a procedência ou improcedência das infrações de trânsito aplicadas, e poderá o LOCATÁRIO, a seu critério e às suas expensas, recorrer das multas, junto ao Órgão de Trânsito competente, o que não o eximirá do pagamento do valor da multa, mas lhe dará o direito ao reembolso, caso o recurso seja julgado procedente.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 7ª – RESTRIÇÃO TERRITORIAL</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>O LOCATÁRIO se compromete a utilizar o veículo exclusivamente dentro do território nacional brasileiro, sendo expressamente proibida sua saída para qualquer outro país. O descumprimento desta cláusula implicará em multa de R$ 280,00 (duzentos e oitenta reais) e rescisão imediata do presente contrato, sem prejuízo das demais medidas legais cabíveis.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 9ª – DA VEDAÇÃO À SUBLOCAÇÃO E EMPRÉSTIMO DO VEÍCULO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Será permitido o uso do veículo objeto do presente contrato, apenas pelo LOCATÁRIO, sendo vedada, no todo ou em parte, a sublocação, transferência, empréstimo, comodato ou cessão da locação, seja a qualquer título, sem expressa anuência da LOCADORA, sob pena de imediata rescisão, aplicação de multa e de demais penalidades contratuais e legais cabíveis.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. Ocorrendo a utilização do veículo por terceiros com a concordância do LOCATÁRIO, este se responsabilizará por qualquer ação civil ou criminal que referida utilização possa gerar, isentando assim a LOCADORA de qualquer responsabilidade, ou ônus.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 8ª – DAS MULTAS E INFRAÇÕES</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>As multas ou quaisquer outras infrações às leis de trânsito, cometidas durante o período da locação do veículo, serão de responsabilidade do LOCATÁRIO, devendo ser liquidadas quando da notificação pelos órgãos competentes ou no final do contrato, o que ocorrer primeiro.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Em caso de apreensão do veículo, serão cobradas do LOCATÁRIO todas as despesas de serviço dos profissionais envolvidos para liberação do veículo alugado, assim como todas as taxas cobradas pelos órgãos competentes, e também quantas diárias forem necessárias até a disponibilização do veículo para locação.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. O LOCATÁRIO declara-se ciente e concorda que se ocorrer qualquer multa ou infração de trânsito durante a vigência deste contrato, seu nome poderá ser indicado pela LOCADORA junto ao Órgão de Trânsito autuante, na qualidade de condutor do veículo, tendo assim a pontuação recebida transferida para sua carteira de habilitação.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 3º. A LOCADORA poderá preencher os dados relativos à "apresentação do Condutor", previsto na Resolução 404/12 do CONTRAN, caso tenha sido lavrada autuação por infrações de trânsito enquanto o veículo esteve em posse e responsabilidade do LOCATÁRIO, situação na qual a LOCADORA apresentará para o Órgão de Trânsito competente a cópia do presente contrato celebrado com o LOCATÁRIO.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 4º. Descabe qualquer discussão sobre a procedência ou improcedência das infrações de trânsito aplicadas, e poderá o LOCATÁRIO, a seu critério e às suas expensas, recorrer das multas, junto ao Órgão de Trânsito competente, o que não o eximirá do pagamento do valor da multa, mas lhe dará o direito ao reembolso, caso o recurso seja julgado procedente.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 10ª – DA MANUTENÇÃO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>A manutenção do veículo, referente a troca das peças oriundas do desgaste natural de sua utilização, é de responsabilidade do LOCATÁRIO, sem ônus para a LOCADORA.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. Se durante o período da manutenção o LOCATÁRIO não dispor do bem, ou de outro de categoria igual ou similar, terá desconto no aluguel, proporcional ao período de manutenção.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 9ª – DA VEDAÇÃO À SUBLOCAÇÃO E EMPRÉSTIMO DO VEÍCULO</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Será permitido o uso do veículo objeto do presente contrato, apenas pelo LOCATÁRIO, sendo vedada, no todo ou em parte, a sublocação, transferência, empréstimo, comodato ou cessão da locação, seja a qualquer título, sem expressa anuência da LOCADORA, sob pena de imediata rescisão, aplicação de multa e de demais penalidades contratuais e legais cabíveis.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. Ocorrendo a utilização do veículo por terceiros com a concordância do LOCATÁRIO, este se responsabilizará por qualquer ação civil ou criminal que referida utilização possa gerar, isentando assim a LOCADORA de qualquer responsabilidade, ou ônus.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 11ª – DA UTILIZAÇÃO DO SEGURO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Ocorrendo a necessidade da utilização do seguro veicular, registrado em nome da LOCADORA, devido à perda, extravio, furto, roubo, destruição parcial ou total, ou colisão do veículo por ora locado, fica desde já estipulada indenização devida pelo LOCATÁRIO que deverá, para efeito de cobertura do valor da franquia do seguro veicular, pagar à LOCADORA o valor de R$ 3.520,00 (três mil e quinhentos e vinte reais).</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. O LOCATÁRIO declara estar ciente de que a locação foi realizada sem a contratação de seguro veicular, assumindo, assim, total responsabilidade civil e material por quaisquer danos, perdas, furtos, roubos, destruição, sinistros ou acidentes ocorridos com o veículo durante o período de vigência deste contrato, obrigando-se a ressarcir integralmente a LOCADORA em todas essas situações, isentando-a de quaisquer ônus, indenizações ou coberturas decorrentes da ausência de seguro.</p>
-                <p style={{ marginTop: '30px', textAlign: 'left' }}>ASS.________________________________________________________</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 10ª – DA MANUTENÇÃO</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>A manutenção do veículo, referente a troca das peças oriundas do desgaste natural de sua utilização, é de responsabilidade do LOCATÁRIO, sem ônus para a LOCADORA.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. Se durante o período da manutenção o LOCATÁRIO não dispor do bem, ou de outro de categoria igual ou similar, terá desconto no aluguel, proporcional ao período de manutenção.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 12ª – DOS DEVERES DO LOCATÁRIO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Sem prejuízo de outras disposições deste contrato, constituem obrigações do LOCATÁRIO:</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>I – pagar o aluguel e os encargos da locação, legal ou contratualmente exigíveis, no prazo estipulado;</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>II – usar o veículo como foi convencionado, de acordo com a sua natureza e com o objetivo a que se destina;</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>III – cuidar e zelar do veículo como se fosse sua propriedade;</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>IV – restituir o veículo, no final da locação, no estado em que o recebeu, conforme o laudo de vistoria, salvo as deteriorações decorrentes do seu uso normal;</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>V – levar imediatamente ao conhecimento da LOCADORA o surgimento de qualquer dano, ou ocorrência, cuja reparação, e ou indenização, a esta enquadre;</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>VI – reparar rapidamente os danos sob sua responsabilidade;</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>VII – não modificar a forma interna ou externa do veículo sem o consentimento prévio e por escrito da LOCADORA.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 11ª – DA UTILIZAÇÃO DO SEGURO</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Ocorrendo a necessidade da utilização do seguro veicular, registrado em nome da LOCADORA, devido à perda, extravio, furto, roubo, destruição parcial ou total, ou colisão do veículo por ora locado, fica desde já estipulada indenização devida pelo LOCATÁRIO que deverá, para efeito de cobertura do valor da franquia do seguro veicular, pagar à LOCADORA o valor de R$ 3.520,00 (três mil e quinhentos e vinte reais).</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. O LOCATÁRIO declara estar ciente de que a locação foi realizada sem a contratação de seguro veicular, assumindo, assim, total responsabilidade civil e material por quaisquer danos, perdas, furtos, roubos, destruição, sinistros ou acidentes ocorridos com o veículo durante o período de vigência deste contrato, obrigando-se a ressarcir integralmente a LOCADORA em todas essas situações, isentando-a de quaisquer ônus, indenizações ou coberturas decorrentes da ausência de seguro.</p>
+                  <p style={{ marginTop: '30px', textAlign: 'left' }}>ASS.________________________________________________________</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 13ª – DOS DEVERES DA LOCADORA</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Sem prejuízo de outras disposições deste contrato, constituem obrigações da LOCADORA:</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>I – entregar ao LOCATÁRIO o veículo alugado em estado de servir ao uso a que se destina;</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>II – ser integralmente responsável pelos problemas, defeitos e vícios anteriores à locação.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 12ª – DOS DEVERES DO LOCATÁRIO</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Sem prejuízo de outras disposições deste contrato, constituem obrigações do LOCATÁRIO:</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>I – pagar o aluguel e os encargos da locação, legal ou contratualmente exigíveis, no prazo estipulado;</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>II – usar o veículo como foi convencionado, de acordo com a sua natureza e com o objetivo a que se destina;</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>III – cuidar e zelar do veículo como se fosse sua propriedade;</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>IV – restituir o veículo, no final da locação, no estado em que o recebeu, conforme o laudo de vistoria, salvo as deteriorações decorrentes do seu uso normal;</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>V – levar imediatamente ao conhecimento da LOCADORA o surgimento de qualquer dano, ou ocorrência, cuja reparação, e ou indenização, a esta enquadre;</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>VI – reparar rapidamente os danos sob sua responsabilidade;</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>VII – não modificar a forma interna ou externa do veículo sem o consentimento prévio e por escrito da LOCADORA.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 14ª – DA GARANTIA</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>O cumprimento das obrigações previstas neste contrato, inclusive o pagamento pontual do aluguel, estará garantido por caução dada em dinheiro, perfazendo o montante de {contractData.valor_caucao_formatted} {contractData.valor_caucao_extenso}, entregue à LOCADORA no ato de assinatura deste contrato.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Ao final da locação, tendo sido todas as obrigações devidamente cumpridas, o LOCATÁRIO estará autorizado a levantar a respectiva soma.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. A critério das partes, o valor dado como caução poderá ser revertido para o pagamento de aluguéis devidos.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 13ª – DOS DEVERES DA LOCADORA</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Sem prejuízo de outras disposições deste contrato, constituem obrigações da LOCADORA:</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>I – entregar ao LOCATÁRIO o veículo alugado em estado de servir ao uso a que se destina;</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>II – ser integralmente responsável pelos problemas, defeitos e vícios anteriores à locação.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 15ª – DA RESCISÃO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>As partes poderão rescindir o contrato unilateralmente, sem apresentação de justificativa.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. Em cumprimento ao princípio da boa-fé, as partes se comprometem a informar uma à outra qualquer fato que possa porventura intervir na relação jurídica formalizada através do presente contrato.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 14ª – DA GARANTIA</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>O cumprimento das obrigações previstas neste contrato, inclusive o pagamento pontual do aluguel, estará garantido por caução dada em dinheiro, perfazendo o montante de {contractData.valor_caucao_formatted} {contractData.valor_caucao_extenso}, entregue à LOCADORA no ato de assinatura deste contrato.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Ao final da locação, tendo sido todas as obrigações devidamente cumpridas, o LOCATÁRIO estará autorizado a levantar a respectiva soma.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. A critério das partes, o valor dado como caução poderá ser revertido para o pagamento de aluguéis devidos.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 16ª – DAS PENALIDADES</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>A parte que violar as obrigações previstas neste contrato se sujeitará ao pagamento de indenização e ressarcimento pelas perdas, danos, lucros cessantes, danos indiretos e quaisquer outros prejuízos patrimoniais ou morais percebidos pela outra parte em decorrência deste descumprimento, sem prejuízo de demais penalidades legais ou contratuais cabíveis.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Caso ocorra uma violação, este contrato poderá ser rescindido de pleno direito pela parte prejudicada, sem a necessidade aviso prévio.</p>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Ocorrendo uma tolerância de uma das partes em relação ao descumprimento das cláusulas contidas neste instrumento não se configura em renúncia ou alteração da norma infringida.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 15ª – DA RESCISÃO</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>As partes poderão rescindir o contrato unilateralmente, sem apresentação de justificativa.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Parágrafo único. Em cumprimento ao princípio da boa-fé, as partes se comprometem a informar uma à outra qualquer fato que possa porventura intervir na relação jurídica formalizada através do presente contrato.</p>
 
-                <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 17ª – DO FORO</h3>
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Fica desde já eleito o foro da comarca de Naviraí para serem resolvidas eventuais pendências decorrentes deste contrato.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 16ª – DAS PENALIDADES</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>A parte que violar as obrigações previstas neste contrato se sujeitará ao pagamento de indenização e ressarcimento pelas perdas, danos, lucros cessantes, danos indiretos e quaisquer outros prejuízos patrimoniais ou morais percebidos pela outra parte em decorrência deste descumprimento, sem prejuízo de demais penalidades legais ou contratuais cabíveis.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 1º. Caso ocorra uma violação, este contrato poderá ser rescindido de pleno direito pela parte prejudicada, sem a necessidade aviso prévio.</p>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>§ 2º. Ocorrendo uma tolerância de uma das partes em relação ao descumprimento das cláusulas contidas neste instrumento não se configura em renúncia ou alteração da norma infringida.</p>
 
-                <p style={{ margin: '10px 0', textAlign: 'justify' }}>Por estarem assim certos e ajustados, firmam os signatários este instrumento em 02 (duas) vias de igual teor e forma.</p>
+                  <h3 style={{ margin: '20px 0 10px 0', fontWeight: 'bold' }}>CLÁUSULA 17ª – DO FORO</h3>
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Fica desde já eleito o foro da comarca de Naviraí para serem resolvidas eventuais pendências decorrentes deste contrato.</p>
 
-                {contractData.observacoes && (
-                  <div style={{ margin: '20px 0' }}>
-                    <h3 style={{ fontWeight: 'bold' }}>OBSERVAÇÕES:</h3>
-                    <p style={{ margin: '10px 0', textAlign: 'justify' }}>{contractData.observacoes}</p>
-                  </div>
-                )}
+                  <p style={{ margin: '10px 0', textAlign: 'justify' }}>Por estarem assim certos e ajustados, firmam os signatários este instrumento em 02 (duas) vias de igual teor e forma.</p>
 
-                <div style={{ marginTop: '80px' }}></div>
-
-                <div className="signature-section" style={{ marginTop: '60px' }}>
-                  <p style={{ margin: '10px 0' }}>Naviraí, {contractData?.data_atual_formatted || '[Data Atual]'}</p>
-                  
-                  <div style={{ marginTop: '40px' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '20px', display: 'inline-block', minWidth: '300px' }}>
-                        <strong>LOCADORA</strong><br />
-                        João Roberto dos Santos de Oliveira<br />
-                        neste ato representando a pessoa jurídica<br />
-                        L dos Santos de Oliveira
-                      </div>
+                  {contractData.observacoes && (
+                    <div style={{ margin: '20px 0' }}>
+                      <h3 style={{ fontWeight: 'bold' }}>OBSERVAÇÕES:</h3>
+                      <p style={{ margin: '10px 0', textAlign: 'justify' }}>{contractData.observacoes}</p>
                     </div>
-                    
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '20px', display: 'inline-block', minWidth: '300px' }}>
-                        <strong>LOCATÁRIO</strong><br />
-                        {contractData.cliente_nome}
+                  )}
+
+                  <div style={{ marginTop: '80px' }}></div>
+
+                  <div className="signature-section" style={{ marginTop: '60px' }}>
+                    <p style={{ margin: '10px 0' }}>Naviraí, {contractData?.data_atual_formatted || '[Data Atual]'}</p>
+
+                    <div style={{ marginTop: '40px' }}>
+                      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                        <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '20px', display: 'inline-block', minWidth: '300px' }}>
+                          <strong>LOCADORA</strong><br />
+                          João Roberto dos Santos de Oliveira<br />
+                          neste ato representando a pessoa jurídica<br />
+                          L dos Santos de Oliveira
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ borderTop: '1px solid black', paddingTop: '5px', marginTop: '20px', display: 'inline-block', minWidth: '300px' }}>
+                          <strong>LOCATÁRIO</strong><br />
+                          {contractData.cliente_nome}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
               </div>
             </div>
           </div>
