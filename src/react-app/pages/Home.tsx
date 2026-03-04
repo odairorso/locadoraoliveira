@@ -15,6 +15,7 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -28,6 +29,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement
+  ,Filler
 );
 
 interface AdvancedStats {

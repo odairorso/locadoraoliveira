@@ -19,6 +19,31 @@ async function detectClienteColumns(supabase) {
   return { docColumn, hasTipoPessoa };
 }
 
+async function fetchClienteById(supabase, id) {
+  const schema = await detectClienteColumns(supabase);
+  const docField = schema.docColumn;
+  const selectFields = ['id', 'nome', docField, schema.hasTipoPessoa ? 'tipo_pessoa' : null]
+    .filter(Boolean)
+    .join(', ');
+  const { data, error } = await supabase
+    .from('clientes')
+    .select(selectFields)
+    .eq('id', id)
+    .single();
+  if (error) return null;
+  return data;
+}
+
+async function fetchVeiculoById(supabase, id) {
+  const { data, error } = await supabase
+    .from('veiculos')
+    .select('id, marca, modelo, placa, ano')
+    .eq('id', id)
+    .single();
+  if (error) return null;
+  return data;
+}
+
 function generateContractHTML(contractData) {
   // Helper for conditional rendering of observations
   const observacoesHTML = contractData.observacoes
@@ -260,6 +285,8 @@ export default async function handler(request, response) {
       const clienteDocField = clienteSchema.docColumn;
       const clienteTipoField = clienteSchema.hasTipoPessoa ? 'tipo_pessoa' : null;
       const clienteSelect = ['id', 'nome', clienteDocField, clienteTipoField].filter(Boolean).join(', ');
+      // Detect optional columns in locacoes to avoid selecting non-existent fields and avoid ordering by missing columns
+      const hasCreatedAt = !(await supabase.from('locacoes').select('created_at').limit(1)).error;
       if (isContratoData || isContratoHtml) {
         if (!finalId) {
           return response.status(400).json({ success: false, error: 'ID da locação é obrigatório para contrato' });
@@ -267,17 +294,26 @@ export default async function handler(request, response) {
 
         console.log('DEBUG: Buscando locação com ID:', finalId);
 
-        const { data: locacao, error: locacaoError } = await supabase
+        let locacao, locacaoError;
+        ({ data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
           .select(`*, cliente:clientes (${clienteSelect}), veiculo:veiculos (*)`)
           .eq('id', parseInt(finalId))
-          .single();
+          .single());
 
         console.log('DEBUG: Resultado da busca locação:', { locacao, locacaoError });
 
-        if (locacaoError) {
-          console.error('Erro ao buscar locação:', locacaoError);
-          return response.status(500).json({ success: false, error: "Erro ao buscar dados da locação.", details: locacaoError.message });
+        // Fallback manual se o join relacional falhar (ex.: falta de FK)
+        if (locacaoError || !locacao) {
+          const baseRes = await supabase.from('locacoes').select('*').eq('id', parseInt(finalId)).single();
+          if (baseRes.error || !baseRes.data) {
+            console.error('Erro ao buscar locação (fallback base):', baseRes.error);
+            return response.status(500).json({ success: false, error: "Erro ao buscar dados da locação.", details: (locacaoError||baseRes.error)?.message });
+          }
+          const base = baseRes.data;
+          const clienteData = await fetchClienteById(supabase, base.cliente_id);
+          const veiculoData = await fetchVeiculoById(supabase, base.veiculo_id);
+          locacao = { ...base, cliente: clienteData, veiculo: veiculoData };
         }
 
         if (!locacao) {
@@ -343,7 +379,7 @@ export default async function handler(request, response) {
 
         const { data: locacao, error: locacaoError } = await supabase
           .from('locacoes')
-          .select(`id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( ${clienteSelect} ), veiculo:veiculos ( id, marca, modelo, placa, ano )`)
+          .select(`*, cliente:clientes ( ${clienteSelect} ), veiculo:veiculos ( id, marca, modelo, placa, ano )`)
           .eq('id', parseInt(finalId))
           .single();
 
@@ -369,21 +405,59 @@ export default async function handler(request, response) {
         return response.status(200).json({ success: true, data: formattedLocacao });
       }
 
-      let query = supabase.from('locacoes').select(`id, status, data_locacao, data_entrega, valor_total, observacoes, cliente_id, veiculo_id, valor_diaria, valor_caucao, valor_seguro, cliente:clientes ( ${clienteSelect} ), veiculo:veiculos ( id, marca, modelo, placa, ano )`);
+      let query = supabase.from('locacoes').select(`*, cliente:clientes ( ${clienteSelect} ), veiculo:veiculos ( id, marca, modelo, placa, ano )`);
       if (status) {
         query = query.eq('status', status);
       }
-      const { data, error } = await query.order('created_at', { ascending: false });
+      let data, error;
+      ({ data, error } = await (hasCreatedAt ? query.order('created_at', { ascending: false }) : query.order('id', { ascending: false })));
 
-      if (error) throw error;
+      let formattedData;
+      if (error) {
+        console.warn('Relational select falhou, aplicando fallback simples:', error);
+        // Fallback: buscar sem joins e montar manualmente
+        const baseRes = await (hasCreatedAt
+          ? supabase.from('locacoes').select('*').order('created_at', { ascending: false })
+          : supabase.from('locacoes').select('*').order('id', { ascending: false })
+        );
+        if (baseRes.error) throw baseRes.error;
+        const bases = baseRes.data || [];
+        // Carregar clientes e veiculos em batch
+        const clienteIds = [...new Set(bases.map(b => b.cliente_id).filter(Boolean))];
+        const veiculoIds = [...new Set(bases.map(b => b.veiculo_id).filter(Boolean))];
+        let clientesMap = new Map();
+        let veiculosMap = new Map();
+        if (clienteIds.length) {
+          const schema = await detectClienteColumns(supabase);
+          const sel = ['id', 'nome', schema.docColumn, schema.hasTipoPessoa ? 'tipo_pessoa' : null].filter(Boolean).join(', ');
+          const { data: clientesArr } = await supabase.from('clientes').select(sel).in('id', clienteIds);
+          (clientesArr||[]).forEach(c => clientesMap.set(c.id, c));
+        }
+        if (veiculoIds.length) {
+          const { data: veiculosArr } = await supabase.from('veiculos').select('id, marca, modelo, placa, ano').in('id', veiculoIds);
+          (veiculosArr||[]).forEach(v => veiculosMap.set(v.id, v));
+        }
+        formattedData = bases.map(b => {
+          const c = clientesMap.get(b.cliente_id);
+          const v = veiculosMap.get(b.veiculo_id);
+          return {
+            ...b,
+            cliente_nome: c?.nome,
+            veiculo_info: v ? `${v.marca} ${v.modelo} - ${v.placa}` : '',
+            clientes: c,
+            veiculos: v,
+          };
+        });
+      } else {
+        formattedData = (data || []).map(l => ({
+          ...l,
+          cliente_nome: l.cliente?.nome,
+          veiculo_info: `${l.veiculo?.marca} ${l.veiculo?.modelo} - ${l.veiculo?.placa}`,
+          clientes: l.cliente,
+          veiculos: l.veiculo
+        }));
+      }
 
-      const formattedData = data.map(l => ({
-        ...l,
-        cliente_nome: l.cliente?.nome,
-        veiculo_info: `${l.veiculo?.marca} ${l.veiculo?.modelo} - ${l.veiculo?.placa}`,
-        clientes: l.cliente,
-        veiculos: l.veiculo
-      }));
       return response.status(200).json({ success: true, data: formattedData });
     }
 
