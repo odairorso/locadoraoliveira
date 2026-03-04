@@ -34,8 +34,8 @@ const loadApiRoutes = async () => {
     const apiRouter = await import(`file://${join(__dirname, 'api', 'index.mjs')}`);
     
     if (apiRouter.default) {
-      // Configurar rota catch-all para todas as requisições da API
-      app.all('/api/*', async (req, res) => {
+      // Configurar rota catch-all para todas as requisições da API (Express v5 compatível)
+      app.all(/^\/api\/.+$/, async (req, res) => {
         console.log(`API Request: ${req.method} ${req.url}`);
         console.log(`Looking for API file: ${join(__dirname, 'api', 'index.mjs')}`);
         console.log('Found API file, importing...');

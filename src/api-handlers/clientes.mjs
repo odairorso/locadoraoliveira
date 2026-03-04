@@ -1,5 +1,40 @@
 import { createClient } from '@supabase/supabase-js';
 
+async function detectColumns(supabase) {
+  let docColumn = 'cpf_cnpj';
+  let hasTipoPessoa = true;
+
+  const checkColumn = async (col) => {
+    const { error } = await supabase.from('clientes').select(col).limit(1);
+    return !error;
+  };
+
+  if (!(await checkColumn('cpf_cnpj'))) {
+    if (await checkColumn('cpf')) {
+      docColumn = 'cpf';
+    }
+  }
+
+  hasTipoPessoa = await checkColumn('tipo_pessoa');
+
+  return { docColumn, hasTipoPessoa };
+}
+
+function normalizePayloadForSchema(body, { docColumn, hasTipoPessoa }) {
+  const payload = { ...body };
+
+  if (docColumn === 'cpf') {
+    payload.cpf = payload.cpf_cnpj;
+    delete payload.cpf_cnpj;
+  }
+
+  if (!hasTipoPessoa) {
+    delete payload.tipo_pessoa;
+  }
+
+  return payload;
+}
+
 export default async function handler(request, response) {
   // Set CORS headers
   response.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,12 +57,18 @@ export default async function handler(request, response) {
 
   try {
     const { method } = request;
-    const { search, id } = request.query;
+    const { search, id, limit } = request.query;
+
+    const schema = await detectColumns(supabase);
 
     if (method === 'GET') {
       let query = supabase.from('clientes').select('*');
       if (search) {
-        query = query.or(`nome.ilike.%${search}%,cpf_cnpj.ilike.%${search}%`);
+        const docCol = schema.docColumn;
+        query = query.or(`nome.ilike.%${search}%,${docCol}.ilike.%${search}%`);
+      }
+      if (limit && /^\d+$/.test(String(limit))) {
+        query = query.limit(parseInt(limit));
       }
       const { data, error } = await query.order('nome', { ascending: true });
       if (error) throw error;
@@ -36,20 +77,33 @@ export default async function handler(request, response) {
 
     if (method === 'POST') {
       const { cpf_cnpj } = request.body;
-      const { data: existing, error: existingError } = await supabase
-        .from('clientes')
-        .select('id')
-        .eq('cpf_cnpj', cpf_cnpj)
-        .single();
+
+      let existing = null;
+      let existingError = null;
+      if (schema.docColumn === 'cpf_cnpj') {
+        ({ data: existing, error: existingError } = await supabase
+          .from('clientes')
+          .select('id')
+          .eq('cpf_cnpj', cpf_cnpj)
+          .single());
+      } else {
+        ({ data: existing, error: existingError } = await supabase
+          .from('clientes')
+          .select('id')
+          .eq('cpf', cpf_cnpj)
+          .single());
+      }
 
       if (existingError && existingError.code !== 'PGRST116') throw existingError;
       if (existing) {
         return response.status(400).json({ success: false, error: "CPF/CNPJ já cadastrado" });
       }
 
+      const payload = normalizePayloadForSchema(request.body, schema);
+
       const { data: newCliente, error } = await supabase
         .from('clientes')
-        .insert([request.body])
+        .insert([payload])
         .select()
         .single();
 
@@ -71,9 +125,11 @@ export default async function handler(request, response) {
         return response.status(400).json({ success: false, error: 'Nome é obrigatório' });
       }
 
+      const payload = normalizePayloadForSchema(request.body, schema);
+
       const { data: updatedCliente, error } = await supabase
         .from('clientes')
-        .update(request.body)
+        .update(payload)
         .eq('id', finalUpdateId)
         .select()
         .single();
