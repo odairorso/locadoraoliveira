@@ -53,7 +53,6 @@ const VistoriaComparacao: React.FC = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const saidaId = searchParams.get('saida_id');
-  const _locacaoId = searchParams.get('locacaoId');
 
   const [vistoriaEntrada, setVistoriaEntrada] = useState<VistoriaData | null>(null);
   const [vistoriaSaida, setVistoriaSaida] = useState<VistoriaData | null>(null);
@@ -200,10 +199,6 @@ const VistoriaComparacao: React.FC = () => {
 
   const getStatusIcon = (status: boolean) => {
     return status ? <CheckCircle2 size={20} /> : <XCircle size={20} />;
-  };
-
-  const _getConfrontoIcon = (confrontado: boolean) => {
-    return confrontado ? <CheckCircle2 size={20} className="text-blue-600" /> : <AlertCircle size={20} className="text-gray-400" />;
   };
 
   if (loading) {
