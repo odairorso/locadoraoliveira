@@ -232,7 +232,7 @@ const VistoriaForm: React.FC = () => {
                   console.log('VistoriaForm - Dados preenchidos - Quilometragem:', vistoriaEntrada.quilometragem, 'Combustível:', vistoriaEntrada.combustivel);
                 } else {
                   console.log('VistoriaForm - ❌ Nenhuma vistoria de entrada encontrada para esta locação específica');
-                  console.log('VistoriaForm - Vistorias disponíveis para este veículo:', vistoriasResult.data.vistorias.map(v => ({ id: v.id, locacao_id: v.locacao_id, tipo: v.tipo_vistoria })));
+                  console.log('VistoriaForm - Vistorias disponíveis para este veículo:', vistoriasResult.data.vistorias.map((v: any) => ({ id: v.id, locacao_id: v.locacao_id, tipo: v.tipo_vistoria })));
                 }
               } else {
                 console.log('VistoriaForm - ❌ Array de vistorias está vazio');
@@ -369,7 +369,8 @@ const VistoriaForm: React.FC = () => {
               observacoes: vistoria.observacoes || '',
               checklist: vistoria.checklist || {},
               avarias: vistoria.avarias || [],
-              fotos: vistoria.fotos || []
+              fotos: vistoria.fotos || [],
+              nomeVistoriador: vistoria.nome_vistoriador || ''
             });
 
             // Atualiza os campos de busca para exibir os dados carregados

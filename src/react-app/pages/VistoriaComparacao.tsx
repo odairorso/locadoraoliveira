@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, AlertCircle, Camera, FileText } from 'lucide-react';
-import { useApi } from '@/react-app/hooks/useApi';
+import { ArrowLeft, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
 interface VistoriaData {
   id: string;
@@ -54,7 +53,7 @@ const VistoriaComparacao: React.FC = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const saidaId = searchParams.get('saida_id');
-  const locacaoId = searchParams.get('locacaoId');
+  const _locacaoId = searchParams.get('locacaoId');
 
   const [vistoriaEntrada, setVistoriaEntrada] = useState<VistoriaData | null>(null);
   const [vistoriaSaida, setVistoriaSaida] = useState<VistoriaData | null>(null);
@@ -203,7 +202,7 @@ const VistoriaComparacao: React.FC = () => {
     return status ? <CheckCircle2 size={20} /> : <XCircle size={20} />;
   };
 
-  const getConfrontoIcon = (confrontado: boolean) => {
+  const _getConfrontoIcon = (confrontado: boolean) => {
     return confrontado ? <CheckCircle2 size={20} className="text-blue-600" /> : <AlertCircle size={20} className="text-gray-400" />;
   };
 
