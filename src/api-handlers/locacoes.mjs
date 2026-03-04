@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 async function detectClienteColumns(supabase) {
   let docColumn = 'cpf_cnpj';
-  let hasTipoPessoa = true;
+  let tipoField = 'tipo_pessoa';
 
   const checkColumn = async (col) => {
     const { error } = await supabase.from('clientes').select(col).limit(1);
@@ -12,17 +12,25 @@ async function detectClienteColumns(supabase) {
   if (!(await checkColumn('cpf_cnpj'))) {
     if (await checkColumn('cpf')) {
       docColumn = 'cpf';
+    } else if (await checkColumn('documento')) {
+      docColumn = 'documento';
     }
   }
-  hasTipoPessoa = await checkColumn('tipo_pessoa');
+  if (await checkColumn('tipo_pessoa')) {
+    tipoField = 'tipo_pessoa';
+  } else if (await checkColumn('tipo_documento')) {
+    tipoField = 'tipo_documento';
+  } else {
+    tipoField = null;
+  }
 
-  return { docColumn, hasTipoPessoa };
+  return { docColumn, tipoField };
 }
 
 async function fetchClienteById(supabase, id) {
   const schema = await detectClienteColumns(supabase);
   const docField = schema.docColumn;
-  const selectFields = ['id', 'nome', docField, schema.hasTipoPessoa ? 'tipo_pessoa' : null]
+  const selectFields = ['id', 'nome', docField, schema.tipoField]
     .filter(Boolean)
     .join(', ');
   const { data, error } = await supabase
@@ -283,7 +291,7 @@ export default async function handler(request, response) {
     if (method === 'GET') {
       const clienteSchema = await detectClienteColumns(supabase);
       const clienteDocField = clienteSchema.docColumn;
-      const clienteTipoField = clienteSchema.hasTipoPessoa ? 'tipo_pessoa' : null;
+      const clienteTipoField = clienteSchema.tipoField;
       const clienteSelect = ['id', 'nome', clienteDocField, clienteTipoField].filter(Boolean).join(', ');
       // Detect optional columns in locacoes to avoid selecting non-existent fields and avoid ordering by missing columns
       const hasCreatedAt = !(await supabase.from('locacoes').select('created_at').limit(1)).error;
@@ -346,7 +354,12 @@ export default async function handler(request, response) {
           id: locacao.id,
           cliente_nome: cliente.nome || '[Cliente não encontrado]',
           cliente_cpf_cnpj: cliente[clienteDocField] || '[CPF/CNPJ não encontrado]',
-          cliente_tipo_doc: (clienteTipoField ? cliente[clienteTipoField] : 'pf') === 'pj' ? 'CNPJ' : 'CPF',
+          cliente_tipo_doc: (() => {
+            if (!clienteTipoField) return 'CPF';
+            const t = String(cliente[clienteTipoField] || '').toLowerCase();
+            if (t === 'pj' || t === 'cnpj') return 'CNPJ';
+            return 'CPF';
+          })(),
           endereco_completo: enderecoCompleto,
           veiculo_marca: veiculo.marca || '[Marca não encontrada]',
           veiculo_modelo: veiculo.modelo || '[Modelo não encontrado]',
@@ -429,7 +442,7 @@ export default async function handler(request, response) {
         let veiculosMap = new Map();
         if (clienteIds.length) {
           const schema = await detectClienteColumns(supabase);
-          const sel = ['id', 'nome', schema.docColumn, schema.hasTipoPessoa ? 'tipo_pessoa' : null].filter(Boolean).join(', ');
+          const sel = ['id', 'nome', schema.docColumn, schema.tipoField].filter(Boolean).join(', ');
           const { data: clientesArr } = await supabase.from('clientes').select(sel).in('id', clienteIds);
           (clientesArr||[]).forEach(c => clientesMap.set(c.id, c));
         }

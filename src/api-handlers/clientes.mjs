@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 async function detectColumns(supabase) {
   let docColumn = 'cpf_cnpj';
-  let hasTipoPessoa = true;
+  let tipoField = 'tipo_pessoa';
 
   const checkColumn = async (col) => {
     const { error } = await supabase.from('clientes').select(col).limit(1);
@@ -12,27 +12,73 @@ async function detectColumns(supabase) {
   if (!(await checkColumn('cpf_cnpj'))) {
     if (await checkColumn('cpf')) {
       docColumn = 'cpf';
+    } else if (await checkColumn('documento')) {
+      docColumn = 'documento';
     }
   }
 
-  hasTipoPessoa = await checkColumn('tipo_pessoa');
-
-  return { docColumn, hasTipoPessoa };
-}
-
-function normalizePayloadForSchema(body, { docColumn, hasTipoPessoa }) {
-  const payload = { ...body };
-
-  if (docColumn === 'cpf') {
-    payload.cpf = payload.cpf_cnpj;
-    delete payload.cpf_cnpj;
+  if (await checkColumn('tipo_pessoa')) {
+    tipoField = 'tipo_pessoa';
+  } else if (await checkColumn('tipo_documento')) {
+    tipoField = 'tipo_documento';
+  } else {
+    tipoField = null;
   }
 
-  if (!hasTipoPessoa) {
+  return { docColumn, tipoField };
+}
+
+function normalizePayloadForSchema(body, { docColumn, tipoField }) {
+  const payload = { ...body };
+
+  // Normalizar documento para apenas dígitos
+  const rawDoc = (payload.cpf_cnpj || '').toString();
+  const digitsDoc = rawDoc.replace(/\D/g, '');
+
+  // Mapear documento
+  if (docColumn === 'cpf') {
+    payload.cpf = digitsDoc;
+    delete payload.cpf_cnpj;
+  } else if (docColumn === 'documento') {
+    payload.documento = digitsDoc;
+    delete payload.cpf_cnpj;
+  } else {
+    // cpf_cnpj na tabela: sobrescrever com dígitos para consistência
+    payload.cpf_cnpj = digitsDoc;
+  }
+
+  // Mapear tipo
+  if (tipoField === 'tipo_pessoa') {
+    // já está no formato esperado
+  } else if (tipoField === 'tipo_documento') {
+    // converter 'pf'/'pj' -> 'cpf'/'cnpj'
+    const map = { pf: 'cpf', pj: 'cnpj' };
+    if (payload.tipo_pessoa) {
+      payload.tipo_documento = map[payload.tipo_pessoa] || payload.tipo_documento;
+      delete payload.tipo_pessoa;
+    }
+  } else {
+    // não há coluna de tipo: remover do payload
     delete payload.tipo_pessoa;
   }
 
   return payload;
+}
+
+function mapRowToFrontend(row, { docColumn, tipoField }) {
+  const mapped = { ...row };
+  // Expor campo unificado cpf_cnpj no response para o frontend
+  if (docColumn === 'documento') {
+    mapped.cpf_cnpj = row.documento;
+  } else if (docColumn === 'cpf') {
+    mapped.cpf_cnpj = row.cpf;
+  }
+  // Expor tipo_pessoa padronizado
+  if (!row.tipo_pessoa && tipoField === 'tipo_documento') {
+    const t = (row.tipo_documento || '').toString().toLowerCase();
+    mapped.tipo_pessoa = t === 'cnpj' ? 'pj' : 'pf';
+  }
+  return mapped;
 }
 
 export default async function handler(request, response) {
@@ -72,7 +118,8 @@ export default async function handler(request, response) {
       }
       const { data, error } = await query.order('nome', { ascending: true });
       if (error) throw error;
-      return response.status(200).json({ success: true, data });
+      const dataMapped = (data || []).map(r => mapRowToFrontend(r, schema));
+      return response.status(200).json({ success: true, data: dataMapped });
     }
 
     if (method === 'POST') {
@@ -86,11 +133,17 @@ export default async function handler(request, response) {
           .select('id')
           .eq('cpf_cnpj', cpf_cnpj)
           .single());
-      } else {
+      } else if (schema.docColumn === 'cpf') {
         ({ data: existing, error: existingError } = await supabase
           .from('clientes')
           .select('id')
           .eq('cpf', cpf_cnpj)
+          .single());
+      } else if (schema.docColumn === 'documento') {
+        ({ data: existing, error: existingError } = await supabase
+          .from('clientes')
+          .select('id')
+          .eq('documento', cpf_cnpj)
           .single());
       }
 
@@ -108,7 +161,7 @@ export default async function handler(request, response) {
         .single();
 
       if (error) throw error;
-      return response.status(200).json({ success: true, data: newCliente });
+      return response.status(200).json({ success: true, data: mapRowToFrontend(newCliente, schema) });
     }
 
     if (method === 'PUT') {
@@ -135,7 +188,7 @@ export default async function handler(request, response) {
         .single();
 
       if (error) throw error;
-      return response.status(200).json({ success: true, data: updatedCliente });
+      return response.status(200).json({ success: true, data: mapRowToFrontend(updatedCliente, schema) });
     }
 
     if (method === 'DELETE') {
