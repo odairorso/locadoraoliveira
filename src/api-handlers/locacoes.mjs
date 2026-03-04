@@ -30,7 +30,7 @@ async function detectClienteColumns(supabase) {
 async function fetchClienteById(supabase, id) {
   const schema = await detectClienteColumns(supabase);
   const docField = schema.docColumn;
-  const selectFields = ['id', 'nome', docField, schema.tipoField]
+  const selectFields = ['id', 'nome', 'endereco', 'bairro', 'cidade', 'estado', 'cep', docField, schema.tipoField]
     .filter(Boolean)
     .join(', ');
   const { data, error } = await supabase
@@ -307,7 +307,7 @@ export default async function handler(request, response) {
       const clienteSchema = await detectClienteColumns(supabase);
       const clienteDocField = clienteSchema.docColumn;
       const clienteTipoField = clienteSchema.tipoField;
-      const clienteSelect = ['id', 'nome', clienteDocField, clienteTipoField].filter(Boolean).join(', ');
+      const clienteSelect = ['id', 'nome', 'endereco', 'bairro', 'cidade', 'estado', 'cep', clienteDocField, clienteTipoField].filter(Boolean).join(', ');
       // Detect optional columns in locacoes to avoid selecting non-existent fields and avoid ordering by missing columns
       const hasCreatedAt = !(await supabase.from('locacoes').select('created_at').limit(1)).error;
       if (isContratoData || isContratoHtml) {
