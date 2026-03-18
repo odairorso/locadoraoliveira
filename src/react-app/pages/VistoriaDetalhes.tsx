@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { formatarData } from '@/react-app/utils/formatters';
 
 interface VistoriaDetalhes {
   id: number;
@@ -83,10 +84,6 @@ const VistoriaDetalhes: React.FC = () => {
       console.error('Erro ao excluir vistoria:', error);
       alert('Erro ao excluir vistoria');
     }
-  };
-
-  const formatarData = (dataString: string) => {
-    return new Date(dataString).toLocaleString('pt-BR');
   };
 
   const itensChecklist = [

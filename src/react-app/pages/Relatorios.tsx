@@ -12,33 +12,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import { supabase } from '@/react-app/supabase';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-  Filler,
-} from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-  Filler
-);
 
 interface RelatorioFinanceiro {
   mes: string;

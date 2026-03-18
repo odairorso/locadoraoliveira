@@ -125,33 +125,18 @@ export default function LocacoesPage() {
 
   const handleDelete = async (locacao: Locacao) => {
     if (confirm(`Tem certeza que deseja excluir esta locação?`)) {
-      console.log('Tentando excluir locação:', locacao.id);
       const result = await deleteLocacao(`/api/locacoes/${locacao.id}`, {}, 'DELETE');
-      console.log('Resultado da exclusão:', result);
-      if (result) {
-        console.log('Exclusão bem-sucedida, atualizando lista...');
-        refetch();
-      } else {
-        console.error('Falha na exclusão');
-      }
+      if (result) refetch();
     }
   };
 
   const handleFinishLocacao = async (locacao: Locacao) => {
     if (confirm('Tem certeza que deseja finalizar esta locação?')) {
-      try {
-        const result = await updateLocacao(`/api/locacoes/${locacao.id}`, { status: 'finalizada' }, 'PUT');
-
-        if (result) {
-          console.log('✅ Finalização bem-sucedida, atualizando lista...');
-          refetch();
-        } else {
-          console.error('❌ Falha na finalização - a API não retornou um resultado positivo.');
-          alert('Erro: A finalização falhou. Verifique o console para mais detalhes.');
-        }
-      } catch (error: any) {
-        console.error('❌ Erro catastrófico ao finalizar locação:', error);
-        alert(`Ocorreu um erro inesperado: ${error.message}`);
+      const result = await updateLocacao(`/api/locacoes/${locacao.id}`, { status: 'finalizada' }, 'PUT');
+      if (result) {
+        refetch();
+      } else {
+        alert('Erro: A finalização falhou. Tente novamente.');
       }
     }
   };
@@ -255,30 +240,15 @@ export default function LocacoesPage() {
 
   const viewContract = async (locacao: Locacao) => {
     try {
-      console.log('=== INÍCIO viewContract ===');
-      console.log('Carregando contrato para locação:', locacao.id);
-      console.log('Estado atual showContractPreview:', showContractPreview);
-      console.log('Estado atual contractData:', contractData);
-
       const response = await fetch(`/api/locacoes/${locacao.id}/contrato-data`);
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
       const data = await response.json();
-      console.log('Dados recebidos do contrato:', data);
 
       if (data.success) {
-        console.log('Dados do contrato:', data.data);
-        console.log('Definindo contractData...');
         setContractData(data.data);
-        console.log('Definindo showContractPreview como true...');
         setShowContractPreview(true);
-        console.log('Estados definidos! Modal deveria aparecer agora.');
       } else {
-        console.error('Erro na resposta:', data.error);
         alert('Erro ao carregar dados do contrato');
       }
-      console.log('=== FIM viewContract ===');
     } catch (error) {
       console.error('Erro ao carregar contrato:', error);
       alert('Erro ao carregar contrato');

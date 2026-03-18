@@ -2,24 +2,28 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Phone, Mail, MapPin, Building2, User } from 'lucide-react';
 import { useApi, useMutation } from '@/react-app/hooks/useApi';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
+import ErrorMessage from '@/react-app/components/ErrorMessage';
+import { formatCPF, formatCNPJ, formatPhone, formatCEP } from '@/react-app/utils/formatters';
 import type { Cliente, ClienteCreate } from '@/shared/types';
+
+const FORM_DEFAULTS: ClienteCreate = {
+  nome: '',
+  tipo_pessoa: 'pf',
+  cpf_cnpj: '',
+  celular: '',
+  endereco: '',
+  bairro: '',
+  cidade: '',
+  estado: '',
+  cep: '',
+  email: '',
+};
 
 export default function ClientesPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
-  const [formData, setFormData] = useState<ClienteCreate>({
-    nome: '',
-    tipo_pessoa: 'pf',
-    cpf_cnpj: '',
-    celular: '',
-    endereco: '',
-    bairro: '',
-    cidade: '',
-    estado: '',
-    cep: '',
-    email: '',
-  });
+  const [formData, setFormData] = useState<ClienteCreate>(FORM_DEFAULTS);
 
   const { data: clientes, loading, error, refetch } = useApi<Cliente[]>(`/api/clientes?search=${encodeURIComponent(search)}`);
   const { mutate: createCliente, loading: creating } = useMutation<Cliente, ClienteCreate>();
@@ -81,60 +85,11 @@ export default function ClientesPage() {
   const resetForm = () => {
     setShowForm(false);
     setEditingClient(null);
-    setFormData({
-      nome: '',
-      tipo_pessoa: 'pf',
-      cpf_cnpj: '',
-      celular: '',
-      endereco: '',
-      bairro: '',
-      cidade: '',
-      estado: '',
-      cep: '',
-      email: '',
-    });
+    setFormData(FORM_DEFAULTS);
   };
 
-  const formatCPF = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
-  };
-
-  const formatCNPJ = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{2})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1/$2')
-      .replace(/(\d{4})(\d)/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
-  };
-
-  const formatCpfCnpj = (value: string) => {
-    if (formData.tipo_pessoa === 'pj') {
-      return formatCNPJ(value);
-    }
-    return formatCPF(value);
-  };
-
-  const formatPhone = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{5})(\d)/, '$1-$2')
-      .replace(/(-\d{4})\d+?$/, '$1');
-  };
-
-  const formatCEP = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{5})(\d)/, '$1-$2')
-      .replace(/(-\d{3})\d+?$/, '$1');
-  };
+  const formatCpfCnpj = (value: string) =>
+    formData.tipo_pessoa === 'pj' ? formatCNPJ(value) : formatCPF(value);
 
   const handleTipoPessoaChange = (tipo: 'pf' | 'pj') => {
     setFormData({ ...formData, tipo_pessoa: tipo, cpf_cnpj: '' });
@@ -403,9 +358,7 @@ export default function ClientesPage() {
         {loading ? (
           <LoadingSpinner text="Carregando clientes..." />
         ) : error ? (
-          <div className="p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
-            <p className="text-red-800 dark:text-red-200">Erro ao carregar clientes: {error}</p>
-          </div>
+          <ErrorMessage message={`Erro ao carregar clientes: ${error}`} />
         ) : !clientes || clientes.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 dark:text-gray-400">Nenhum cliente encontrado</p>

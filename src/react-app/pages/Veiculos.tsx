@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Car, DollarSign, Palette } from 'lucide-react';
 import { useApi, useMutation } from '@/react-app/hooks/useApi';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
+import ErrorMessage from '@/react-app/components/ErrorMessage';
+import { formatCurrency } from '@/react-app/utils/formatters';
+import { getStatusColor, getStatusText } from '@/react-app/utils/statusHelpers';
 import type { Veiculo, VeiculoCreate } from '@/shared/types';
 
 export default function VeiculosPage() {
@@ -53,34 +56,17 @@ export default function VeiculosPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      let result;
-      if (editingVehicle) {
-        const vehicleId = typeof editingVehicle.id === 'string' ? parseInt(editingVehicle.id) : editingVehicle.id;
-        
-        console.log('Enviando atualização para veículo ID:', vehicleId);
-        console.log('Dados enviados:', formData);
-        
+
+    let result;
+    if (editingVehicle) {
       result = await updateVeiculo(`/api/veiculos/${editingVehicle.id}`, formData, 'PUT');
-      console.log("Updating vehicle with ID:", editingVehicle.id);
-      console.log("Form data being sent:", formData);
-      } else {
-        result = await createVeiculo('/api/veiculos', formData);
-      }
-      
-      if (result) {
-        console.log('Operação bem-sucedida:', result);
-        alert(editingVehicle ? 'Veículo atualizado com sucesso!' : 'Veículo criado com sucesso!');
-        resetForm();
-        refetch();
-      } else {
-        console.error('Falha na operação, sem mensagem de erro específica');
-        alert(editingVehicle ? 'Erro ao atualizar veículo. Tente novamente.' : 'Erro ao criar veículo. Tente novamente.');
-      }
-    } catch (error) {
-      console.error('Erro ao salvar veículo:', error);
-      alert('Ocorreu um erro ao processar a operação. Verifique o console para mais detalhes.');
+    } else {
+      result = await createVeiculo('/api/veiculos', formData);
+    }
+
+    if (result) {
+      resetForm();
+      refetch();
     }
   };
 
@@ -95,19 +81,8 @@ export default function VeiculosPage() {
 
   const handleDelete = async (veiculo: Veiculo) => {
     if (confirm(`Tem certeza que deseja excluir o veículo ${veiculo.marca} ${veiculo.modelo}?`)) {
-      try {
-        console.log('Attempting to delete vehicle with ID:', veiculo.id);
-        const result = await deleteVeiculo(`/api/veiculos/${veiculo.id}`, {}, 'DELETE');
-        if (result) {
-          alert('Veículo excluído com sucesso!');
-          refetch();
-        } else {
-          alert('Erro ao excluir veículo. Verifique se o veículo não está sendo usado em locações ativas.');
-        }
-      } catch (error) {
-        console.error('Erro ao deletar veículo:', error);
-        alert('Erro inesperado ao excluir veículo. Tente novamente.');
-      }
+      const result = await deleteVeiculo(`/api/veiculos/${veiculo.id}`, {}, 'DELETE');
+      if (result) refetch();
     }
   };
 
@@ -134,39 +109,6 @@ export default function VeiculosPage() {
       .replace(/[^A-Z0-9]/g, '')
       .replace(/^([A-Z]{3})(\d{4})$/, '$1-$2')
       .substring(0, 8);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'disponivel':
-        return 'bg-green-100 text-green-800';
-      case 'locado':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'vendido':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'disponivel':
-        return 'Disponível';
-      case 'locado':
-        return 'Locado';
-      case 'vendido':
-        return 'Vendido';
-      default:
-        return status;
-    }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
   };
 
   return (
@@ -405,9 +347,7 @@ export default function VeiculosPage() {
         {loading ? (
           <LoadingSpinner text="Carregando veículos..." />
         ) : error ? (
-          <div className="p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
-            <p className="text-red-800 dark:text-red-200">Erro ao carregar veículos: {error}</p>
-          </div>
+          <ErrorMessage message={`Erro ao carregar veículos: ${error}`} />
         ) : !veiculos || veiculos.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 dark:text-gray-400">Nenhum veículo encontrado</p>

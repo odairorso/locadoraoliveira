@@ -177,85 +177,53 @@ export default function Checklist() {
 
   const carregarDadosVistoriaEntrada = async (entradaId: string, veiculoId: string) => {
     try {
-      console.log('carregarDadosVistoriaEntrada - Iniciando com entradaId:', entradaId, 'veiculoId:', veiculoId);
-
-      // Buscar dados da vistoria de entrada
       const vistoriaResponse = await fetch(`/api/vistorias/${entradaId}`);
       const vistoriaResult = await vistoriaResponse.json();
 
-      console.log('Resposta da vistoria:', vistoriaResult);
-
       if (vistoriaResult.success && vistoriaResult.data) {
         const vistoriaEntrada = vistoriaResult.data;
-        console.log('Dados da vistoria de entrada:', vistoriaEntrada);
 
-        // Buscar dados do veículo
         const veiculoResponse = await fetch(`/api/veiculos/${veiculoId}`);
         const veiculoResult = await veiculoResponse.json();
 
-        console.log('Resposta do veículo:', veiculoResult);
-
         if (veiculoResult.success && veiculoResult.data) {
-          const veiculo = veiculoResult.data;
-          console.log('Dados do veículo:', veiculo);
-          setSelectedVeiculo(veiculo);
+          setSelectedVeiculo(veiculoResult.data);
 
-          // Buscar dados do cliente
           const clienteResponse = await fetch(`/api/clientes/${vistoriaEntrada.cliente_id}`);
           const clienteResult = await clienteResponse.json();
 
-          console.log('Resposta do cliente:', clienteResult);
-
           if (clienteResult.success && clienteResult.data) {
-            const cliente = clienteResult.data;
-            console.log('Dados do cliente:', cliente);
-            setSelectedCliente(cliente);
-
-            // Preencher o formulário com os dados
+            setSelectedCliente(clienteResult.data);
             setForm(prev => ({
               ...prev,
               veiculo_id: parseInt(veiculoId),
               cliente_id: vistoriaEntrada.cliente_id,
               locacao_id: vistoriaEntrada.locacao_id,
-              nome_condutor: cliente.nome
+              nome_condutor: clienteResult.data.nome
             }));
-
-            console.log('Formulário preenchido, ocultando seleção de locação');
-            // Não mostrar seleção de locação pois já temos os dados
             setShowLocacaoSelection(false);
           }
         }
       }
     } catch (error) {
       console.error('Erro ao carregar dados da vistoria de entrada:', error);
-      // Em caso de erro, mostrar seleção manual
       setShowLocacaoSelection(true);
     }
   };
 
   const carregarDadosVistoriaPorLocacao = async (locacaoId: string) => {
     try {
-      console.log('carregarDadosVistoriaPorLocacao - Iniciando com locacaoId:', locacaoId);
-
-      // Buscar dados da locação
       const locacaoResponse = await fetch(`/api/locacoes/${locacaoId}`);
       const locacaoResult = await locacaoResponse.json();
 
-      console.log('Resposta da locação:', locacaoResult);
-
       if (locacaoResult.success && locacaoResult.data) {
         const locacao = locacaoResult.data;
-        console.log('Dados da locação:', locacao);
 
-        // Buscar vistoria de entrada pelo veículo da locação
         const vistoriasResponse = await fetch(`/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`);
         const vistoriasResult = await vistoriasResponse.json();
 
-        console.log('Resposta das vistorias:', vistoriasResult);
-
         if (vistoriasResult.success && vistoriasResult.data && vistoriasResult.data.vistorias && vistoriasResult.data.vistorias.length > 0) {
           const vistoriaEntrada = vistoriasResult.data.vistorias[0];
-          console.log('Vistoria de entrada encontrada:', vistoriaEntrada);
 
           // Definir cliente e veículo selecionados
           if (locacao.clientes) {
@@ -290,11 +258,8 @@ export default function Checklist() {
             combustivel: vistoriaEntrada.combustivel || ''
           }));
 
-          console.log('Formulário preenchido com dados da locação, ocultando seleção de locação');
-          // Não mostrar seleção de locação pois já temos os dados
           setShowLocacaoSelection(false);
         } else {
-          console.log('Nenhuma vistoria de entrada encontrada para o veículo da locação');
           alert(`Vistoria de entrada não encontrada para o veículo ${locacao.veiculos?.marca} ${locacao.veiculos?.modelo} - ${locacao.veiculos?.placa}. Você precisará preencher os dados manualmente.`);
 
           // Mesmo sem vistoria de entrada, podemos preencher os dados básicos da locação
@@ -328,11 +293,9 @@ export default function Checklist() {
             nome_condutor: locacao.clientes?.nome || ''
           }));
 
-          // Ocultar seleção de locação mesmo sem vistoria de entrada
           setShowLocacaoSelection(false);
         }
       } else {
-        console.log('Locação não encontrada');
         alert('Locação não encontrada.');
       }
     } catch (error) {

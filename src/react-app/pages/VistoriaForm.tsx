@@ -147,10 +147,7 @@ const VistoriaForm: React.FC = () => {
     const veiculoLocado = searchParams.get('veiculo_locado');
     const locacaoId = searchParams.get('locacaoId');
 
-    console.log('VistoriaForm - Parâmetros da URL:', { tipo, veiculoId, entradaId, veiculoLocado, locacaoId });
-
     if (tipo) {
-      console.log('VistoriaForm - Definindo tipo de vistoria:', tipo);
       setFormData(prev => ({ ...prev, tipoVistoria: tipo }));
     }
 
@@ -160,25 +157,20 @@ const VistoriaForm: React.FC = () => {
 
     // Se for vistoria de saída, carregar dados do veículo da vistoria de entrada
     if (tipo === 'saida' && veiculoId && entradaId) {
-      console.log('VistoriaForm - Carregando dados da vistoria de entrada:', entradaId);
       carregarDadosVistoriaEntrada(entradaId);
     }
 
-    // Se for entrada de veículo locado, carregar lista de veículos locados
     if (tipo === 'entrada' && veiculoLocado === 'true') {
-      console.log('VistoriaForm - Carregando veículos locados');
       carregarVeiculosLocados();
     }
   }, [searchParams]);
 
   const carregarDadosLocacao = async (locacaoId: string) => {
     try {
-      console.log('VistoriaForm - Carregando dados da locação:', locacaoId);
       const response = await fetch(`/api/locacoes/${locacaoId}`);
       const result = await response.json();
       if (result.success && result.data) {
         const locacao = result.data;
-        console.log('VistoriaForm - Dados da locação carregados:', locacao);
 
         setFormData(prev => ({
           ...prev,
@@ -187,66 +179,32 @@ const VistoriaForm: React.FC = () => {
           placa: locacao.veiculo_placa,
           veiculoId: locacao.veiculo_id,
           modelo: locacao.veiculo_modelo,
-          condutor: locacao.cliente_nome, // Default condutor to client name
+          condutor: locacao.cliente_nome,
           telefone: locacao.cliente_telefone,
         }));
-        // Also update search terms to reflect the loaded data
         setClientSearchTerm(locacao.cliente_nome);
         setVehicleSearchTerm(`${locacao.veiculo_modelo} - ${locacao.veiculo_placa}`);
 
-        // For exit inspections, also load entry inspection data for comparison
         const tipo = searchParams.get('tipo');
-        console.log('VistoriaForm - Tipo de vistoria detectado:', tipo);
-        console.log('VistoriaForm - SearchParams completos:', Object.fromEntries(searchParams.entries()));
 
         if (tipo === 'saida') {
-          console.log('VistoriaForm - É vistoria de saída! Buscando vistoria de entrada para veículo:', locacao.veiculo_id);
-          console.log('VistoriaForm - LocacaoId atual:', locacaoId);
-
           try {
-            const apiUrl = `/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`;
-            console.log('VistoriaForm - URL da API:', apiUrl);
-
-            const vistoriasResponse = await fetch(apiUrl);
+            const vistoriasResponse = await fetch(`/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`);
             const vistoriasResult = await vistoriasResponse.json();
 
-            console.log('VistoriaForm - Resposta da API de vistorias:', vistoriasResult);
-
-            if (vistoriasResult.success && vistoriasResult.data && vistoriasResult.data.vistorias) {
-              console.log('VistoriaForm - Vistorias encontradas:', vistoriasResult.data.vistorias.length);
-              console.log('VistoriaForm - Todas as vistorias:', vistoriasResult.data.vistorias);
-
-              if (vistoriasResult.data.vistorias.length > 0) {
-                const vistoriaEntrada = vistoriasResult.data.vistorias.find((v: any) => v.locacao_id === parseInt(locacaoId));
-                console.log('VistoriaForm - Procurando vistoria com locacao_id:', parseInt(locacaoId));
-                console.log('VistoriaForm - Vistoria de entrada encontrada:', vistoriaEntrada);
-
-                if (vistoriaEntrada) {
-                  console.log('VistoriaForm - ✅ Vistoria de entrada encontrada! Preenchendo dados:', vistoriaEntrada);
-                  // Pre-fill some data from entry inspection for comparison
-                  setFormData(prev => ({
-                    ...prev,
-                    quilometragem: vistoriaEntrada.quilometragem || '',
-                    combustivel: vistoriaEntrada.combustivel || 'vazio',
-                  }));
-                  console.log('VistoriaForm - Dados preenchidos - Quilometragem:', vistoriaEntrada.quilometragem, 'Combustível:', vistoriaEntrada.combustivel);
-                } else {
-                  console.log('VistoriaForm - ❌ Nenhuma vistoria de entrada encontrada para esta locação específica');
-                  console.log('VistoriaForm - Vistorias disponíveis para este veículo:', vistoriasResult.data.vistorias.map((v: any) => ({ id: v.id, locacao_id: v.locacao_id, tipo: v.tipo_vistoria })));
-                }
-              } else {
-                console.log('VistoriaForm - ❌ Array de vistorias está vazio');
+            if (vistoriasResult.success && vistoriasResult.data?.vistorias?.length > 0) {
+              const vistoriaEntrada = vistoriasResult.data.vistorias.find((v: any) => v.locacao_id === parseInt(locacaoId));
+              if (vistoriaEntrada) {
+                setFormData(prev => ({
+                  ...prev,
+                  quilometragem: vistoriaEntrada.quilometragem || '',
+                  combustivel: vistoriaEntrada.combustivel || 'vazio',
+                }));
               }
-            } else {
-              console.log('VistoriaForm - ❌ Resposta da API não contém dados válidos');
-              console.log('VistoriaForm - Success:', vistoriasResult.success);
-              console.log('VistoriaForm - Data:', vistoriasResult.data);
             }
           } catch (error) {
-            console.error('VistoriaForm - ❌ Erro ao buscar vistoria de entrada:', error);
+            console.error('Erro ao buscar vistoria de entrada:', error);
           }
-        } else {
-          console.log('VistoriaForm - Não é vistoria de saída, pulando busca de vistoria de entrada');
         }
       } else {
         console.error('Erro ao carregar dados da locação:', result.error);
@@ -277,15 +235,11 @@ const VistoriaForm: React.FC = () => {
 
   const carregarDadosVistoriaEntrada = async (entradaId: string) => {
     try {
-      console.log('VistoriaForm - Fazendo chamada para API:', `/api/vistorias/${entradaId}`);
       const response = await fetch(`/api/vistorias/${entradaId}`);
       const result = await response.json();
 
-      console.log('VistoriaForm - Resposta da API:', result);
-
       if (result.success && result.data) {
         const vistoriaEntrada = result.data;
-        console.log('VistoriaForm - Dados da vistoria de entrada:', vistoriaEntrada);
         setFormData(prev => ({
           ...prev,
           cliente: vistoriaEntrada.cliente_nome || '',
@@ -295,45 +249,31 @@ const VistoriaForm: React.FC = () => {
           modelo: vistoriaEntrada.modelo,
           telefone: vistoriaEntrada.telefone || '',
         }));
-        console.log('VistoriaForm - FormData atualizado com sucesso');
       } else {
-        console.error('VistoriaForm - Erro na resposta da API:', result);
+        console.error('Erro na resposta da API de vistoria de entrada:', result);
       }
     } catch (error) {
-      console.error('VistoriaForm - Erro ao carregar dados da vistoria de entrada:', error);
+      console.error('Erro ao carregar dados da vistoria de entrada:', error);
     }
   };
 
   const carregarVistoriaSaidaParaComparacao = async (locacaoId: string) => {
     try {
-      console.log('VistoriaForm - Buscando vistoria de saída para locação:', locacaoId);
       const response = await fetch(`/api/vistorias?locacao_id=${locacaoId}&tipo=saida`);
       const result = await response.json();
 
-      console.log('VistoriaForm - Resposta da busca de vistoria de saída:', result);
-
       if (result.success && result.data && result.data.length > 0) {
-        const vistoriaSaida = result.data[0]; // Pega a primeira vistoria de saída encontrada
-        console.log('VistoriaForm - Dados da vistoria de saída para comparação:', vistoriaSaida);
-
-        // Atualizar campos com dados da vistoria de saída para comparação
+        const vistoriaSaida = result.data[0];
         setFormData(prev => ({
           ...prev,
-          // Manter os dados básicos da vistoria de entrada atual
-          // Mas pré-preencher quilometragem e combustível da saída para comparação
           quilometragem: vistoriaSaida.quilometragem?.toString() || prev.quilometragem,
           combustivel: vistoriaSaida.nivel_combustivel || prev.combustivel,
-          // Também carregar checklist e avarias da saída para comparação
           checklist: vistoriaSaida.checklist || prev.checklist,
           avarias: vistoriaSaida.avarias || prev.avarias,
         }));
-
-        console.log('VistoriaForm - Dados da vistoria de saída carregados para comparação');
-      } else {
-        console.log('VistoriaForm - Nenhuma vistoria de saída encontrada para a locação:', locacaoId);
       }
     } catch (error) {
-      console.error('VistoriaForm - Erro ao carregar vistoria de saída para comparação:', error);
+      console.error('Erro ao carregar vistoria de saída para comparação:', error);
     }
   };
 
@@ -379,7 +319,6 @@ const VistoriaForm: React.FC = () => {
 
             // Se for vistoria de entrada, carregar dados da vistoria de saída para comparação
             if (vistoria.tipo_vistoria === 'entrada' && vistoria.locacao_id) {
-              console.log('VistoriaForm - Carregando vistoria de saída para comparação, locacao_id:', vistoria.locacao_id);
               carregarVistoriaSaidaParaComparacao(vistoria.locacao_id);
             }
           }
@@ -508,9 +447,6 @@ const VistoriaForm: React.FC = () => {
       assinaturaVistoriadorUrl: '',
       fotos: photos, // Include photos in payload
     };
-
-    console.log('Payload para API:', payload);
-    console.log('Combustível sendo enviado:', formData.combustivel);
 
     const url = isEditing
       ? `/api/vistorias/${id}`

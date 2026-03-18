@@ -1,14 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Edit2, Trash2, Wrench, Car, Calendar, DollarSign, FileText, Save, X } from 'lucide-react';
-import { useApi } from '../hooks/useApi';
-
-interface Veiculo {
-  id: number;
-  marca: string;
-  modelo: string;
-  placa: string;
-  ano: number;
-}
+import { useApi } from '@/react-app/hooks/useApi';
+import LoadingSpinner from '@/react-app/components/LoadingSpinner';
+import ErrorMessage from '@/react-app/components/ErrorMessage';
+import { formatCurrency } from '@/react-app/utils/formatters';
+import type { Veiculo } from '@/shared/types';
 
 interface Manutencao {
   id: number;
@@ -91,11 +87,9 @@ export default function Manutencao() {
   const [showResumo, setShowResumo] = useState(false);
   const [tipoPersonalizado, setTipoPersonalizado] = useState('');
 
-  // Função para formatar data para exibição (dd/mm/yyyy)
   const formatarData = (data: string) => {
     if (!data) return '';
-    const date = new Date(data + 'T00:00:00');
-    return date.toLocaleDateString('pt-BR');
+    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
   };
 
   // Função para formatar data para input (aaaa-mm-dd)
@@ -123,14 +117,6 @@ export default function Manutencao() {
     
     // Se nada funcionar, retorna o valor original, que provavelmente causará o erro esperado
     return data;
-  };
-
-  // Função para formatar valor em reais
-  const formatarValor = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(valor);
   };
 
   // Resetar formulário
@@ -244,24 +230,8 @@ export default function Manutencao() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-600 text-center">
-          <p className="text-xl font-semibold">Erro ao carregar manutenções</p>
-          <p className="mt-2">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner text="Carregando manutenções..." />;
+  if (error) return <ErrorMessage message={`Erro ao carregar manutenções: ${error}`} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -311,7 +281,7 @@ export default function Manutencao() {
                 <div className="space-y-1">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Gasto:</span>
-                    <span className="font-semibold text-green-600">{formatarValor(resumo.total)}</span>
+                    <span className="font-semibold text-green-600">{formatCurrency(resumo.total)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Manutenções:</span>
@@ -548,7 +518,7 @@ export default function Manutencao() {
                             <DollarSign className="h-4 w-4 text-white" />
                           </div>
                           <span className="font-semibold text-green-600">
-                            {formatarValor(manutencao.valor)}
+                            {formatCurrency(manutencao.valor)}
                           </span>
                         </div>
                       </td>
@@ -635,7 +605,7 @@ export default function Manutencao() {
                         <DollarSign className="h-4 w-4 text-white" />
                       </div>
                       <span className="font-semibold text-green-600">
-                        {formatarValor(manutencao.valor)}
+                        {formatCurrency(manutencao.valor)}
                       </span>
                     </div>
                     

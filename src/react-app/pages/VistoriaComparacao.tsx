@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 

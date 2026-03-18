@@ -6,7 +6,7 @@ interface UseApiOptions {
 }
 
 export function useApi<T>(
-  url: string, 
+  url: string,
   options: UseApiOptions = { immediate: true }
 ) {
   const [data, setData] = useState<T | null>(null);
@@ -15,7 +15,6 @@ export function useApi<T>(
   const abortRef = useRef<AbortController | null>(null);
 
   const execute = useCallback(async (fetchOptions?: RequestInit) => {
-    // Abort previous in-flight request para evitar respostas fora de ordem
     if (abortRef.current) {
       try { abortRef.current.abort(); } catch {}
     }
@@ -24,22 +23,18 @@ export function useApi<T>(
 
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Temporariamente removendo autenticação pois RLS está desabilitado
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         ...fetchOptions,
       });
-      
+
       const result: ApiResponse<T> = await response.json();
-      
+
       if (result.success) {
-        // Se a resposta tem campos além de 'data', retorna o objeto completo
-        if (result.data && typeof result.data === 'object' && 
+        if (result.data && typeof result.data === 'object' &&
             Object.keys(result).some(key => key !== 'success' && key !== 'data' && key !== 'error')) {
           setData(result as any);
         } else {
@@ -49,57 +44,19 @@ export function useApi<T>(
         setError(result.error || 'Erro desconhecido');
       }
     } catch (err) {
-      if ((err as any)?.name === 'AbortError') {
-        // Requisição anterior abortada: não altera estado de erro
-        return;
-      }
+      if ((err as any)?.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Erro de conexão');
     } finally {
       setLoading(false);
     }
   }, [url]);
 
-  const post = async (body: any) => {
-    return execute({
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-  };
-
-  const put = async (body: any) => {
-    return execute({
-      method: 'PUT',
-      body: JSON.stringify(body),
-    });
-  };
-
-  const del = async () => {
-    return execute({
-      method: 'DELETE',
-    });
-  };
-
   useEffect(() => {
-    if (options.immediate) {
-      execute();
-    }
-    return () => {
-      if (abortRef.current) {
-        try { abortRef.current.abort(); } catch {}
-      }
-    };
+    if (options.immediate) execute();
+    return () => { try { abortRef.current?.abort(); } catch {} };
   }, [execute, options.immediate]);
 
-  return {
-    data,
-    loading,
-    error,
-    execute,
-    post,
-    put,
-    delete: del,
-    refetch: execute,
-  };
+  return { data, loading, error, refetch: execute };
 }
 
 export function useMutation<TData, TVariables = any>() {
@@ -107,49 +64,29 @@ export function useMutation<TData, TVariables = any>() {
   const [error, setError] = useState<string | null>(null);
 
   const mutate = async (
-    url: string, 
-    variables: TVariables, 
+    url: string,
+    variables: TVariables,
     method: 'POST' | 'PUT' | 'DELETE' = 'POST',
-    id?: number
   ): Promise<TData | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Para requisições PUT, garantir que estamos usando a URL correta
-      // Se o ID for fornecido como parâmetro separado, adicionar à URL
-      let finalUrl = url;
-      if (method === 'PUT' && id !== undefined) {
-        // Garantir que estamos usando a URL base e adicionar o ID
-        finalUrl = `${url}/${id}`;
-        console.log(`URL ajustada para PUT com ID: ${finalUrl}`);
-      }
-      
-      console.log(`Executando ${method} para ${finalUrl}`, variables);
-      
-      // Temporariamente removendo autenticação pois RLS está desabilitado
-      const response = await fetch(finalUrl, {
+      const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: method !== 'DELETE' ? JSON.stringify(variables) : undefined,
       });
-      
-      console.log(`Resposta do servidor: ${response.status}`);
-      
+
       const result: ApiResponse<TData> = await response.json();
-      console.log('Dados da resposta:', result);
-      
+
       if (result.success) {
         return result.data !== undefined ? result.data : true as any;
       } else {
-        console.error('Erro retornado pelo servidor:', result.error);
         setError(result.error || 'Erro desconhecido');
         return null;
       }
     } catch (err) {
-      console.error('Erro na requisição:', err);
       setError(err instanceof Error ? err.message : 'Erro de conexão');
       return null;
     } finally {
@@ -157,9 +94,5 @@ export function useMutation<TData, TVariables = any>() {
     }
   };
 
-  return {
-    mutate,
-    loading,
-    error,
-  };
+  return { mutate, loading, error };
 }

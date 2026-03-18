@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, Search, Car, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatarData } from '@/react-app/utils/formatters';
 
-const ChecklistDashboard: React.FC = () => {
+const getVistoriaUrl = (vistoria: any) =>
+  vistoria.locacao_id
+    ? `/checklist/editar/${vistoria.id}?locacaoId=${vistoria.locacao_id}&tipo=${vistoria.tipo_vistoria}`
+    : `/checklist/editar/${vistoria.id}?tipo=${vistoria.tipo_vistoria}`;
+
+const ChecklistDashboard = () => {
   const navigate = useNavigate();
   const [vistoriasPendentes, setVistoriasPendentes] = useState<any[]>([]); // Vistorias de saída pendentes
   const [vistoriasEntradaPendentes, setVistoriasEntradaPendentes] = useState<any[]>([]); // Vistorias de entrada pendentes
@@ -48,10 +54,6 @@ const ChecklistDashboard: React.FC = () => {
     vistoria.nome_condutor.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatarData = (dataString: string) => {
-    return new Date(dataString).toLocaleString('pt-BR');
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -76,13 +78,7 @@ const ChecklistDashboard: React.FC = () => {
               {vistoriasPendentes.map((vistoria) => (
                 <div
                   key={vistoria.id}
-                  onClick={() => {
-                    // Include locacao_id parameter if available to load entry inspection data
-                    const url = vistoria.locacao_id 
-                      ? `/checklist/editar/${vistoria.id}?locacaoId=${vistoria.locacao_id}&tipo=${vistoria.tipo_vistoria}`
-                      : `/checklist/editar/${vistoria.id}?tipo=${vistoria.tipo_vistoria}`;
-                    navigate(url);
-                  }}
+                  onClick={() => navigate(getVistoriaUrl(vistoria))}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                     vistoria.tipo_vistoria === 'saida' 
                       ? 'border-orange-300 dark:border-orange-600 hover:bg-orange-100 dark:hover:bg-gray-600 bg-orange-50 dark:bg-gray-800'
@@ -103,19 +99,13 @@ const ChecklistDashboard: React.FC = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Cliente: <span 
                       className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium underline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const url = vistoria.locacao_id 
-                          ? `/checklist/editar/${vistoria.id}?locacaoId=${vistoria.locacao_id}&tipo=${vistoria.tipo_vistoria}`
-                          : `/checklist/editar/${vistoria.id}?tipo=${vistoria.tipo_vistoria}`;
-                        navigate(url);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); navigate(getVistoriaUrl(vistoria)); }}
                     >
                       {vistoria.nome_condutor}
                     </span>
                   </div>
                    <div className={`text-xs mt-2 font-semibold ${
-                     vistoria.tipo_vistoria === 'saida' 
+                     vistoria.tipo_vistoria === 'saida'
                        ? 'text-red-600 dark:text-red-400'
                        : 'text-blue-600 dark:text-blue-400'
                    }`}>
@@ -147,13 +137,7 @@ const ChecklistDashboard: React.FC = () => {
               {vistoriasEntradaPendentes.map((vistoria) => (
                 <div
                   key={vistoria.id}
-                  onClick={() => {
-                    // Include locacao_id parameter if available to load entry inspection data
-                    const url = vistoria.locacao_id 
-                      ? `/checklist/editar/${vistoria.id}?locacaoId=${vistoria.locacao_id}&tipo=${vistoria.tipo_vistoria}`
-                      : `/checklist/editar/${vistoria.id}?tipo=${vistoria.tipo_vistoria}`;
-                    navigate(url);
-                  }}
+                  onClick={() => navigate(getVistoriaUrl(vistoria))}
                   className="p-3 border border-blue-300 dark:border-blue-600 hover:bg-blue-100 dark:hover:bg-gray-600 bg-blue-50 dark:bg-gray-800 rounded-lg cursor-pointer transition-colors"
                 >
                   <div className="font-semibold text-gray-900 dark:text-white flex items-center">
@@ -166,13 +150,7 @@ const ChecklistDashboard: React.FC = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Cliente: <span 
                       className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium underline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const url = vistoria.locacao_id 
-                          ? `/checklist/editar/${vistoria.id}?locacaoId=${vistoria.locacao_id}&tipo=${vistoria.tipo_vistoria}`
-                          : `/checklist/editar/${vistoria.id}?tipo=${vistoria.tipo_vistoria}`;
-                        navigate(url);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); navigate(getVistoriaUrl(vistoria)); }}
                     >
                       {vistoria.nome_condutor}
                     </span>

@@ -2,63 +2,22 @@ import { Car, Users, FileText, DollarSign, Wallet, TrendingUp, Award, BarChart3,
 import { useNavigate } from 'react-router-dom';
 import DashboardCard from '@/react-app/components/DashboardCard';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
+import ErrorMessage from '@/react-app/components/ErrorMessage';
 import { useApi } from '@/react-app/hooks/useApi';
 import type { DashboardStats } from '@/shared/types';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-  Filler,
-} from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { formatCurrency } from '@/react-app/utils/formatters';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-  ,Filler
-);
+interface VeiculoRanking {
+  veiculo: { id: string; marca: string; modelo: string; ano: number; placa: string };
+  totalLocacoes: number;
+  totalLucro: number;
+}
 
 interface AdvancedStats {
-  veiculosMaisLocados?: Array<{
-    veiculo: {
-      id: string;
-      marca: string;
-      modelo: string;
-      ano: number;
-      placa: string;
-    };
-    totalLocacoes: number;
-    totalLucro: number;
-  }>;
-  veiculosMaiorLucro?: Array<{
-    veiculo: {
-      id: string;
-      marca: string;
-      modelo: string;
-      ano: number;
-      placa: string;
-    };
-    totalLocacoes: number;
-    totalLucro: number;
-  }>;
-  receitaMensal?: Array<{
-    mes: string;
-    valor: number;
-  }>;
+  veiculosMaisLocados?: VeiculoRanking[];
+  veiculosMaiorLucro?: VeiculoRanking[];
+  receitaMensal?: Array<{ mes: string; valor: number }>;
 }
 
 export default function Home() {
@@ -71,11 +30,7 @@ export default function Home() {
   }
 
   if (error) {
-    return (
-      <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md p-4">
-        <p className="text-red-800 dark:text-red-200">Erro ao carregar dashboard: {error}</p>
-      </div>
-    );
+    return <ErrorMessage message={`Erro ao carregar dashboard: ${error}`} />;
   }
 
   return (
@@ -123,21 +78,21 @@ export default function Home() {
         />
         <DashboardCard
           title="Receita do Mês"
-          value={`R$ ${(stats?.receitaMes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatCurrency(stats?.receitaMes || 0)}
           icon={DollarSign}
           color="purple"
           subtitle="faturamento atual"
         />
         <DashboardCard
           title="Receita Seguros"
-          value={`R$ ${(stats?.receitaSeguro || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatCurrency(stats?.receitaSeguro || 0)}
           icon={Shield}
           color="blue"
           subtitle="seguros do mês"
         />
         <DashboardCard
           title="Saldo do Caixa"
-          value={`R$ ${(stats?.saldoCaixa || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatCurrency(stats?.saldoCaixa || 0)}
           icon={Wallet}
           color="red"
           subtitle="disponível em caixa"
