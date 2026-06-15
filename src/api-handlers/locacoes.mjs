@@ -490,6 +490,17 @@ export default async function handler(request, response) {
         }));
       }
 
+      if (search) {
+        const searchLower = String(search).toLowerCase();
+        formattedData = formattedData.filter(l => {
+          const idMatch = String(l.id).includes(searchLower);
+          const clienteMatch = l.cliente_nome ? l.cliente_nome.toLowerCase().includes(searchLower) : false;
+          const veiculoMatch = l.veiculo_info ? l.veiculo_info.toLowerCase().includes(searchLower) : false;
+          const obsMatch = l.observacoes ? l.observacoes.toLowerCase().includes(searchLower) : false;
+          return idMatch || clienteMatch || veiculoMatch || obsMatch;
+        });
+      }
+
       return response.status(200).json({ success: true, data: formattedData });
     }
 
