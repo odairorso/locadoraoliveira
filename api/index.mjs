@@ -13,7 +13,6 @@ import receitaPorVeiculoHandler from '../src/api-handlers/receita-por-veiculo.mj
 import locacoesIdHandler from '../src/api-handlers/locacoes-id.mjs';
 import manutencoesIdHandler from '../src/api-handlers/manutencoes-id.mjs';
 import vistoriasIdHandler from '../src/api-handlers/vistorias-id.mjs';
-import { autoFinalizeExpiredRentals } from '../src/api-handlers/auto-finalize.mjs';
 
 export default async function handler(request, response) {
   // Set CORS headers
@@ -27,9 +26,6 @@ export default async function handler(request, response) {
   }
 
   try {
-    // Auto-finalize any expired rentals first
-    await autoFinalizeExpiredRentals();
-
     // Extract the endpoint from the URL path
     const url = new URL(request.url, `http://${request.headers.host}`);
     const pathSegments = url.pathname.split('/').filter(Boolean);
