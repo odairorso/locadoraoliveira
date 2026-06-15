@@ -115,6 +115,7 @@ export interface DashboardStats {
   receitaMes: number;
   receitaSeguro: number;
   saldoCaixa?: number;
+  locacoesVencidas?: number;
 }
 
 // Movimentação Financeira schemas

@@ -1,4 +1,4 @@
-import { Car, Users, FileText, DollarSign, Wallet, TrendingUp, Award, BarChart3, Calendar, Shield } from 'lucide-react';
+import { Car, Users, FileText, DollarSign, Wallet, TrendingUp, Award, BarChart3, Calendar, Shield, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardCard from '@/react-app/components/DashboardCard';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
@@ -49,6 +49,32 @@ export default function Home() {
           </p>
         </div>
       </div>
+
+      {/* Alerta de Locações Vencidas */}
+      {stats && stats.locacoesVencidas && stats.locacoesVencidas > 0 ? (
+        <div 
+          onClick={() => navigate('/locacoes?status=ativa')}
+          className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-amber-100/60 dark:hover:bg-amber-950/40 transition-all shadow-md group"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Atenção: Há {stats.locacoesVencidas} {stats.locacoesVencidas === 1 ? 'locação vencida' : 'locações vencidas'}!
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-450">
+                A data prevista de devolução expirou, mas os veículos ainda não foram marcados como devolvidos.
+              </p>
+            </div>
+          </div>
+          <span className="text-amber-700 dark:text-amber-400 font-medium text-sm group-hover:underline flex items-center">
+            Ver Contratos
+            <span className="ml-1">→</span>
+          </span>
+        </div>
+      ) : null}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">

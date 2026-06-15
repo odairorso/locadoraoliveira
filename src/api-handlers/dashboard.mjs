@@ -127,13 +127,22 @@ async function handleBasicStats(supabase, response) {
     })
     .reduce((acc, mov) => acc + mov.valor, 0);
 
+  // Busca a quantidade de locações ativas vencidas
+  const hojeStr = new Date().toLocaleDateString('en-CA');
+  const { count: expiredRentals } = await supabase
+    .from('locacoes')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'ativa')
+    .lt('data_entrega', hojeStr);
+
   const stats = {
     locacoesAtivas: activeRentals || 0,
     veiculosDisponiveis: availableVehicles || 0,
     veiculosLocados: rentedVehicles || 0,
     receitaMes: totalRevenue || 0,
     receitaSeguro: receitaSeguro || 0,
-    saldoCaixa: saldoCaixa || 0
+    saldoCaixa: saldoCaixa || 0,
+    locacoesVencidas: expiredRentals || 0
   };
 
   response.status(200).json({
