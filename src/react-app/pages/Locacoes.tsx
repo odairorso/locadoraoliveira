@@ -23,14 +23,34 @@ export default function LocacoesPage() {
     observacoes: '',
   });
 
-  const apiUrl = useMemo(() => {
-    const queryParams = new URLSearchParams();
-    if (search) queryParams.set('search', search);
-    if (statusFilter) queryParams.set('status', statusFilter);
-    return `/api/locacoes?${queryParams.toString()}`;
-  }, [search, statusFilter]);
+  const { data: locacoes, loading, error, refetch } = useApi<(Locacao & { cliente_nome: string; veiculo_info: string })[]>(
+    '/api/locacoes'
+  );
 
-  const { data: locacoes, loading, error, refetch } = useApi<(Locacao & { cliente_nome: string; veiculo_info: string })[]>(apiUrl);
+  const filteredLocacoes = useMemo(() => {
+    if (!locacoes) return [];
+
+    return locacoes.filter(locacao => {
+      // 1. Filtrar por Status
+      if (statusFilter && locacao.status !== statusFilter) {
+        return false;
+      }
+
+      // 2. Filtrar por termo de busca
+      if (search) {
+        const searchLower = search.toLowerCase();
+        const idMatch = String(locacao.id).includes(searchLower);
+        const clienteMatch = locacao.cliente_nome ? locacao.cliente_nome.toLowerCase().includes(searchLower) : false;
+        const veiculoMatch = locacao.veiculo_info ? locacao.veiculo_info.toLowerCase().includes(searchLower) : false;
+        const obsMatch = locacao.observacoes ? locacao.observacoes.toLowerCase().includes(searchLower) : false;
+
+        return idMatch || clienteMatch || veiculoMatch || obsMatch;
+      }
+
+      return true;
+    });
+  }, [locacoes, search, statusFilter]);
+
   const { data: clientes, loading: loadingClientes } = useApi<Cliente[]>('/api/clientes?limit=100');
   const { data: veiculosDisponiveis, loading: loadingVeiculos } = useApi<Veiculo[]>(
     editingLocacao ? '/api/veiculos' : '/api/veiculos?status=disponivel'
@@ -48,14 +68,6 @@ export default function LocacoesPage() {
       setStatusFilter(status);
     }
   }, [location.search]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      refetch();
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [search, statusFilter]);
 
   const calculateTotal = () => {
     if (formData.data_locacao && formData.data_entrega && formData.valor_diaria) {
@@ -640,7 +652,7 @@ export default function LocacoesPage() {
           <div className="p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md">
             <p className="text-red-800 dark:text-red-200">Erro ao carregar locações: {error}</p>
           </div>
-        ) : !locacoes || locacoes.length === 0 ? (
+        ) : !filteredLocacoes || filteredLocacoes.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <p className="text-gray-500 dark:text-gray-400">Nenhuma locação encontrada</p>
@@ -648,7 +660,7 @@ export default function LocacoesPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {locacoes.map((locacao) => (
+            {filteredLocacoes.map((locacao) => (
               <div key={locacao.id} className="p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-3 sm:space-y-0">
                   <div className="flex-1">
