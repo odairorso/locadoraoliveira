@@ -51,7 +51,7 @@ export default function LocacoesPage() {
     });
   }, [locacoes, search, statusFilter]);
 
-  const { data: clientes, loading: loadingClientes } = useApi<Cliente[]>('/api/clientes?limit=100');
+  const { data: clientes, loading: loadingClientes } = useApi<Cliente[]>('/api/clientes');
   const { data: veiculosDisponiveis, loading: loadingVeiculos } = useApi<Veiculo[]>(
     editingLocacao ? '/api/veiculos' : '/api/veiculos?status=disponivel'
   );
