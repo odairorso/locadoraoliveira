@@ -49,91 +49,54 @@ export default async function handler(request, response) {
 }
 
 async function handleBasicStats(supabase, response) {
-  const { count: activeRentals } = await supabase
-    .from('locacoes')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'ativa');
-
-  const { count: availableVehicles } = await supabase
-    .from('veiculos')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'disponivel');
-
-  const { count: rentedVehicles } = await supabase
-    .from('veiculos')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'locado');
-
-  // Busca todas as movimentações para calcular a receita e o saldo de caixa manualmente
-  const { data: movimentacoes, error: movimentacoesError } = await supabase
-    .from('movimentacoes_financeiras')
-    .select('tipo, valor, data_movimentacao, categoria');
-
-  if (movimentacoesError) {
-    console.error('Erro ao buscar movimentações financeiras:', movimentacoesError);
-    throw movimentacoesError;
-  }
-
-  // Busca todas as manutenções para incluir no cálculo do saldo
-  const { data: manutencoes, error: manutencoesError } = await supabase
-    .from('manutencoes')
-    .select('valor, data_manutencao');
-
-  if (manutencoesError) {
-    console.error('Erro ao buscar manutenções:', manutencoesError);
-    throw manutencoesError;
-  }
-
-  // Calcula o saldo de caixa total (incluindo manutenções como despesas)
-  const saldoMovimentacoes = movimentacoes.reduce((acc, mov) => {
-    if (mov.tipo === 'entrada') {
-      return acc + mov.valor;
-    } else if (mov.tipo === 'saida') {
-      return acc - mov.valor;
-    }
-    return acc;
-  }, 0);
-
-  // Subtrai o total de manutenções do saldo
-  const totalManutencoes = manutencoes.reduce((acc, manutencao) => acc + manutencao.valor, 0);
-  const saldoCaixa = saldoMovimentacoes - totalManutencoes;
-
-  // Calcula a receita do mês atual
   const hoje = new Date();
   const anoAtual = hoje.getFullYear();
   const mesAtual = hoje.getMonth();
+  const hojeStr = hoje.toLocaleDateString('en-CA');
 
-  const totalRevenue = movimentacoes
-    .filter(mov => {
-      const dataMov = new Date(mov.data_movimentacao);
-      return (
-        mov.tipo === 'entrada' &&
-        dataMov.getFullYear() === anoAtual &&
-        dataMov.getMonth() === mesAtual
-      );
-    })
+  // Primeiro dia do mês atual
+  const primeiroDiaMes = new Date(anoAtual, mesAtual, 1).toISOString().split('T')[0];
+
+  // Executar todas as queries em paralelo para reduzir latência
+  const [
+    { count: activeRentals },
+    { count: availableVehicles },
+    { count: rentedVehicles },
+    { count: expiredRentals },
+    { data: movMes, error: movMesError },
+    { data: movSaldo, error: movSaldoError },
+    { data: manutencoes, error: manutencoesError }
+  ] = await Promise.all([
+    supabase.from('locacoes').select('*', { count: 'exact', head: true }).eq('status', 'ativa'),
+    supabase.from('veiculos').select('*', { count: 'exact', head: true }).eq('status', 'disponivel'),
+    supabase.from('veiculos').select('*', { count: 'exact', head: true }).eq('status', 'locado'),
+    supabase.from('locacoes').select('*', { count: 'exact', head: true }).eq('status', 'ativa').lt('data_entrega', hojeStr),
+    // Movimentações só do mês atual (para receita do mês)
+    supabase.from('movimentacoes_financeiras')
+      .select('tipo, valor, categoria')
+      .eq('tipo', 'entrada')
+      .gte('data_movimentacao', primeiroDiaMes),
+    // Movimentações de todos os tempos (para saldo de caixa)
+    supabase.from('movimentacoes_financeiras').select('tipo, valor'),
+    supabase.from('manutencoes').select('valor'),
+  ]);
+
+  if (movMesError) throw movMesError;
+  if (movSaldoError) throw movSaldoError;
+  if (manutencoesError) throw manutencoesError;
+
+  // Receita do mês (já filtrada no banco)
+  const totalRevenue = (movMes || []).reduce((acc, mov) => acc + mov.valor, 0);
+  const receitaSeguro = (movMes || [])
+    .filter(mov => mov.categoria === 'seguro')
     .reduce((acc, mov) => acc + mov.valor, 0);
 
-  // Calcula a receita de seguros do mês atual
-  const receitaSeguro = movimentacoes
-    .filter(mov => {
-      const dataMov = new Date(mov.data_movimentacao);
-      return (
-        mov.tipo === 'entrada' &&
-        mov.categoria === 'seguro' &&
-        dataMov.getFullYear() === anoAtual &&
-        dataMov.getMonth() === mesAtual
-      );
-    })
-    .reduce((acc, mov) => acc + mov.valor, 0);
-
-  // Busca a quantidade de locações ativas vencidas
-  const hojeStr = new Date().toLocaleDateString('en-CA');
-  const { count: expiredRentals } = await supabase
-    .from('locacoes')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'ativa')
-    .lt('data_entrega', hojeStr);
+  // Saldo de caixa total
+  const saldoMovimentacoes = (movSaldo || []).reduce((acc, mov) => {
+    return mov.tipo === 'entrada' ? acc + mov.valor : acc - mov.valor;
+  }, 0);
+  const totalManutencoes = (manutencoes || []).reduce((acc, m) => acc + m.valor, 0);
+  const saldoCaixa = saldoMovimentacoes - totalManutencoes;
 
   const stats = {
     locacoesAtivas: activeRentals || 0,

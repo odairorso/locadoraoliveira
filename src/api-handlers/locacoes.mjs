@@ -1,6 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Cache em memória para o schema de colunas — evita 3-4 queries extras a cada requisição
+let _schemaCache = null;
+
 async function detectClienteColumns(supabase) {
+  if (_schemaCache) return _schemaCache;
+
   let docColumn = 'cpf_cnpj';
   let tipoField = 'tipo_pessoa';
 
@@ -24,7 +29,8 @@ async function detectClienteColumns(supabase) {
     tipoField = null;
   }
 
-  return { docColumn, tipoField };
+  _schemaCache = { docColumn, tipoField };
+  return _schemaCache;
 }
 
 async function fetchClienteById(supabase, id) {
