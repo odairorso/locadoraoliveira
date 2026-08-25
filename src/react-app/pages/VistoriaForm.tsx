@@ -423,7 +423,7 @@ const VistoriaForm: React.FC = () => {
     Object.keys(formData.checklist).forEach(key => {
       const dbKey = key.toLowerCase()
         .replace(/\s*\([^)]*\)\s*/g, '')
-        .replace(/[\s\/]/g, '_')
+        .replace(/[\s/]/g, '_')
         .replace(/_$/, '');
       checklistData[dbKey] = formData.checklist[key];
     });

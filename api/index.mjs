@@ -15,10 +15,24 @@ import manutencoesIdHandler from '../src/api-handlers/manutencoes-id.mjs';
 import vistoriasIdHandler from '../src/api-handlers/vistorias-id.mjs';
 
 export default async function handler(request, response) {
-  // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
+  // Set CORS headers com restrição de origens autorizadas
+  const origin = request?.headers?.origin || request?.headers?.Origin;
+  const isAllowedOrigin = !origin || 
+    origin.startsWith('http://localhost') || 
+    origin.startsWith('http://127.0.0.1') || 
+    origin.endsWith('.vercel.app') || 
+    origin.startsWith('capacitor://') || 
+    origin.startsWith('https://localhost');
+
+  if (isAllowedOrigin && origin) {
+    response.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    response.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info');
+  response.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (request.method === 'OPTIONS') {
     response.status(200).end();

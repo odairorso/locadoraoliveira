@@ -76,11 +76,11 @@ CREATE INDEX IF NOT EXISTS idx_movimentacoes_categoria ON movimentacoes_financei
 CREATE INDEX IF NOT EXISTS idx_movimentacoes_data ON movimentacoes_financeiras(data_movimentacao);
 CREATE INDEX IF NOT EXISTS idx_movimentacoes_locacao_id ON movimentacoes_financeiras(locacao_id);
 
--- DESABILITAR RLS TEMPORARIAMENTE PARA FUNCIONAR SEM AUTENTICAÇÃO
-ALTER TABLE clientes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE veiculos DISABLE ROW LEVEL SECURITY;
-ALTER TABLE locacoes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE movimentacoes_financeiras DISABLE ROW LEVEL SECURITY;
+-- HABILITAR RLS COM POLÍTICAS SEGURAS
+ALTER TABLE clientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE veiculos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE locacoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE movimentacoes_financeiras ENABLE ROW LEVEL SECURITY;
 
 -- Criar função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()

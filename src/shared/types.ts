@@ -40,7 +40,16 @@ export const VeiculoSchema = z.object({
   tipo_operacao: z.enum(["locacao", "venda", "ambos"], {
     errorMap: () => ({ message: "Tipo deve ser 'locacao', 'venda' ou 'ambos'" })
   }),
-  status: z.enum(["disponivel", "locado", "vendido"]).default("disponivel"),
+  status: z.enum(["disponivel", "locado", "vendido", "manutencao"]).default("disponivel"),
+  fotos: z.array(z.string()).optional().default([]),
+  foto_principal: z.string().optional().nullable(),
+  transmissao: z.enum(["manual", "automatico"]).optional().default("manual"),
+  combustivel: z.string().optional().default("Flex"),
+  passageiros: z.number().optional().default(5),
+  tem_ar_condicionado: z.boolean().optional().default(true),
+  tem_direcao_hidraulica: z.boolean().optional().default(true),
+  tem_vidro_eletrico: z.boolean().optional().default(true),
+  descricao: z.string().optional().nullable(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });
@@ -100,6 +109,63 @@ export const VendaCreateSchema = VendaSchema.omit({
 
 export type Venda = z.infer<typeof VendaSchema>;
 export type VendaCreate = z.infer<typeof VendaCreateSchema>;
+
+// Perfil de Usuário
+export type UserRole = 'admin' | 'funcionario' | 'cliente';
+
+export interface Perfil {
+  id?: string;
+  user_id?: string;
+  email: string;
+  nome: string;
+  telefone?: string;
+  role: UserRole;
+  ativo: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Configurações da Empresa & PIX
+export interface ConfiguracaoEmpresa {
+  id?: number;
+  nome_empresa: string;
+  cnpj: string;
+  telefone: string;
+  whatsapp: string;
+  email: string;
+  endereco: string;
+  cidade: string;
+  estado: string;
+  tipo_chave_pix: 'cnpj' | 'celular' | 'email' | 'aleatoria';
+  chave_pix: string;
+  titular_pix: string;
+  cidade_pix: string;
+  link_playstore: string;
+  mensagem_compartilhamento?: string;
+  updated_at?: string;
+}
+
+// Solicitação de Reserva do Cliente
+export interface SolicitacaoReserva {
+  id?: number;
+  veiculo_id: number;
+  veiculo?: Veiculo;
+  cliente_nome: string;
+  cliente_cpf: string;
+  cliente_telefone: string;
+  cliente_email?: string;
+  data_inicio: string;
+  data_fim: string;
+  dias: number;
+  valor_diaria: number;
+  valor_total: number;
+  forma_pagamento: string;
+  comprovante_pix_url?: string;
+  status: 'pendente' | 'aprovada' | 'rejeitada' | 'cancelada';
+  observacoes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 // API Response types
 export interface ApiResponse<T> {

@@ -71,3 +71,14 @@ tmp/
 .netlify
 
 .vercel
+
+# Android Keystore e Senhas
+key.properties
+*.jks
+*.keystore
+*.apk
+*.aab
+APP_GERADO_PLAY_STORE/
+eslint-report*.json
+
+

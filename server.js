@@ -21,8 +21,9 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir arquivos estáticos
-app.use(express.static(__dirname, {
+// Servir estritamente arquivos compilados de produção da pasta dist
+const distPath = join(__dirname, 'dist');
+app.use(express.static(distPath, {
   maxAge: '1d',
   setHeaders: (res, filePath) => {
     // Arquivos com hash no nome (ex: index-abc123.js) podem ser cacheados por mais tempo
@@ -34,7 +35,7 @@ app.use(express.static(__dirname, {
 
 // Rota para a página principal
 app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, 'index.html'));
+  res.sendFile(join(distPath, 'index.html'));
 });
 
 // Função para carregar o roteador consolidado da API

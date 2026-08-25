@@ -95,7 +95,7 @@ const VistoriaComparacao: React.FC = () => {
             const dbKey = uiToDbChecklistMap[item] || item.toLowerCase()
               .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
               .replace(/\s*\([^)]*\)\s*/g, '')
-              .replace(/[\s\/]/g, '_')
+              .replace(/[\s/]/g, '_')
               .replace(/_$/, '');
 
             const saidaStatus = saidaResult.data.checklist ? !!saidaResult.data.checklist[dbKey] : false;
@@ -136,7 +136,7 @@ const VistoriaComparacao: React.FC = () => {
         const dbKey = uiToDbChecklistMap[key] || key.toLowerCase()
           .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
           .replace(/\s*\([^)]*\)\s*/g, '')
-          .replace(/[\s\/]/g, '_')
+          .replace(/[\s/]/g, '_')
           .replace(/_$/, '');
         checklistData[dbKey] = confrontoState[key];
       });
@@ -329,7 +329,7 @@ const VistoriaComparacao: React.FC = () => {
                   const dbKey = uiToDbChecklistMap[item] || item.toLowerCase()
                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                     .replace(/\s*\([^)]*\)\s*/g, '')
-                    .replace(/[\s\/]/g, '_')
+                    .replace(/[\s/]/g, '_')
                     .replace(/_$/, '');
 
                   const saidaStatus = vistoriaSaida.checklist ? !!vistoriaSaida.checklist[dbKey] : false;

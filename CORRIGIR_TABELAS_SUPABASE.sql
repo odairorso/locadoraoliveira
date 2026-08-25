@@ -1,5 +1,8 @@
 -- SCRIPT DE CORREÇÃO - EXECUTE ESTE CÓDIGO NO SQL EDITOR DO SUPABASE
 -- Este script corrige problemas de estrutura das tabelas
+-- ⚠️ ATENÇÃO: ESTE SCRIPT É DESTRUTIVO (DROP TABLE ... CASCADE) E DESABILITA
+--    O ROW LEVEL SECURITY. NÃO o execute em produção. Após executá-lo,
+--    rode novamente o SUPABASE_SECURITY_RLS.sql para reativar as proteções.
 
 -- PRIMEIRO: Remover tabelas existentes (se houver problemas de estrutura)
 DROP TABLE IF EXISTS locacoes CASCADE;

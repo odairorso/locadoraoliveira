@@ -48,14 +48,21 @@ export default async function handler(request, response) {
   }
 }
 
+function getLocalYmd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 async function handleBasicStats(supabase, response) {
   const hoje = new Date();
   const anoAtual = hoje.getFullYear();
   const mesAtual = hoje.getMonth();
-  const hojeStr = hoje.toLocaleDateString('en-CA');
+  const hojeStr = getLocalYmd(hoje);
 
-  // Primeiro dia do mês atual
-  const primeiroDiaMes = new Date(anoAtual, mesAtual, 1).toISOString().split('T')[0];
+  // Primeiro dia do mês atual, em data local (não UTC)
+  const primeiroDiaMes = getLocalYmd(new Date(anoAtual, mesAtual, 1));
 
   // Executar todas as queries em paralelo para reduzir latência
   const [
@@ -183,7 +190,7 @@ async function handleAdvancedStats(supabase, response) {
     .from('movimentacoes_financeiras')
     .select('tipo, valor, data_movimentacao')
     .eq('tipo', 'entrada')
-    .gte('data_movimentacao', new Date(new Date().getFullYear(), 0, 1).toISOString())
+    .gte('data_movimentacao', getLocalYmd(new Date(new Date().getFullYear(), 0, 1)))
     .order('data_movimentacao', { ascending: true });
 
   if (movError) {

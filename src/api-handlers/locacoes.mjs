@@ -519,14 +519,35 @@ export default async function handler(request, response) {
         return response.status(400).json({ success: false, error: "Veículo não está disponível" });
       }
 
-      const { data: overlap, error: overlapError } = await supabase.from('locacoes').select('id').eq('veiculo_id', veiculo_id).eq('status', 'ativa').or(`data_locacao.lte.${data_entrega},data_entrega.gte.${data_locacao}`).single();
+      // Overlap correto (interseção de períodos):
+      //   existente.data_locacao <= nova.data_entrega E
+      //   existente.data_entrega >= nova.data_locacao
+      const { data: overlap, error: overlapError } = await supabase
+        .from('locacoes')
+        .select('id')
+        .eq('veiculo_id', veiculo_id)
+        .eq('status', 'ativa')
+        .lte('data_locacao', data_entrega)
+        .gte('data_entrega', data_locacao)
+        .limit(1);
 
-      if (overlapError && overlapError.code !== 'PGRST116') throw overlapError;
-      if (overlap) {
+      if (overlapError) throw overlapError;
+      if (overlap && overlap.length > 0) {
         return response.status(400).json({ success: false, error: "Veículo já possui locação no período informado" });
       }
 
-      const { data: newLocacao, error } = await supabase.from('locacoes').insert([request.body]).select().single();
+      // Whitelist de campos: evita mass assignment de campos não permitidos
+      const allowedFields = [
+        'cliente_id', 'veiculo_id', 'data_locacao', 'data_entrega',
+        'valor_diaria', 'valor_total', 'valor_caucao', 'valor_seguro',
+        'status', 'observacoes'
+      ];
+      const payload = {};
+      for (const field of allowedFields) {
+        if (request.body[field] !== undefined) payload[field] = request.body[field];
+      }
+
+      const { data: newLocacao, error } = await supabase.from('locacoes').insert([payload]).select().single();
       if (error) throw error;
 
       // Após criar a locação, insere o registro financeiro correspondente

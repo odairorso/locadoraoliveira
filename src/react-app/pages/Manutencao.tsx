@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Wrench, Car, Calendar, DollarSign, FileText, Save,
 import { useApi } from '@/react-app/hooks/useApi';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import ErrorMessage from '@/react-app/components/ErrorMessage';
+import VehicleSelectModal from '@/react-app/components/VehicleSelectModal';
 import { formatCurrency } from '@/react-app/utils/formatters';
 import type { Veiculo } from '@/shared/types';
 
@@ -314,23 +315,14 @@ export default function Manutencao() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Veículo */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Car className="inline h-4 w-4 mr-1" />
-                    Veículo *
-                  </label>
-                  <select
-                    value={formData.veiculo_id}
-                    onChange={(e) => setFormData({ ...formData, veiculo_id: e.target.value })}
+                  <VehicleSelectModal
+                    selectedVehicleId={parseInt(formData.veiculo_id) || 0}
+                    onSelectVehicle={(veiculo) => setFormData({ ...formData, veiculo_id: String(veiculo.id) })}
+                    veiculos={veiculos || []}
+                    loading={loadingVeiculos}
+                    label="Veículo *"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
-                  >
-                    <option value="">Selecione um veículo</option>
-                    {veiculos?.map((veiculo) => (
-                      <option key={veiculo.id} value={veiculo.id}>
-                        {veiculo.marca} {veiculo.modelo} - {veiculo.placa}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {/* Data */}

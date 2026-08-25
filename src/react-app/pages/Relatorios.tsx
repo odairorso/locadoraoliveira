@@ -326,7 +326,7 @@ export default function Relatorios() {
       const dataInicioRelatorio = new Date(dataInicio);
       const dataFimRelatorio = new Date(dataFim);
 
-      let mesAtual = new Date(dataInicioRelatorio.getFullYear(), dataInicioRelatorio.getMonth(), 1);
+      const mesAtual = new Date(dataInicioRelatorio.getFullYear(), dataInicioRelatorio.getMonth(), 1);
       const ultimoMesRelatorio = new Date(dataFimRelatorio.getFullYear(), dataFimRelatorio.getMonth(), 1);
 
       while (mesAtual <= ultimoMesRelatorio) {

@@ -25,6 +25,12 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/clipboard": "^6.0.2",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/splash-screen": "^6.0.4",
+    "@capacitor/status-bar": "^6.0.3",
     "@eslint/js": "9.25.1",
     "@getmocha/users-service": "^0.0.4",
     "@getmocha/vite-plugins": "latest",
@@ -47,7 +53,10 @@
     "wrangler": "^4.25.0"
   },
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "build:android": "npm run build && npx cap sync android",
+    "cap:sync": "npx cap sync",
+    "cap:open": "npx cap open android",
     "cf-typegen": "wrangler types",
     "check": "tsc && vite build && wrangler deploy --dry-run",
     "dev": "vite",

@@ -104,8 +104,8 @@ async function handleFinanceiroReport(req, res) {
 
     if (periodo_inicio && periodo_fim) {
       queryMovimentacoes = queryMovimentacoes
-        .gte('data', periodo_inicio)
-        .lte('data', periodo_fim);
+        .gte('data_movimentacao', periodo_inicio)
+        .lte('data_movimentacao', periodo_fim);
     }
 
     const { data: movimentacoes, error: errorMovimentacoes } = await queryMovimentacoes;
@@ -115,41 +115,44 @@ async function handleFinanceiroReport(req, res) {
       return res.status(500).json({ error: 'Erro ao buscar movimentações financeiras' });
     }
 
-    // Calcular totais
-    const receitas = movimentacoes.filter(m => m.tipo === 'receita');
-    const despesas = movimentacoes.filter(m => m.tipo === 'despesa');
+    // Calcular totais (schema usa entrada e saida)
+    const receitas = (movimentacoes || []).filter(m => m.tipo === 'entrada');
+    const despesas = (movimentacoes || []).filter(m => m.tipo === 'saida');
 
-    const totalReceitas = receitas.reduce((sum, r) => sum + r.valor, 0);
-    const totalDespesas = despesas.reduce((sum, d) => sum + d.valor, 0);
+    const totalReceitas = receitas.reduce((sum, r) => sum + Number(r.valor || 0), 0);
+    const totalDespesas = despesas.reduce((sum, d) => sum + Number(d.valor || 0), 0);
     const lucroLiquido = totalReceitas - totalDespesas;
 
     // Agrupar por categoria
     const receitasPorCategoria = receitas.reduce((acc, r) => {
-      acc[r.categoria] = (acc[r.categoria] || 0) + r.valor;
+      acc[r.categoria] = (acc[r.categoria] || 0) + Number(r.valor || 0);
       return acc;
     }, {});
 
     const despesasPorCategoria = despesas.reduce((acc, d) => {
-      acc[d.categoria] = (acc[d.categoria] || 0) + d.valor;
+      acc[d.categoria] = (acc[d.categoria] || 0) + Number(d.valor || 0);
       return acc;
     }, {});
 
     // Evolução mensal
-    const evolucaoMensal = movimentacoes.reduce((acc, mov) => {
-      const data = new Date(mov.data);
+    const evolucaoMensal = (movimentacoes || []).reduce((acc, mov) => {
+      const data = new Date(mov.data_movimentacao || new Date());
       if (isNaN(data.getTime())) {
-        console.warn('Data inválida encontrada:', mov.data);
         return acc;
       }
-      const mes = data.toISOString().substring(0, 7);
-      if (!acc[mes]) {
-        acc[mes] = { receitas: 0, despesas: 0 };
+
+      const mesAno = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+      if (!acc[mesAno]) {
+        acc[mesAno] = { mes: mesAno, receitas: 0, despesas: 0, lucro: 0 };
       }
-      if (mov.tipo === 'receita') {
-        acc[mes].receitas += mov.valor;
+
+      if (mov.tipo === 'entrada') {
+        acc[mesAno].receitas += Number(mov.valor || 0);
       } else {
-        acc[mes].despesas += mov.valor;
+        acc[mesAno].despesas += Number(mov.valor || 0);
       }
+
+      acc[mesAno].lucro = acc[mesAno].receitas - acc[mesAno].despesas;
       return acc;
     }, {});
 
@@ -273,7 +276,7 @@ async function handleVeiculosReport(req, res) {
       .from('manutencoes')
       .select(`
         veiculo_id,
-        custo,
+        valor,
         data_manutencao,
         veiculo:veiculos(marca, modelo, placa)
       `);
@@ -322,7 +325,7 @@ async function handleVeiculosReport(req, res) {
           lucro_liquido: 0
         };
       }
-      veiculosMap[veiculoId].custo_manutencao += manutencao.custo || 0;
+      veiculosMap[veiculoId].custo_manutencao += Number(manutencao.valor || 0);
     });
 
     // Calcular lucro líquido

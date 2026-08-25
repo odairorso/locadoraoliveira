@@ -42,3 +42,19 @@ export function formatCurrency(value: number): string {
 export function formatarData(dataString: string): string {
   return new Date(dataString).toLocaleString('pt-BR');
 }
+
+export function getTodayLocalString(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function getFirstDayOfMonthLocalString(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}-01`;
+}
+

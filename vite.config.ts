@@ -46,7 +46,7 @@ const apiPlugin = (): any => ({
               req.on('end', () => {
                 try {
                   req.body = body ? JSON.parse(body) : {};
-                } catch (e) {
+                } catch {
                   req.body = {};
                 }
                 resolve();
@@ -115,7 +115,7 @@ const apiPlugin = (): any => ({
 
 export default defineConfig(() => {
   return {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   plugins: [/*...mochaPlugins(process.env as any),*/ react(), apiPlugin()/*, cloudflare()*/],
   server: {
 

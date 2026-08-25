@@ -1,9 +1,8 @@
-import { Car, Users, FileText, DollarSign, Wallet, TrendingUp, Award, BarChart3, Calendar, Shield, AlertTriangle } from 'lucide-react';
+import { Car, Users, FileText, DollarSign, Wallet, Award, BarChart3, Shield, AlertTriangle, UserPlus, CarFront, FilePlus, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardCard from '@/react-app/components/DashboardCard';
-import LoadingSpinner from '@/react-app/components/LoadingSpinner';
-import ErrorMessage from '@/react-app/components/ErrorMessage';
 import { useApi } from '@/react-app/hooks/useApi';
+import { useAppTheme } from '@/react-app/contexts/ThemeContext';
 import type { DashboardStats } from '@/shared/types';
 import { Line } from 'react-chartjs-2';
 import { formatCurrency } from '@/react-app/utils/formatters';
@@ -21,281 +20,392 @@ interface AdvancedStats {
 }
 
 export default function Home() {
-  const { data: stats, loading, error } = useApi<DashboardStats>('/api/dashboard');
+  const { data: stats } = useApi<DashboardStats>('/api/dashboard');
   const { data: advancedStats, loading: loadingAdvanced } = useApi<AdvancedStats>('/api/dashboard?tipo=stats');
+  const { themeModel, setThemeModel } = useAppTheme();
   const navigate = useNavigate();
 
-  if (loading) {
-    return <LoadingSpinner text="Carregando dashboard..." />;
-  }
+  const isGold = themeModel === 'gold_minimal';
 
-  if (error) {
-    return <ErrorMessage message={`Erro ao carregar dashboard: ${error}`} />;
-  }
+  const currentStats: DashboardStats = stats || {
+    locacoesAtivas: 0,
+    veiculosDisponiveis: 0,
+    veiculosLocados: 0,
+    receitaMes: 0,
+    receitaSeguro: 0,
+    saldoCaixa: 0,
+    locacoesVencidas: 0
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-gray-900 rounded-xl p-4 sm:p-6 md:p-8 text-white shadow-2xl border border-slate-700">
-        <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 md:mb-3">
-            Sistema Oliveira Veículos
-          </h1>
-          <p className="text-gray-300 text-base sm:text-lg mb-1 md:mb-2">
-            Gestão completa de locação e venda de veículos
-          </p>
-          <p className="text-gray-400 text-xs sm:text-sm">
-            Contato: (67) 99622.9840 | veiculos.oliveira@gmail.com
-          </p>
+    <div className="space-y-5">
+      {/* Seletor Rápido de Modelo Visual */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl backdrop-blur-xl shadow-lg">
+        <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>Escolher Modelo Visual do App:</span>
+        </div>
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <button
+            onClick={() => setThemeModel('gold_minimal')}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center space-x-1.5 ${
+              isGold
+                ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20 scale-102 font-black'
+                : 'bg-slate-950/70 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <span>🌟 Modelo 1: Dourado Minimalista</span>
+          </button>
+          <button
+            onClick={() => setThemeModel('vibrant_multicolor')}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center space-x-1.5 ${
+              !isGold
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 scale-102 font-black'
+                : 'bg-slate-950/70 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <span>🌈 Modelo 2: Colorido Vibrante</span>
+          </button>
         </div>
       </div>
 
-      {/* Alerta de Locações Vencidas */}
-      {stats && stats.locacoesVencidas && stats.locacoesVencidas > 0 ? (
-        <div 
-          onClick={() => navigate('/locacoes?status=ativa')}
-          className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-amber-100/60 dark:hover:bg-amber-950/40 transition-all shadow-md group"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
-              <AlertTriangle className="h-6 w-6" />
-            </div>
+      {/* 1. Header do Painel */}
+      {isGold ? (
+        // MODELO 1: DOURADO MINIMALISTA (Print 1)
+        <div className="bg-[#10141d] rounded-2xl p-5 sm:p-6 border border-slate-800/80 shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <p className="font-semibold text-amber-900 dark:text-amber-200">
-                Atenção: Há {stats.locacoesVencidas} {stats.locacoesVencidas === 1 ? 'locação vencida' : 'locações vencidas'}!
+              <span className="text-[10px] font-extrabold tracking-widest text-amber-500 uppercase block mb-1">
+                PAINEL GERAL
+              </span>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
+                Sistema Oliveira Veículos
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                Gestão completa de locação e venda de veículos
               </p>
-              <p className="text-sm text-amber-700 dark:text-amber-450">
-                A data prevista de devolução expirou, mas os veículos ainda não foram marcados como devolvidos.
-              </p>
+            </div>
+
+            <div className="text-left sm:text-right text-xs text-slate-400">
+              <p className="font-bold text-white">(67) 99622.9840</p>
+              <p className="text-slate-400 text-[11px]">veiculos.oliveira@gmail.com</p>
             </div>
           </div>
-          <span className="text-amber-700 dark:text-amber-400 font-medium text-sm group-hover:underline flex items-center">
-            Ver Contratos
-            <span className="ml-1">→</span>
-          </span>
-        </div>
-      ) : null}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          <div className="border-b-2 border-dashed border-amber-500/30 my-4" />
+
+          {currentStats.locacoesVencidas > 0 ? (
+            <div 
+              onClick={() => navigate('/locacoes?status=vencida')}
+              className="bg-[#161a22] border border-amber-500/80 rounded-xl p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-amber-950/30 transition-all shadow-lg active:scale-98 group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold flex-shrink-0">
+                  !
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-extrabold text-amber-300">
+                    Há {currentStats.locacoesVencidas} {currentStats.locacoesVencidas === 1 ? 'locação vencida' : 'locações vencidas'}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">
+                    A data prevista de devolução expirou, mas os veículos ainda não foram marcados como devolvidos.
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform flex items-center flex-shrink-0 pl-2">
+                Ver contratos →
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        // MODELO 2: COLORIDO VIBRANTE (Print 2 Original)
+        <div className="space-y-4">
+          <div className="text-center py-4 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 rounded-2xl border border-slate-800">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Sistema Oliveira Veículos
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Gestão completa de locação e venda de veículos
+            </p>
+            <p className="text-xs text-blue-400 font-semibold mt-1">
+              Contato: (67) 99622.9840 | veiculos.oliveira@gmail.com
+            </p>
+          </div>
+
+          {currentStats.locacoesVencidas > 0 ? (
+            <div 
+              onClick={() => navigate('/locacoes?status=vencida')}
+              className="bg-[#1c1109] border border-amber-600/70 rounded-xl p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-[#25160b] transition-all shadow-lg active:scale-98 group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-extrabold text-amber-300">
+                    Atenção: Há {currentStats.locacoesVencidas} {currentStats.locacoesVencidas === 1 ? 'locação vencida' : 'locações vencidas'}!
+                  </p>
+                  <p className="text-[11px] text-amber-200/70 mt-0.5">
+                    A data prevista de devolução expirou. Toque para ver os contratos.
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform flex items-center flex-shrink-0 pl-2">
+                Ver Contratos →
+              </span>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* 2. Grid de Cards de Estatísticas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         <DashboardCard
-          title="Locações Ativas"
-          value={stats?.locacoesAtivas || 0}
+          title={isGold ? "LOCAÇÕES ATIVAS" : "Locações Ativas"}
+          value={isGold ? String(currentStats.locacoesAtivas).padStart(2, '0') : currentStats.locacoesAtivas}
           icon={FileText}
-          color="blue"
+          color={isGold ? "yellow" : "blue"}
           subtitle="contratos em andamento"
           onClick={() => navigate('/locacoes?status=ativa')}
         />
         <DashboardCard
-          title="Veículos Disponíveis"
-          value={stats?.veiculosDisponiveis || 0}
+          title={isGold ? "VEÍCULOS DISPONÍVEIS" : "Veículos Disponíveis"}
+          value={isGold ? String(currentStats.veiculosDisponiveis).padStart(2, '0') : currentStats.veiculosDisponiveis}
           icon={Car}
           color="green"
           subtitle="prontos para locação"
           onClick={() => navigate('/veiculos?status=disponivel')}
         />
         <DashboardCard
-          title="Veículos Locados"
-          value={stats?.veiculosLocados || 0}
+          title={isGold ? "VEÍCULOS LOCADOS" : "Veículos Locados"}
+          value={isGold ? String(currentStats.veiculosLocados).padStart(2, '0') : currentStats.veiculosLocados}
           icon={Users}
-          color="yellow"
+          color={isGold ? "blue" : "yellow"}
           subtitle="atualmente em uso"
           onClick={() => navigate('/veiculos?status=locado')}
         />
         <DashboardCard
-          title="Receita do Mês"
-          value={formatCurrency(stats?.receitaMes || 0)}
+          title={isGold ? "RECEITA DO MÊS" : "Receita do Mês"}
+          value={formatCurrency(currentStats.receitaMes)}
           icon={DollarSign}
-          color="purple"
+          color={isGold ? "green" : "purple"}
           subtitle="faturamento atual"
         />
         <DashboardCard
-          title="Receita Seguros"
-          value={formatCurrency(stats?.receitaSeguro || 0)}
+          title={isGold ? "RECEITA SEGUROS" : "Receita Seguros"}
+          value={formatCurrency(currentStats.receitaSeguro)}
           icon={Shield}
-          color="blue"
+          color={isGold ? "blue" : "cyan"}
           subtitle="seguros do mês"
         />
         <DashboardCard
-          title="Saldo do Caixa"
-          value={formatCurrency(stats?.saldoCaixa || 0)}
+          title={isGold ? "SALDO DO CAIXA" : "Saldo do Caixa"}
+          value={formatCurrency(currentStats.saldoCaixa)}
           icon={Wallet}
-          color="red"
+          color={isGold ? "yellow" : "red"}
           subtitle="disponível em caixa"
         />
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Ações Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
-            onClick={() => navigate('/clientes')}
-            className="flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-800 dark:hover:to-blue-700 transition-colors border border-blue-200 dark:border-blue-700"
-          >
-            <Users className="h-8 w-8 text-blue-600 dark:text-blue-400 mr-3" />
-            <div className="text-left">
-              <p className="font-semibold text-blue-900 dark:text-blue-100">Novo Cliente</p>
-              <p className="text-sm text-blue-700 dark:text-blue-300">Cadastrar cliente</p>
-            </div>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/veiculos')}
-            className="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-lg hover:from-green-100 hover:to-green-200 dark:hover:from-green-800 dark:hover:to-green-700 transition-colors border border-green-200 dark:border-green-700"
-          >
-            <Car className="h-8 w-8 text-green-600 dark:text-green-400 mr-3" />
-            <div className="text-left">
-              <p className="font-semibold text-green-900 dark:text-green-100">Novo Veículo</p>
-              <p className="text-sm text-green-700 dark:text-green-300">Cadastrar veículo</p>
-            </div>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/locacoes')}
-            className="flex items-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-800 dark:hover:to-purple-700 transition-colors border border-purple-200 dark:border-purple-700"
-          >
-            <FileText className="h-8 w-8 text-purple-600 dark:text-purple-400 mr-3" />
-            <div className="text-left">
-              <p className="font-semibold text-purple-900 dark:text-purple-100">Nova Locação</p>
-              <p className="text-sm text-purple-700 dark:text-purple-300">Criar contrato</p>
-            </div>
-          </button>
-        </div>
+      {/* 3. Ações Rápidas */}
+      <div className="space-y-2.5">
+        <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider px-1">
+          {isGold ? "AÇÕES RÁPIDAS" : "Ações Rápidas"}
+        </p>
+        
+        {isGold ? (
+          // MODELO 1: Dourado Minimalista (Print 1)
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button 
+              onClick={() => navigate('/clientes')}
+              className="flex items-center p-3.5 bg-[#12161f] rounded-xl hover:bg-[#181e2b] transition-all border border-slate-800 hover:border-slate-700 active:scale-95 group text-left shadow-lg"
+            >
+              <div className="w-8 h-8 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mr-3 flex-shrink-0">
+                <UserPlus className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-bold text-white text-xs">Novo Cliente</p>
+                <p className="text-[10px] text-slate-400">Cadastrar cliente</p>
+              </div>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/veiculos')}
+              className="flex items-center p-3.5 bg-[#12161f] rounded-xl hover:bg-[#181e2b] transition-all border border-slate-800 hover:border-slate-700 active:scale-95 group text-left shadow-lg"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mr-3 flex-shrink-0">
+                <CarFront className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-bold text-white text-xs">Novo Veículo</p>
+                <p className="text-[10px] text-slate-400">Cadastrar veículo</p>
+              </div>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/locacoes?action=new')}
+              className="flex items-center p-3.5 bg-[#12161f] rounded-xl hover:bg-[#181e2b] transition-all border border-slate-800 hover:border-slate-700 active:scale-95 group text-left shadow-lg"
+            >
+              <div className="w-8 h-8 rounded-lg bg-amber-600/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mr-3 flex-shrink-0">
+                <FilePlus className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-bold text-white text-xs">Nova Locação</p>
+                <p className="text-[10px] text-slate-400">Criar contrato</p>
+              </div>
+            </button>
+          </div>
+        ) : (
+          // MODELO 2: Colorido Vibrante (Print 2)
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button 
+              onClick={() => navigate('/clientes')}
+              className="flex items-center p-4 bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-900/30 active:scale-95 text-left"
+            >
+              <div className="p-2 bg-white/10 rounded-lg mr-3 text-white">
+                <UserPlus className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-white text-sm">Novo Cliente</p>
+                <p className="text-xs text-blue-100">Cadastrar cliente</p>
+              </div>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/veiculos')}
+              className="flex items-center p-4 bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all shadow-lg shadow-emerald-900/30 active:scale-95 text-left"
+            >
+              <div className="p-2 bg-white/10 rounded-lg mr-3 text-white">
+                <CarFront className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-white text-sm">Novo Veículo</p>
+                <p className="text-xs text-emerald-100">Cadastrar veículo</p>
+              </div>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/locacoes?action=new')}
+              className="flex items-center p-4 bg-purple-600 hover:bg-purple-500 rounded-xl transition-all shadow-lg shadow-purple-900/30 active:scale-95 text-left"
+            >
+              <div className="p-2 bg-white/10 rounded-lg mr-3 text-white">
+                <FilePlus className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-white text-sm">Nova Locação</p>
+                <p className="text-xs text-purple-100">Criar contrato</p>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Advanced Analytics Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Veículos Mais Locados */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
-              <Award className="h-6 w-6 text-yellow-500 mr-2" />
-              Top Veículos Locados
-            </h2>
-            <TrendingUp className="h-5 w-5 text-green-500" />
-          </div>
+      {/* 4. 3 Painéis Inferiores (Top Veículos, Maior Lucro, Receita Mensal) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+        {/* 1. Top Veículos Locados */}
+        <div className="bg-[#12161f] border border-slate-800 rounded-xl p-4 shadow-xl">
+          <h2 className="text-xs font-extrabold text-white flex items-center mb-3">
+            <Award className={`h-4 w-4 ${isGold ? 'text-amber-500' : 'text-amber-400'} mr-1.5`} />
+            Top Veículos Locados
+          </h2>
           
           {loadingAdvanced ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                </div>
+            <div className="space-y-2">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="animate-pulse h-10 bg-slate-800 rounded-lg"></div>
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {(advancedStats?.veiculosMaisLocados || []).slice(0, 5).map((item: any, index: number) => (
-                <div key={item.veiculo.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 dark:bg-blue-900/50 dark:border-blue-800">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                      index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+            <div className="space-y-2">
+              {(advancedStats?.veiculosMaisLocados || []).slice(0, 3).map((item: any, index: number) => (
+                <div key={item.veiculo.id} className="flex items-center justify-between p-2.5 bg-[#0e1219] rounded-lg border border-slate-800/80">
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div className={`w-5 h-5 rounded flex items-center justify-center font-black text-[10px] flex-shrink-0 ${
+                      index === 0 ? (isGold ? 'bg-amber-500 text-black' : 'bg-amber-500 text-black') : 'bg-slate-500 text-white'
                     }`}>
                       {index + 1}
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                    <div className="min-w-0">
+                      <p className="font-bold text-white text-xs truncate">
                         {item.veiculo.marca} {item.veiculo.modelo}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                      <p className="text-[10px] text-slate-500 font-mono">
                         {item.veiculo.ano} • {item.veiculo.placa}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-blue-600 dark:text-blue-400 text-sm">
-                      {item.totalLocacoes} locações
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-right flex-shrink-0 pl-2">
+                    <p className={`font-bold ${isGold ? 'text-amber-400' : 'text-blue-400'} text-xs`}>
                       R$ {item.totalLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[9px] text-slate-500">
+                      {item.totalLocacoes} locações
                     </p>
                   </div>
                 </div>
-              )) || (
-                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                  <Car className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Nenhum dado disponível</p>
-                </div>
-              )}
+              ))}
             </div>
           )}
         </div>
 
-        {/* Veículos com Maior Lucro */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
-              <DollarSign className="h-6 w-6 text-green-500 mr-2" />
-              Maior Lucro
-            </h2>
-            <TrendingUp className="h-5 w-5 text-green-500" />
-          </div>
+        {/* 2. Maior Lucro */}
+        <div className="bg-[#12161f] border border-slate-800 rounded-xl p-4 shadow-xl">
+          <h2 className="text-xs font-extrabold text-white flex items-center mb-3">
+            <span className="text-emerald-400 font-bold mr-1.5">$</span>
+            Maior Lucro
+          </h2>
           
           {loadingAdvanced ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                </div>
+            <div className="space-y-2">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="animate-pulse h-10 bg-slate-800 rounded-lg"></div>
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {(advancedStats?.veiculosMaiorLucro || []).slice(0, 5).map((item: any, index: number) => (
-                <div key={item.veiculo.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100 dark:bg-green-900/50 dark:border-green-800">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                      index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-500' : 'bg-green-500'
+            <div className="space-y-2">
+              {(advancedStats?.veiculosMaiorLucro || []).slice(0, 3).map((item: any, index: number) => (
+                <div key={item.veiculo.id} className="flex items-center justify-between p-2.5 bg-[#0e1219] rounded-lg border border-slate-800/80">
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div className={`w-5 h-5 rounded flex items-center justify-center font-black text-[10px] flex-shrink-0 ${
+                      index === 0 ? 'bg-emerald-500 text-black' : 'bg-slate-500 text-white'
                     }`}>
                       {index + 1}
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                    <div className="min-w-0">
+                      <p className="font-bold text-white text-xs truncate">
                         {item.veiculo.marca} {item.veiculo.modelo}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                      <p className="text-[10px] text-slate-500 font-mono">
                         {item.veiculo.ano} • {item.veiculo.placa}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-green-600 dark:text-green-400 text-sm">
+                  <div className="text-right flex-shrink-0 pl-2">
+                    <p className="font-bold text-emerald-400 text-xs">
                       R$ {item.totalLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-[9px] text-slate-500">
                       {item.totalLocacoes} locações
                     </p>
                   </div>
                 </div>
-              )) || (
-                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                  <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Nenhum dado disponível</p>
-                </div>
-              )}
+              ))}
             </div>
           )}
         </div>
 
-        {/* Gráfico de Receita Mensal */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
-              <BarChart3 className="h-6 w-6 text-purple-500 mr-2" />
-              Receita Mensal
-            </h2>
-            <Calendar className="h-5 w-5 text-purple-500" />
-          </div>
+        {/* 3. Receita Mensal */}
+        <div className="bg-[#12161f] border border-slate-800 rounded-xl p-4 shadow-xl">
+          <h2 className="text-xs font-extrabold text-white flex items-center mb-3">
+            <BarChart3 className={`h-4 w-4 ${isGold ? 'text-amber-500' : 'text-purple-400'} mr-1.5`} />
+            Receita Mensal
+          </h2>
           
           {loadingAdvanced ? (
-            <div className="animate-pulse">
-              <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </div>
+            <div className="animate-pulse h-36 bg-slate-800 rounded-lg"></div>
           ) : (advancedStats as any)?.receitaMensal?.length > 0 ? (
-            <div className="h-48">
+            <div className="h-36">
               <Line
                 data={{
                   labels: (advancedStats as any).receitaMensal.map((item: any) => {
@@ -309,15 +419,15 @@ export default function Home() {
                     {
                       label: 'Receita (R$)',
                       data: (advancedStats as any).receitaMensal.map((item: any) => item.valor),
-                      borderColor: 'rgb(147, 51, 234)',
-                      backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                      borderWidth: 3,
+                      borderColor: isGold ? '#f59e0b' : '#a855f7',
+                      backgroundColor: isGold ? 'rgba(245, 158, 11, 0.12)' : 'rgba(168, 85, 247, 0.12)',
+                      borderWidth: 2,
                       fill: true,
-                      tension: 0.4,
-                      pointBackgroundColor: 'rgb(147, 51, 234)',
-                      pointBorderColor: 'white',
+                      tension: 0.35,
+                      pointBackgroundColor: isGold ? '#f59e0b' : '#a855f7',
+                      pointBorderColor: '#12161f',
                       pointBorderWidth: 2,
-                      pointRadius: 6,
+                      pointRadius: 4,
                     },
                   ],
                 }}
@@ -325,27 +435,32 @@ export default function Home() {
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    legend: {
-                      display: false,
-                    },
+                    legend: { display: false },
                   },
                   scales: {
+                    x: {
+                      ticks: { color: '#64748b', font: { size: 9 } },
+                      grid: { color: 'rgba(51, 65, 85, 0.15)' }
+                    },
                     y: {
                       beginAtZero: true,
                       ticks: {
+                        color: '#64748b',
+                        font: { size: 9 },
                         callback: function(value: any) {
-                          return 'R$ ' + value.toLocaleString('pt-BR');
+                          return 'R$ ' + Number(value).toLocaleString('pt-BR');
                         },
                       },
+                      grid: { color: 'rgba(51, 65, 85, 0.15)' }
                     },
                   },
                 }}
               />
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">Nenhum dado de receita disponível</p>
+            <div className="text-center py-6 text-slate-500">
+              <BarChart3 className="h-6 w-6 mx-auto mb-1 opacity-40" />
+              <p className="text-xs">Nenhum dado de receita</p>
             </div>
           )}
         </div>

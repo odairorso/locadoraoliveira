@@ -314,7 +314,7 @@ const VistoriaDetalhes: React.FC = () => {
                   } else {
                     return <p>Nenhuma avaria registrada</p>;
                   }
-                } catch (error) {
+                } catch {
                   // Se não conseguir fazer parse, mostra como string
                   return <p className="whitespace-pre-wrap">{vistoria.avarias}</p>;
                 }

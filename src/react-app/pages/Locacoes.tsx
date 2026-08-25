@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Edit, Trash2, FileText, Calendar, DollarSign, User, Car, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, FileText, Calendar, DollarSign, User, Car, CheckCircle, XCircle, Clock, QrCode } from 'lucide-react';
 import { useApi, useMutation } from '@/react-app/hooks/useApi';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
+import PixModal from '@/react-app/components/PixModal';
+import ClientSelectModal from '@/react-app/components/ClientSelectModal';
+import VehicleSelectModal from '@/react-app/components/VehicleSelectModal';
+import { supabase } from '@/react-app/supabase';
+import { useNetworkReconnect } from '@/react-app/hooks/useNetworkReconnect';
 import type { Locacao, LocacaoCreate, Cliente, Veiculo } from '@/shared/types';
 
 export default function LocacoesPage() {
@@ -9,6 +14,9 @@ export default function LocacoesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingLocacao, setEditingLocacao] = useState<Locacao | null>(null);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixLocacao, setPixLocacao] = useState<any>(null);
+  const [configEmpresa, setConfigEmpresa] = useState<any>(null);
 
   const [formData, setFormData] = useState<LocacaoCreate>({
     cliente_id: 0,
@@ -30,9 +38,15 @@ export default function LocacoesPage() {
   const filteredLocacoes = useMemo(() => {
     if (!locacoes) return [];
 
+    const hoje = new Date().toISOString().split('T')[0];
+
     return locacoes.filter(locacao => {
-      // 1. Filtrar por Status
-      if (statusFilter && locacao.status !== statusFilter) {
+      // 1. Filtrar por Vencidas (Locações ativas onde data_entrega já expirou)
+      if (statusFilter === 'vencida' || statusFilter === 'vencidas') {
+        if (locacao.status !== 'ativa' || !locacao.data_entrega || locacao.data_entrega >= hoje) {
+          return false;
+        }
+      } else if (statusFilter && locacao.status !== statusFilter) {
         return false;
       }
 
@@ -62,12 +76,28 @@ export default function LocacoesPage() {
   const isLoading = creating || updating || deleting;
 
   useEffect(() => {
+    supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => {
+      if (data) setConfigEmpresa(data);
+    });
+
     const params = new URLSearchParams(location.search);
     const status = params.get('status');
     if (status) {
       setStatusFilter(status);
     }
+    const action = params.get('action');
+    if (action === 'new') {
+      setShowForm(true);
+    }
   }, [location.search]);
+
+  // Reconecta automaticamente quando trocar de rede (Wi-Fi -> 4G)
+  useNetworkReconnect(() => {
+    supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => {
+      if (data) setConfigEmpresa(data);
+    });
+    // As listas via useApi já refazem por conta própria ao voltar a conexão
+  });
 
   const calculateTotal = () => {
     if (formData.data_locacao && formData.data_entrega && formData.valor_diaria) {
@@ -355,7 +385,7 @@ export default function LocacoesPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          disabled={!clientes?.length || !veiculosDisponiveis?.length}
+          disabled={!loadingClientes && !loadingVeiculos && (!clientes?.length || !veiculosDisponiveis?.length)}
           className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -363,8 +393,8 @@ export default function LocacoesPage() {
         </button>
       </div>
 
-      {/* Alert if no clients or vehicles */}
-      {(!clientes?.length || !veiculosDisponiveis?.length) && (
+      {/* Alert if no clients or vehicles (only show after loading finishes) */}
+      {!loadingClientes && !loadingVeiculos && (!clientes?.length || !veiculosDisponiveis?.length) && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md p-4">
           <p className="text-yellow-800 dark:text-yellow-200">
             {!clientes?.length && !veiculosDisponiveis?.length
@@ -395,61 +425,46 @@ export default function LocacoesPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="">Todos os Status</option>
-          <option value="ativa">Ativa</option>
-          <option value="finalizada">Finalizada</option>
-          <option value="cancelada">Cancelada</option>
+          <option value="vencida">⚠️ Locações Vencidas</option>
+          <option value="ativa">Ativas</option>
+          <option value="finalizada">Finalizadas</option>
+          <option value="cancelada">Canceladas</option>
         </select>
       </div>
 
       {/* Rental Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-2 sm:top-10 mx-auto p-3 sm:p-5 border border-gray-200 dark:border-gray-600 w-full sm:w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-none sm:rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-y-auto">
-            <div className="mt-1 sm:mt-3">
-              <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white mb-4">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 sm:p-5 text-white flex justify-between items-center flex-shrink-0">
+              <h3 className="text-base font-bold">
                 {editingLocacao ? 'Editar Locação' : 'Nova Locação'}
               </h3>
+              <button onClick={resetForm} className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-white">✕</button>
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Cliente *
-                    </label>
-                    <select
+                    <ClientSelectModal
+                      selectedClientId={formData.cliente_id}
+                      onSelectClient={(cliente) => setFormData({ ...formData, cliente_id: cliente.id })}
+                      clientes={clientes || []}
+                      loading={loadingClientes}
+                      label="Cliente *"
                       required
-                      disabled={loadingClientes}
-                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
-                      value={formData.cliente_id}
-                      onChange={(e) => setFormData({ ...formData, cliente_id: parseInt(e.target.value) })}
-                    >
-                      <option value={0}>Selecione um cliente</option>
-                      {clientes?.map(cliente => (
-                        <option key={cliente.id} value={cliente.id}>
-                          {cliente.nome} - {cliente.cpf_cnpj}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Veículo *
-                    </label>
-                    <select
+                    <VehicleSelectModal
+                      selectedVehicleId={formData.veiculo_id}
+                      onSelectVehicle={(veiculo) => handleVeiculoChange(veiculo.id)}
+                      veiculos={veiculosDisponiveis || []}
+                      loading={loadingVeiculos}
+                      label="Veículo *"
                       required
-                      disabled={loadingVeiculos}
-                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
-                      value={formData.veiculo_id}
-                      onChange={(e) => handleVeiculoChange(parseInt(e.target.value))}
-                    >
-                      <option value={0}>Selecione um veículo</option>
-                      {veiculosDisponiveis?.map(veiculo => (
-                        <option key={veiculo.id} value={veiculo.id}>
-                          {veiculo.marca} {veiculo.modelo} - {veiculo.placa} - {formatCurrency(veiculo.valor_diaria || 0)}/dia
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
 
@@ -639,7 +654,6 @@ export default function LocacoesPage() {
                   </button>
                 </div>
               </form>
-            </div>
           </div>
         </div>
       )}
@@ -719,6 +733,18 @@ export default function LocacoesPage() {
                       <span className="sm:hidden">PDF</span>
                     </button>
 
+                    <button
+                      onClick={() => {
+                        setPixLocacao(locacao);
+                        setShowPixModal(true);
+                      }}
+                      className="inline-flex items-center px-2 sm:px-3 py-2 sm:py-1.5 border border-emerald-500/40 text-xs font-bold rounded-lg text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors min-h-[44px] sm:min-h-0 whitespace-nowrap"
+                      title="Gerar PIX"
+                    >
+                      <QrCode className="h-3.5 w-3.5 mr-1 text-emerald-400 flex-shrink-0" />
+                      <span>PIX</span>
+                    </button>
+
                     {locacao.status === 'ativa' && (
                       <button
                         onClick={() => handleFinishLocacao(locacao)}
@@ -756,27 +782,28 @@ export default function LocacoesPage() {
 
       {/* Contract Preview Modal */}
       {showContractPreview && contractData && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-2 sm:top-5 mx-auto p-2 sm:p-5 border border-gray-200 dark:border-gray-600 w-full sm:w-11/12 max-w-4xl shadow-lg rounded-none sm:rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-y-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Visualizar Contrato</h3>
-              <div className="flex space-x-2 w-full sm:w-auto">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in">
+          <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-3 sm:p-4 text-white flex justify-between items-center flex-shrink-0">
+              <h3 className="text-sm sm:text-base font-bold">Visualizar Contrato de Locação</h3>
+              <div className="flex space-x-2">
                 <button
                   onClick={printContract}
-                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow"
                 >
-                  Imprimir
+                  Imprimir / PDF
                 </button>
                 <button
                   onClick={() => setShowContractPreview(false)}
-                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
+                  className="px-3 py-1.5 bg-black/20 hover:bg-black/40 text-white rounded-lg font-bold text-xs"
                 >
                   Fechar
                 </button>
               </div>
             </div>
 
-            <div id="contract-content" className="contract-preview bg-white text-black p-2 sm:p-4 md:p-8" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.4', fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
+            <div className="p-2 sm:p-4 overflow-y-auto flex-1 bg-slate-950">
+              <div id="contract-content" className="contract-preview bg-white text-black p-3 sm:p-6 md:p-8 rounded-xl shadow" style={{ fontFamily: 'Arial, sans-serif', lineHeight: '1.4', fontSize: window.innerWidth < 640 ? '11px' : '12px' }}>
               <div className="contract-page">
                 <div className="text-center mb-4 sm:mb-8">
                   <h1 className="text-2xl font-bold">Oliveira Veiculos</h1>
@@ -930,6 +957,26 @@ export default function LocacoesPage() {
             </div>
           </div>
         </div>
+      </div>
+    )}
+      {/* Modal de Pagamento PIX */}
+      {showPixModal && pixLocacao && (
+        <PixModal
+          isOpen={showPixModal}
+          onClose={() => {
+            setShowPixModal(false);
+            setPixLocacao(null);
+          }}
+          valor={pixLocacao.valor_total || 0}
+          descricao={`Locação #${pixLocacao.id} - ${pixLocacao.cliente_nome}`}
+          referenciaId={pixLocacao.id}
+          nomeCliente={pixLocacao.cliente_nome}
+          chavePix={configEmpresa?.chave_pix || '17909442000158'}
+          tipoChavePix={configEmpresa?.tipo_chave_pix || 'CNPJ'}
+          titularPix={configEmpresa?.titular_pix || 'L DOS SANTOS DE OLIVEIRA LTDA'}
+          cidadePix={configEmpresa?.cidade_pix || 'NAVIRAI'}
+          whatsapp={configEmpresa?.whatsapp || '5567996229840'}
+        />
       )}
     </div>
   );

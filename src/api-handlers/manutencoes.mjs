@@ -6,7 +6,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Listar todas as manutenções com informações do veículo
 async function getManutencoes(req, res) {
-  const { veiculo_id, limit = 50, offset = 0 } = req.query;
+  const { veiculo_id } = req.query;
+  const numLimit = parseInt(req.query.limit, 10) || 50;
+  const numOffset = parseInt(req.query.offset, 10) || 0;
 
   let query = supabase
     .from('manutencoes')
@@ -21,7 +23,7 @@ async function getManutencoes(req, res) {
       )
     `)
     .order('data_manutencao', { ascending: false })
-    .range(offset, offset + limit - 1);
+    .range(numOffset, numOffset + numLimit - 1);
 
   // Filtrar por veículo se especificado
   if (veiculo_id) {

@@ -1,4 +1,7 @@
 -- Criar tabela de vistorias
+-- ⚠️ ATENÇÃO: ao final este script faz "ALTER TABLE vistorias DISABLE ROW LEVEL
+--    SECURITY". Isso DESATIVA a proteção da tabela. Se você executá-lo,
+--    rode também o SUPABASE_SECURITY_RLS.sql logo em seguida.
 CREATE TABLE IF NOT EXISTS vistorias (
     id SERIAL PRIMARY KEY,
     tipo_vistoria VARCHAR(10) CHECK (tipo_vistoria IN ('entrada', 'saida')) NOT NULL,
