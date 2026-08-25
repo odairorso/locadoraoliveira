@@ -280,33 +280,69 @@ export default function LocacoesPage() {
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [contractData, setContractData] = useState<any>(null);
 
+  const buildContractData = async (locacao: any) => {
+    let cliente = locacao.clientes;
+    let veiculo = locacao.veiculos;
+
+    if (!cliente && locacao.cliente_id) {
+      const { data } = await supabase.from('clientes').select('*').eq('id', locacao.cliente_id).maybeSingle();
+      if (data) cliente = data;
+    }
+
+    if (!veiculo && locacao.veiculo_id) {
+      const { data } = await supabase.from('veiculos').select('*').eq('id', locacao.veiculo_id).maybeSingle();
+      if (data) veiculo = data;
+    }
+
+    const docCliente = cliente?.cpf_cnpj || cliente?.documento || cliente?.cpf || '';
+    const tipoDoc = cliente?.tipo_documento || (docCliente.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF');
+    const endCompleto = [
+      cliente?.endereco,
+      cliente?.bairro,
+      `${cliente?.cidade || 'Naviraí'} - ${cliente?.estado || 'MS'}`,
+      cliente?.cep ? `CEP ${cliente?.cep}` : ''
+    ].filter(Boolean).join(', ') || 'Naviraí - MS';
+
+    return {
+      cliente_nome: cliente?.nome || locacao.cliente_nome || 'Cliente',
+      cliente_cpf_cnpj: docCliente || 'Não informado',
+      cliente_tipo_doc: tipoDoc,
+      endereco_completo: endCompleto,
+      veiculo_marca: veiculo?.marca || '',
+      veiculo_modelo: veiculo?.modelo || 'Veículo',
+      veiculo_ano: veiculo?.ano || '',
+      veiculo_placa: veiculo?.placa || '',
+      valor_veiculo_formatted: formatCurrency(Number(veiculo?.valor_mercado || veiculo?.valor_tabela || 0)),
+      valor_diaria_formatted: formatCurrency(Number(locacao.valor_diaria || 0)),
+      valor_total_formatted: formatCurrency(Number(locacao.valor_total || 0)),
+      valor_caucao_formatted: formatCurrency(Number(locacao.valor_caucao || 0)),
+      valor_caucao_extenso: Number(locacao.valor_caucao || 0) > 0 ? `(caução de ${formatCurrency(Number(locacao.valor_caucao))})` : '',
+      data_locacao_formatted: formatDate(locacao.data_locacao),
+      data_entrega_formatted: formatDate(locacao.data_entrega),
+      data_atual_formatted: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }),
+      observacoes: locacao.observacoes || ''
+    };
+  };
+
   const viewContract = async (locacao: Locacao) => {
     try {
-      const response = await fetch(`/api/locacoes/${locacao.id}/contrato-data`);
-      const data = await response.json();
-
-      if (data.success) {
-        setContractData(data.data);
-        setShowContractPreview(true);
-      } else {
-        alert('Erro ao carregar dados do contrato');
-      }
+      const data = await buildContractData(locacao);
+      setContractData(data);
+      setShowContractPreview(true);
     } catch (error) {
-      console.error('Erro ao carregar contrato:', error);
+      console.error('Erro ao montar contrato:', error);
       alert('Erro ao carregar contrato');
     }
   };
 
   const downloadContract = async (locacao: Locacao) => {
     try {
-      const response = await fetch(`/api/locacoes/${locacao.id}/contrato`);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `contrato-locacao-${locacao.id}.html`;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      const data = await buildContractData(locacao);
+      setContractData(data);
+      setShowContractPreview(true);
+      setTimeout(() => {
+        printContract();
+      }, 300);
     } catch (error) {
       console.error('Erro ao gerar contrato:', error);
       alert('Erro ao gerar contrato');

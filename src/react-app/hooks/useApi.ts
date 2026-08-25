@@ -215,7 +215,12 @@ async function executeSupabaseQuery(url: string): Promise<any> {
       console.warn('Erro ao buscar locações:', error);
       throw new Error(error.message);
     }
-    return data || [];
+    const mapped = (data || []).map((loc: any) => ({
+      ...loc,
+      cliente_nome: loc.cliente_nome || loc.clientes?.nome || 'Cliente não informado',
+      veiculo_info: loc.veiculo_info || (loc.veiculos ? `${loc.veiculos.marca || ''} ${loc.veiculos.modelo || ''} - ${loc.veiculos.placa || ''}`.trim() : 'Veículo não informado')
+    }));
+    return mapped;
   }
 
   // 4. Clientes (Busca por nome, documento/cpf, celular e email com mapeamento perfeito)
