@@ -73,7 +73,8 @@ WITH (security_invoker = on) AS
 SELECT
   id, marca, modelo, ano, placa, cor,
   valor_diaria, valor_veiculo, tipo_operacao, status,
-  foto_principal, fotos, quilometragem_atual, observacoes
+  foto_principal, fotos, transmissao, combustivel, passageiros,
+  tem_ar_condicionado, tem_direcao_hidraulica, tem_vidro_eletrico, descricao
 FROM public.veiculos
 WHERE status IS DISTINCT FROM 'excluido';
 
