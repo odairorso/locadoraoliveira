@@ -41,6 +41,27 @@
 
 ---
 
+## 🔄 Re-auditoria ao vivo (26/08/2026 — após suas ações)
+
+### ✅ Confirmado corrigido (verificado ao vivo no Supabase e no site publicado)
+- **Senhas rotacionadas** — login com as senhas antigas (admin e cliente) agora é **negado**.
+- **RLS bloqueando anon** em: `clientes`, `locacoes`, `movimentacoes_financeiras`, `vistorias`, `manutencoes`, `solicitacoes_reserva` (retornam 0 linhas).
+- **Trigger anti-elevação de cargo** em `perfis` funcionando (tentativa de inserir `role='admin'` → negada).
+- **Cron protegido**: `POST /api/cron/finalize-locacoes` → **401** sem segredo (fail-closed). E o cron foi **desativado** no `vercel.json`.
+- **Pasta duplicada** `Contrato LocaÃ§ao/` removida do git.
+- **Dependências**: `hono` → 4.13.5, `vite` → 6.4.3. `npm audit` caiu de **71 → 4** vulnerabilidades.
+- **Código**: `tsc` strict, ESLint e `vite build` passando; as correções de vistorias/renavam/datas/cache permanecem.
+- **API pública**: 404 sem `details`; endpoint inexistente não vaza informação.
+
+### 🔴 Ainda pendente (encontrado na re-auditoria — 26/08)
+- **RLS DESLIGADO na tabela `perfis`** (crítico): qualquer pessoa (anon) conseguia **ler emails/cargos da equipe**, **inserir** e **excluir** perfis. O script `SUPABASE_SECURITY_RLS.sql` não foi aplicado por completo (suas RPCs também não existem).
+- **RPCs transacionais ausentes**: `criar_locacao`, `atualizar_locacao`, `excluir_locacao` não existem no banco → o app usa o fallback não-transacional.
+- **RENAVAM legível por anônimos** na tabela `veiculos` (RLS concede a linha completa; a UI pública foi corrigida, mas a API `anon` ainda lê a coluna).
+
+➡️ **Ação necessária:** executar **`CORRIGIR_REAUDITORIA.sql`** no SQL Editor do Supabase (habilita RLS em `perfis`, cria as políticas corretas, revoga `renavam` de anon e recria as 3 RPCs + `is_admin`/`is_staff`). É idempotente.
+
+---
+
 ## 🔴 CRÍTICO (corrigir imediatamente)
 
 ### C1. Senhas de produção em texto plano, versionadas no git
