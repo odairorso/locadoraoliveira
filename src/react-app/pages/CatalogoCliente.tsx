@@ -85,7 +85,7 @@ export default function CatalogoClientePage() {
     if (veiculoId) {
       supabase
         .from('veiculos')
-        .select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, quilometragem_atual, observacoes')
+        .select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, transmissao, combustivel, passageiros, tem_ar_condicionado, tem_direcao_hidraulica, tem_vidro_eletrico, descricao')
         .eq('id', veiculoId)
         .single()
         .then(({ data }) => {
@@ -116,7 +116,7 @@ export default function CatalogoClientePage() {
       const { data, error } = await supabase
         .from('veiculos')
         // Colunas públicas do catálogo: SEM renavam (documento do veículo)
-        .select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, quilometragem_atual, observacoes')
+        .select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, transmissao, combustivel, passageiros, tem_ar_condicionado, tem_direcao_hidraulica, tem_vidro_eletrico, descricao')
         .order('valor_diaria', { ascending: true });
 
       if (data && !error) {

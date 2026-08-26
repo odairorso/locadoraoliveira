@@ -375,7 +375,7 @@ const VistoriaForm: React.FC = () => {
         // Consulta direta ao Supabase (respeita RLS e funciona no app Android)
         const { data, error } = await supabase
           .from('veiculos')
-          .select('id, placa, modelo, cor, marca, quilometragem_atual')
+          .select('id, placa, modelo, cor, marca')
           .or(`modelo.ilike.%${term}%,marca.ilike.%${term}%,placa.ilike.%${term}%`)
           .limit(20);
         if (error) throw error;
@@ -416,7 +416,8 @@ const VistoriaForm: React.FC = () => {
       veiculoId: vehicle.id,
       modelo: vehicle.modelo,
       cor: vehicle.cor,
-      quilometragem: vehicle.quilometragem_atual || '',
+      // quilometragem_atual não existe na tabela veiculos; o valor é digitado no formulário
+      quilometragem: prev.quilometragem || '',
     }));
     setVehicleSearchTerm(`${vehicle.modelo} - ${vehicle.placa}`);
     setVehicleSearchResults([]);

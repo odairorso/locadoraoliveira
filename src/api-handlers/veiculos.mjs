@@ -53,7 +53,7 @@ export default async function handler(request, response) {
 
     if (method === 'GET') {
       // Não expor renavam (documento do veículo) na listagem pública
-      let query = supabase.from('veiculos').select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, quilometragem_atual, observacoes');
+      let query = supabase.from('veiculos').select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, transmissao, combustivel, passageiros, descricao');
       if (search) {
         const term = sanitizeTerm(search);
         query = query.or(`modelo.ilike.%${term}%,marca.ilike.%${term}%,placa.ilike.%${term}%`);

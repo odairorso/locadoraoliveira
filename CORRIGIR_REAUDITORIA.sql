@@ -1,66 +1,36 @@
 -- =====================================================================
 -- CORRECAO RE-AUDITORIA — SUPABASE (idempotente; pode rodar mais de uma vez)
 -- =====================================================================
--- Problemas encontrados na re-auditoria ao vivo (26/08/2026):
---   1. CRITICO: RLS DESLIGADO na tabela `perfis` — qualquer pessoa (anon)
---      podia LER (emails/cargos da equipe), INSERIR e EXCLUIR perfis.
---   2. ALTO: coluna `renavam` legível por anônimos em `veiculos`.
---   3. ALTO: RPCs transacionais (criar_locacao/atualizar_locacao/excluir_locacao)
---      NÃO existem no banco — o app usa fallback não-transacional.
+-- v2 (26/08/2026): corrigido o GRANT que usava colunas inexistentes
+-- (quilometragem_atual/observacoes não existem em veiculos).
 --
--- Este script corrige os 3 itens e é independente do SUPABASE_SECURITY_RLS.sql
--- (que continua sendo a referência completa de segurança).
+-- Problemas que este script resolve:
+--   1. CRITICO: RLS DESLIGADO/ineficaz na tabela `perfis` — anon lia
+--      emails/cargos da equipe e podia inserir/excluir perfis.
+--   2. ALTO: coluna `renavam` legível por anônimos em `veiculos`.
+--   3. RPCs transacionais (criar/atualizar/excluir_locacao) + is_admin/is_staff
+--      (CREATE OR REPLACE — inofensivo re-rodar).
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- 1. RLS em `perfis` + políticas corretas
+-- 1. RLS em `perfis`: dropa TODAS as políticas antigas (inclusive as
+--    permissivas de scripts antigos) e recria as políticas corretas.
 -- ---------------------------------------------------------------------
+DO $$
+DECLARE
+  pol record;
+BEGIN
+  FOR pol IN
+    SELECT policyname FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'perfis'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.perfis', pol.policyname);
+  END LOOP;
+END $$;
+
 ALTER TABLE perfis ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Perfis Select Proprio Ou Admin" ON perfis;
-DROP POLICY IF EXISTS "Perfis Insert Proprio Cliente" ON perfis;
-DROP POLICY IF EXISTS "Perfis Admin Manage" ON perfis;
-
--- SELECT: só o próprio usuário (por email ou user_id) ou admin
-CREATE POLICY "Perfis Select Proprio Ou Admin" ON perfis
-  FOR SELECT
-  TO authenticated
-  USING (
-    email = lower(auth.jwt() ->> 'email')
-    OR (user_id IS NOT NULL AND user_id = auth.uid())
-    OR public.is_admin()
-  );
-
--- INSERT: usuário pode criar apenas o PRÓPRIO perfil como 'cliente'
-CREATE POLICY "Perfis Insert Proprio Cliente" ON perfis
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    email = lower(auth.jwt() ->> 'email')
-    AND role = 'cliente'
-  );
-
--- UPDATE/DELETE/ALL: apenas admin (o trigger trg_verificar_role_perfil
--- reforça que role só muda por admin)
-CREATE POLICY "Perfis Admin Manage" ON perfis
-  FOR ALL
-  TO authenticated
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
-
--- ---------------------------------------------------------------------
--- 2. Coluna `renavam` de `veiculos` não é pública
--- ---------------------------------------------------------------------
--- A equipe (authenticated) continua acessando; apenas o papel anon perde
--- a coluna. A página pública usa a view catalogo_publico (sem renavam).
-REVOKE SELECT (renavam) ON veiculos FROM anon;
-GRANT SELECT (id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo,
-  tipo_operacao, status, foto_principal, fotos, quilometragem_atual, observacoes)
-  ON veiculos TO anon;
-
--- ---------------------------------------------------------------------
--- 3. Funções de cargo (necessárias para as políticas e RPCs)
--- ---------------------------------------------------------------------
+-- Funções de cargo (necessárias para as políticas abaixo)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE sql
@@ -93,8 +63,42 @@ AS $$
   );
 $$;
 
+-- SELECT: só o próprio usuário (por email ou user_id) ou admin
+CREATE POLICY "Perfis Select Proprio Ou Admin" ON perfis
+  FOR SELECT
+  TO authenticated
+  USING (
+    email = lower(auth.jwt() ->> 'email')
+    OR (user_id IS NOT NULL AND user_id = auth.uid())
+    OR public.is_admin()
+  );
+
+-- INSERT: usuário pode criar apenas o PRÓPRIO perfil como 'cliente'
+CREATE POLICY "Perfis Insert Proprio Cliente" ON perfis
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    email = lower(auth.jwt() ->> 'email')
+    AND role = 'cliente'
+  );
+
+-- UPDATE/DELETE/ALL: apenas admin (o trigger trg_verificar_role_perfil
+-- reforça que role só muda por admin)
+CREATE POLICY "Perfis Admin Manage" ON perfis
+  FOR ALL
+  TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
 -- ---------------------------------------------------------------------
--- 4. RPC transacional de CRIAÇÃO de locação
+-- 2. Coluna `renavam` de `veiculos` não é pública.
+--    (Anon tem GRANT SELECT de tabela de scripts anteriores; o REVOKE na
+--    coluna basta para escondê-la. A equipe/authenticated continua acessando.)
+-- ---------------------------------------------------------------------
+REVOKE SELECT (renavam) ON veiculos FROM anon;
+
+-- ---------------------------------------------------------------------
+-- 3. RPC transacional de CRIAÇÃO de locação
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.criar_locacao(p jsonb)
 RETURNS public.locacoes
@@ -220,7 +224,7 @@ REVOKE ALL ON FUNCTION public.criar_locacao(jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.criar_locacao(jsonb) TO authenticated;
 
 -- ---------------------------------------------------------------------
--- 5. RPC transacional de ATUALIZAÇÃO de locação
+-- 4. RPC transacional de ATUALIZAÇÃO de locação
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.atualizar_locacao(p jsonb)
 RETURNS public.locacoes
@@ -292,7 +296,7 @@ REVOKE ALL ON FUNCTION public.atualizar_locacao(jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.atualizar_locacao(jsonb) TO authenticated;
 
 -- ---------------------------------------------------------------------
--- 6. RPC transacional de EXCLUSÃO de locação
+-- 5. RPC transacional de EXCLUSÃO de locação
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.excluir_locacao(p_id integer)
 RETURNS boolean
