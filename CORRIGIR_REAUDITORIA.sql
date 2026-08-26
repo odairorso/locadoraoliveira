@@ -92,10 +92,18 @@ CREATE POLICY "Perfis Admin Manage" ON perfis
 
 -- ---------------------------------------------------------------------
 -- 2. Coluna `renavam` de `veiculos` não é pública.
---    (Anon tem GRANT SELECT de tabela de scripts anteriores; o REVOKE na
---    coluna basta para escondê-la. A equipe/authenticated continua acessando.)
+--    IMPORTANTE: o anon tem GRANT SELECT de TABELA (scripts antigos);
+--    REVOKE só na coluna NÃO funciona nesse caso. Por isso revogamos o
+--    SELECT da tabela e concedemos apenas as colunas públicas do catálogo.
+--    A equipe (authenticated) não é afetada.
 -- ---------------------------------------------------------------------
-REVOKE SELECT (renavam) ON veiculos FROM anon;
+REVOKE SELECT ON veiculos FROM anon;
+
+GRANT SELECT (id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo,
+  tipo_operacao, status, foto_principal, fotos, transmissao, combustivel,
+  passageiros, tem_ar_condicionado, tem_direcao_hidraulica, tem_vidro_eletrico,
+  descricao)
+  ON veiculos TO anon;
 
 -- ---------------------------------------------------------------------
 -- 3. RPC transacional de CRIAÇÃO de locação
