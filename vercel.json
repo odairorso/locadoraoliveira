@@ -1,17 +1,7 @@
 {
   "name": "locadora-oliveira",
   "version": 2,
-  "crons": [
-    {
-      "path": "/api/cron/finalize-locacoes",
-      "schedule": "0 5 * * *"
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/api/cron/finalize-locacoes",
-      "destination": "/api/cron/finalize-locacoes.mjs"
-    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.mjs"
