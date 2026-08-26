@@ -101,7 +101,7 @@ export default function Layout({ children }: LayoutProps) {
                 <div>
                   <div className="flex items-center space-x-2">
                     <h1 className="text-base font-black text-white leading-tight">Oliveira</h1>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40">v2.6.7</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40">v2.6.8</span>
                   </div>
                   <p className={`text-[10px] font-bold uppercase tracking-wider ${isGold ? 'text-amber-400' : 'text-blue-400'}`}>
                     Veículos & Locação
@@ -245,7 +245,7 @@ export default function Layout({ children }: LayoutProps) {
               <div>
                 <div className="flex items-center space-x-2">
                   <h1 className="text-xl font-extrabold text-white">Oliveira</h1>
-                  <span className="text-[9px] font-black text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">v2.6.7</span>
+                  <span className="text-[9px] font-black text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">v2.6.8</span>
                 </div>
                 <p className={`text-xs font-semibold ${isGold ? 'text-amber-400' : 'text-blue-400'}`}>Veículos App</p>
               </div>
@@ -371,7 +371,7 @@ export default function Layout({ children }: LayoutProps) {
               </div>
               <div>
                 <span className="font-black text-sm text-white tracking-tight block leading-tight">Oliveira Veículos</span>
-                <span className="text-[9px] font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 inline-block leading-none">v2.6.7</span>
+                <span className="text-[9px] font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 inline-block leading-none">v2.6.8</span>
               </div>
             </div>
           </div>
