@@ -169,6 +169,7 @@ export default function LoginPage() {
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type="email"
+                    autoComplete="off"
                     required
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
@@ -184,6 +185,7 @@ export default function LoginPage() {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type={showLoginPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -235,6 +237,7 @@ export default function LoginPage() {
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type="email"
+                    autoComplete="off"
                     required
                     value={cadEmail}
                     onChange={(e) => setCadEmail(e.target.value)}

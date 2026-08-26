@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { reconnectSupabaseAuth, supabase } from '@/react-app/supabase';
 import type { Perfil, UserRole } from '@/shared/types';
 
@@ -73,6 +73,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Supabase, não confiamos em nenhum role vindo do localStorage (evita que uma
   // 'oliveira_auth_session' forjada abra a UI de admin antes da validação).
   const [loading, setLoading] = useState(true);
+
+  // Debounce para renovação de sessão em eventos de foco (ver handleReconectar)
+  const lastReconnectRef = useRef(0);
 
   const fetchProfileForUser = async (authUser: any) => {
     if (!authUser || !authUser.email) return;
@@ -166,7 +169,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     // 3. Listener para quando a internet voltar ou o app for reaberto
+    // Com debounce de 15s: o navegador dispara vários eventos de foco
+    // (ex.: overlay de autofill na tela de login), e cada um disparava
+    // renovação de sessão com retries — causando o "trava" ao clicar no
+    // e-mail salvo. Agora só renova no máximo 1x a cada 15 segundos.
     const handleReconectar = () => {
+      const now = Date.now();
+      if (now - lastReconnectRef.current < 15000) return;
+      lastReconnectRef.current = now;
       void reconnectSupabaseAuth().then(() => initSession());
     };
     const handleVisibility = () => {
