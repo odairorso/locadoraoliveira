@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [documento, setDocumento] = useState('');
   const [cadPassword, setCadPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCadPassword, setShowCadPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -289,8 +290,15 @@ export default function LoginPage() {
                       value={cadPassword}
                       onChange={(e) => setCadPassword(e.target.value)}
                       placeholder="Mín. 6 dígitos"
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-8 pr-2 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-8 pr-8 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowCadPassword(!showCadPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    >
+                      {showCadPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 </div>
 

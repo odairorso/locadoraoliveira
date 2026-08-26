@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Copy, Check, Share2, MessageCircle, Car } from 'lucide-react';
 import { formatCurrency } from '@/react-app/utils/formatters';
 import type { Veiculo } from '@/shared/types';
@@ -21,12 +21,7 @@ export default function ShareVehicleModal({
 
   if (!isOpen) return null;
 
-  const isLocal = typeof window !== 'undefined' && (
-    window.location.hostname === 'localhost' || 
-    window.location.hostname === '127.0.0.1' || 
-    window.location.origin.includes('localhost')
-  );
-  const baseUrl = isLocal ? 'https://locadoraoliveira.vercel.app' : window.location.origin;
+  const baseUrl = 'https://www.oliveiraaluguelcarros.com.br';
   const shareUrl = veiculo
     ? `${baseUrl}/catalogo?veiculo=${veiculo.id}`
     : `${baseUrl}/catalogo`;

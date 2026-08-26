@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, User, X, Check, Phone, FileText, ChevronRight } from 'lucide-react';
 import type { Cliente } from '@/shared/types';
 import { formatCPF, formatCNPJ, formatPhone } from '@/react-app/utils/formatters';
@@ -33,9 +33,9 @@ export default function ClientSelectModal({
 
     return clientes.filter((c) => {
       const nomeMatch = c.nome ? c.nome.toLowerCase().includes(term) : false;
-      const docRaw = (c.cpf_cnpj || c.documento || '').replace(/\D/g, '');
+      const docRaw = (c.cpf_cnpj || (c as any).documento || '').replace(/\D/g, '');
       const docMatch = docRaw.includes(cleanTerm);
-      const telRaw = (c.celular || c.telefone || '').replace(/\D/g, '');
+      const telRaw = (c.celular || (c as any).telefone || '').replace(/\D/g, '');
       const telMatch = telRaw.includes(cleanTerm);
       const emailMatch = c.email ? c.email.toLowerCase().includes(term) : false;
 
@@ -83,12 +83,12 @@ export default function ClientSelectModal({
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 mt-0.5">
                 <span className="flex items-center space-x-1">
                   <FileText className="w-3 h-3 text-amber-400" />
-                  <span>{formatDoc(selectedClient.cpf_cnpj || selectedClient.documento)}</span>
+                  <span>{formatDoc(selectedClient.cpf_cnpj || (selectedClient as any).documento)}</span>
                 </span>
-                {(selectedClient.celular || selectedClient.telefone) && (
+                {(selectedClient.celular || (selectedClient as any).telefone) && (
                   <span className="flex items-center space-x-1 text-emerald-400">
                     <Phone className="w-3 h-3" />
-                    <span>{formatPhone(selectedClient.celular || selectedClient.telefone || '')}</span>
+                    <span>{formatPhone(selectedClient.celular || (selectedClient as any).telefone || '')}</span>
                   </span>
                 )}
               </div>
@@ -226,12 +226,12 @@ export default function ClientSelectModal({
                           <div className="flex flex-wrap items-center gap-x-2.5 text-[11px] text-slate-400 mt-0.5">
                             <span className="flex items-center space-x-1">
                               <FileText className="w-3 h-3 text-amber-400/80" />
-                              <span className="font-mono">{formatDoc(cliente.cpf_cnpj || cliente.documento)}</span>
+                              <span className="font-mono">{formatDoc(cliente.cpf_cnpj || (cliente as any).documento)}</span>
                             </span>
-                            {(cliente.celular || cliente.telefone) && (
+                            {(cliente.celular || (cliente as any).telefone) && (
                               <span className="flex items-center space-x-1 text-emerald-400/90">
                                 <Phone className="w-3 h-3" />
-                                <span>{formatPhone(cliente.celular || cliente.telefone || '')}</span>
+                                <span>{formatPhone(cliente.celular || (cliente as any).telefone || '')}</span>
                               </span>
                             )}
                           </div>

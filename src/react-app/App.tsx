@@ -18,8 +18,19 @@ import ReservasPage from "@/react-app/pages/Reservas";
 import MeuPerfilPage from "@/react-app/pages/MeuPerfil";
 
 function AppRoutes() {
-  const { isFuncionario, isAdmin, isCliente, user } = useAuth();
+  const { isFuncionario, isAdmin, isCliente, user, loading } = useAuth();
   const isLoggedIn = !!user || isFuncionario || isCliente;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070a12] flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-amber-400 font-bold text-sm tracking-wide">Carregando Sistema Oliveira...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Layout>

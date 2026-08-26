@@ -32,8 +32,11 @@ export default function VeiculosPage() {
     valor_veiculo: 0,
     tipo_operacao: 'ambos',
     status: 'disponivel',
+    fotos: [],
     foto_principal: '',
     transmissao: 'manual',
+    combustivel: 'Flex',
+    passageiros: 5,
     tem_ar_condicionado: true,
     tem_direcao_hidraulica: true,
     tem_vidro_eletrico: true,
@@ -124,8 +127,11 @@ export default function VeiculosPage() {
       valor_veiculo: 0,
       tipo_operacao: 'ambos',
       status: 'disponivel',
+      fotos: [],
       foto_principal: '',
       transmissao: 'manual',
+      combustivel: 'Flex',
+      passageiros: 5,
       tem_ar_condicionado: true,
       tem_direcao_hidraulica: true,
       tem_vidro_eletrico: true,
@@ -548,7 +554,7 @@ export default function VeiculosPage() {
         <ShareVehicleModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
-          veiculo={vehicleToShare}
+          veiculo={vehicleToShare || undefined}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { X, Copy, Check, QrCode, MessageCircle, ShieldCheck, FileCode2 } from 'lucide-react';
 import { formatCurrency } from '@/react-app/utils/formatters';
 import { generatePixPayload } from '@/react-app/utils/pix';

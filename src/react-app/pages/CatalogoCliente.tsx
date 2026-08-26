@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Car, Search, Sparkles, Share2, 
   MessageCircle, Snowflake, Gauge, CheckCircle2,
@@ -8,11 +8,9 @@ import { supabase } from '@/react-app/supabase';
 import { formatCurrency } from '@/react-app/utils/formatters';
 import ShareVehicleModal from '@/react-app/components/ShareVehicleModal';
 import { useNetworkReconnect } from '@/react-app/hooks/useNetworkReconnect';
-import { useAuth } from '@/react-app/contexts/AuthContext';
 import type { Veiculo, SolicitacaoReserva, ConfiguracaoEmpresa } from '@/shared/types';
 
 export default function CatalogoClientePage() {
-  const { perfil, user } = useAuth();
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -208,10 +206,9 @@ export default function CatalogoClientePage() {
 
     try {
       // 1. Cadastra cliente se não existir
-      let clienteId: number | null = null;
       if (reservaForm.cliente_nome) {
         try {
-          const { data: newClient } = await supabase.from('clientes').insert([{
+          await supabase.from('clientes').insert([{
             nome: reservaForm.cliente_nome,
             documento: reservaForm.cliente_cpf || '000.000.000-00',
             celular: reservaForm.cliente_telefone || '',
@@ -223,7 +220,6 @@ export default function CatalogoClientePage() {
             cep: reservaForm.cep || '79950-000',
             tipo_documento: 'CPF'
           }]).select().single();
-          if (newClient) clienteId = newClient.id;
         } catch (clientErr) {
           console.log('Cliente já existe ou registrado:', clientErr);
         }

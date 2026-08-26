@@ -73,7 +73,7 @@ export default function Manutencao() {
     total: number;
   }>('/api/manutencoes');
 
-  const { data: veiculos } = useApi<Veiculo[]>('/api/veiculos');
+  const { data: veiculos, loading: loadingVeiculos } = useApi<Veiculo[]>('/api/veiculos');
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -87,6 +87,11 @@ export default function Manutencao() {
   const [submitting, setSubmitting] = useState(false);
   const [showResumo, setShowResumo] = useState(false);
   const [tipoPersonalizado, setTipoPersonalizado] = useState('');
+
+  const listaManutencoes: Manutencao[] = Array.isArray(manutencoes)
+    ? (manutencoes as any)
+    : (manutencoes?.data || []);
+  const resumoMap: Record<string, ResumoVeiculo> = (manutencoes as any)?.resumoPorVeiculo || {};
 
   const formatarData = (data: string) => {
     if (!data) return '';
@@ -264,29 +269,29 @@ export default function Manutencao() {
       </div>
 
       {/* Resumo por Veículo */}
-      {showResumo && manutencoes?.resumoPorVeiculo && (
+      {showResumo && Object.keys(resumoMap).length > 0 && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Car className="h-5 w-5" />
             Resumo de Gastos por Veículo
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.values(manutencoes.resumoPorVeiculo).map((resumo) => (
-              <div key={resumo.veiculo.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            {Object.values(resumoMap).map((resumo) => (
+              <div key={resumo.veiculo?.id || Math.random()} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900">
-                    {resumo.veiculo.marca} {resumo.veiculo.modelo}
+                    {resumo.veiculo?.marca || 'Veículo'} {resumo.veiculo?.modelo || ''}
                   </h3>
-                  <span className="text-sm text-gray-500">{resumo.veiculo.placa}</span>
+                  <span className="text-sm text-gray-500">{resumo.veiculo?.placa || '-'}</span>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Gasto:</span>
-                    <span className="font-semibold text-green-600">{formatCurrency(resumo.total)}</span>
+                    <span className="font-semibold text-green-600">{formatCurrency(resumo.total || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Manutenções:</span>
-                    <span className="font-semibold">{resumo.quantidade}</span>
+                    <span className="font-semibold">{resumo.quantidade || 0}</span>
                   </div>
                 </div>
               </div>
@@ -441,11 +446,11 @@ export default function Manutencao() {
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="px-4 md:px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            Histórico de Manutenções ({manutencoes?.total || 0})
+            Histórico de Manutenções ({listaManutencoes.length})
           </h2>
         </div>
 
-        {manutencoes?.data && manutencoes.data.length > 0 ? (
+        {listaManutencoes.length > 0 ? (
           <>
             {/* Layout para Desktop */}
             <div className="hidden md:block overflow-x-auto">
@@ -473,7 +478,7 @@ export default function Manutencao() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {manutencoes.data.map((manutencao) => (
+                  {listaManutencoes.map((manutencao) => (
                     <tr key={manutencao.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex items-center gap-2">
@@ -490,9 +495,9 @@ export default function Manutencao() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="font-medium">
-                              {manutencao.veiculos.marca} {manutencao.veiculos.modelo}
+                              {manutencao.veiculos?.marca || 'Veículo'} {manutencao.veiculos?.modelo || ''}
                             </div>
-                            <div className="text-gray-500 text-xs">{manutencao.veiculos.placa}</div>
+                            <div className="text-gray-500 text-xs">{manutencao.veiculos?.placa || '-'}</div>
                           </div>
                         </div>
                       </td>
@@ -543,7 +548,7 @@ export default function Manutencao() {
 
             {/* Layout para Mobile */}
             <div className="md:hidden">
-              {manutencoes.data.map((manutencao) => (
+              {listaManutencoes.map((manutencao) => (
                 <div key={manutencao.id} className="border-b border-gray-200 p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-2">
@@ -579,9 +584,9 @@ export default function Manutencao() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-gray-900">
-                          {manutencao.veiculos.marca} {manutencao.veiculos.modelo}
+                          {manutencao.veiculos?.marca || 'Veículo'} {manutencao.veiculos?.modelo || ''}
                         </div>
-                        <div className="text-gray-500 text-xs">{manutencao.veiculos.placa}</div>
+                        <div className="text-gray-500 text-xs">{manutencao.veiculos?.placa || '-'}</div>
                       </div>
                     </div>
                     

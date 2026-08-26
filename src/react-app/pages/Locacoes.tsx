@@ -484,7 +484,7 @@ export default function LocacoesPage() {
                   <div>
                     <ClientSelectModal
                       selectedClientId={formData.cliente_id}
-                      onSelectClient={(cliente) => setFormData({ ...formData, cliente_id: cliente.id })}
+                      onSelectClient={(cliente) => setFormData({ ...formData, cliente_id: cliente.id || 0 })}
                       clientes={clientes || []}
                       loading={loadingClientes}
                       label="Cliente *"
@@ -495,7 +495,7 @@ export default function LocacoesPage() {
                   <div>
                     <VehicleSelectModal
                       selectedVehicleId={formData.veiculo_id}
-                      onSelectVehicle={(veiculo) => handleVeiculoChange(veiculo.id)}
+                      onSelectVehicle={(veiculo) => handleVeiculoChange(veiculo.id || 0)}
                       veiculos={veiculosDisponiveis || []}
                       loading={loadingVeiculos}
                       label="Veículo *"

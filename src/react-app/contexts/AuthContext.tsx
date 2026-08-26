@@ -65,10 +65,11 @@ const MASTER_ADMIN_EMAILS = [
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [currentRole, setCurrentRole] = useState<UserRole | 'visitante'>('visitante');
-  const [loading, setLoading] = useState(true);
+  const initialSession = getStoredSession();
+  const [user, setUser] = useState<any | null>(() => initialSession?.user || null);
+  const [perfil, setPerfil] = useState<Perfil | null>(() => initialSession?.perfil || null);
+  const [currentRole, setCurrentRole] = useState<UserRole | 'visitante'>(() => initialSession?.role || 'visitante');
+  const [loading, setLoading] = useState(!initialSession?.user);
 
   const fetchProfileForUser = async (authUser: any) => {
     if (!authUser || !authUser.email) return;
@@ -130,16 +131,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(session.user);
           await fetchProfileForUser(session.user);
         } else {
-          setUser(null);
-          setPerfil(null);
-          setCurrentRole('visitante');
-          saveSessionToStorage(null, null, 'visitante');
+          const stored = getStoredSession();
+          if (!stored?.user) {
+            setUser(null);
+            setPerfil(null);
+            setCurrentRole('visitante');
+            saveSessionToStorage(null, null, 'visitante');
+          }
         }
       } catch (err) {
         console.warn('Erro ao inicializar sessão:', err);
-        setUser(null);
-        setPerfil(null);
-        setCurrentRole('visitante');
       } finally {
         setLoading(false);
       }
@@ -148,11 +149,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     initSession();
 
     // 2. Escutar mudanças de autenticação
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
         void fetchProfileForUser(session.user);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setPerfil(null);
         setCurrentRole('visitante');
@@ -266,14 +267,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       // 2. Salvar na tabela clientes
-      await supabase.from('clientes').insert([{
-        nome: data.nome,
-        documento: data.cpf_cnpj,
-        tipo_documento: data.cpf_cnpj.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF',
-        celular: data.telefone,
-        email: cleanEmail,
-        endereco: 'Cadastrado via App'
-      }]).catch(() => {});
+      try {
+        await supabase.from('clientes').insert([{
+          nome: data.nome,
+          documento: data.cpf_cnpj,
+          tipo_documento: data.cpf_cnpj.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF',
+          celular: data.telefone,
+          email: cleanEmail,
+          endereco: 'Cadastrado via App'
+        }]);
+      } catch (errCli) {
+        console.warn('Aviso ao inserir cliente:', errCli);
+      }
 
       // 3. Salvar perfil como cliente
       const clientPerfil: Perfil = {
@@ -284,7 +289,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ativo: true
       };
 
-      await supabase.from('perfis').upsert([clientPerfil], { onConflict: 'email' }).catch(() => {});
+      try {
+        await supabase.from('perfis').upsert([clientPerfil], { onConflict: 'email' });
+      } catch (errPerf) {
+        console.warn('Aviso ao inserir perfil:', errPerf);
+      }
 
       setUser(authData.user);
       setPerfil(clientPerfil);

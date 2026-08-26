@@ -21,6 +21,7 @@ export default async function handler(request, response) {
     origin.startsWith('http://localhost') || 
     origin.startsWith('http://127.0.0.1') || 
     origin.endsWith('.vercel.app') || 
+    origin.includes('oliveiraaluguelcarros.com.br') ||
     origin.startsWith('capacitor://') || 
     origin.startsWith('https://localhost');
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, Car, X, Check, ChevronRight } from 'lucide-react';
 import type { Veiculo } from '@/shared/types';
 import { formatCurrency } from '@/react-app/utils/formatters';

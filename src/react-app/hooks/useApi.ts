@@ -8,9 +8,9 @@ interface UseApiOptions {
 }
 
 // Helper com timeout para evitar travamentos em conexões móveis
-const withTimeout = <T>(promise: Promise<T>, ms: number = 9000): Promise<T> => {
+const withTimeout = <T>(promise: PromiseLike<T> | Promise<T>, ms: number = 9000): Promise<T> => {
   return Promise.race([
-    promise,
+    Promise.resolve(promise),
     new Promise<T>((_, reject) =>
       setTimeout(() => reject(new Error('Tempo limite excedido na consulta')), ms)
     )
@@ -266,12 +266,30 @@ async function executeSupabaseQuery(url: string): Promise<any> {
 
   // 7. Manutenções
   if (cleanUrl.includes('/api/manutencoes')) {
-    const { data, error } = await withTimeout(supabase.from('manutencoes').select('*, veiculos(*)').order('created_at', { ascending: false }));
+    const { data, error } = await withTimeout<any>(
+      supabase.from('manutencoes').select('*, veiculos(*)').order('data_manutencao', { ascending: false })
+    );
     if (error) {
       console.warn('Erro ao buscar manutenções:', error);
       throw new Error(error.message);
     }
-    return data || [];
+    const resumoPorVeiculo: Record<string, any> = {};
+    (data || []).forEach((m: any) => {
+      if (m.veiculos) {
+        const vId = m.veiculo_id;
+        if (!resumoPorVeiculo[vId]) {
+          resumoPorVeiculo[vId] = { veiculo: m.veiculos, total: 0, quantidade: 0 };
+        }
+        resumoPorVeiculo[vId].total += Number(m.valor || 0);
+        resumoPorVeiculo[vId].quantidade += 1;
+      }
+    });
+
+    return {
+      data: data || [],
+      resumoPorVeiculo,
+      total: (data || []).length
+    };
   }
 
   // 8. Movimentações Financeiras
@@ -567,20 +585,24 @@ export function useMutation<TData, TVariables = any>() {
           }
 
           // Vistoria inicial (melhor esforço no fallback; usa as colunas reais da tabela)
-          await supabase.from('vistorias').insert([{
-            veiculo_id: vars.veiculo_id,
-            locacao_id: novaLocacao.id,
-            cliente_id: vars.cliente_id,
-            tipo_vistoria: 'saida',
-            placa: 'N/D',
-            modelo: 'N/D',
-            cor: 'N/D',
-            quilometragem: 0,
-            nivel_combustivel: 'cheio',
-            nome_vistoriador: 'Sistema',
-            observacoes: 'Vistoria inicial de entrega gerada automaticamente.',
-            data_vistoria: new Date().toISOString()
-          }]).catch(e => console.warn('Aviso na vistoria inicial:', e));
+          try {
+            await supabase.from('vistorias').insert([{
+              veiculo_id: vars.veiculo_id,
+              locacao_id: novaLocacao.id,
+              cliente_id: vars.cliente_id,
+              tipo_vistoria: 'saida',
+              placa: 'N/D',
+              modelo: 'N/D',
+              cor: 'N/D',
+              quilometragem: 0,
+              nivel_combustivel: 'cheio',
+              nome_vistoriador: 'Sistema',
+              observacoes: 'Vistoria inicial de entrega gerada automaticamente.',
+              data_vistoria: new Date().toISOString()
+            }]);
+          } catch (e) {
+            console.warn('Aviso na vistoria inicial:', e);
+          }
 
           return novaLocacao as any;
         } else if (method === 'PUT') {

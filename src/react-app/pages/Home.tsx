@@ -94,7 +94,7 @@ export default function Home() {
 
           <div className="border-b-2 border-dashed border-amber-500/30 my-4" />
 
-          {currentStats.locacoesVencidas > 0 ? (
+          {(currentStats.locacoesVencidas || 0) > 0 ? (
             <div 
               onClick={() => navigate('/locacoes?status=vencida')}
               className="bg-[#161a22] border border-amber-500/80 rounded-xl p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-amber-950/30 transition-all shadow-lg active:scale-98 group"
@@ -133,7 +133,7 @@ export default function Home() {
             </p>
           </div>
 
-          {currentStats.locacoesVencidas > 0 ? (
+          {(currentStats.locacoesVencidas || 0) > 0 ? (
             <div 
               onClick={() => navigate('/locacoes?status=vencida')}
               className="bg-[#1c1109] border border-amber-600/70 rounded-xl p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-[#25160b] transition-all shadow-lg active:scale-98 group"
@@ -201,7 +201,7 @@ export default function Home() {
         />
         <DashboardCard
           title={isGold ? "SALDO DO CAIXA" : "Saldo do Caixa"}
-          value={formatCurrency(currentStats.saldoCaixa)}
+          value={formatCurrency(currentStats.saldoCaixa || 0)}
           icon={Wallet}
           color={isGold ? "yellow" : "red"}
           subtitle="disponível em caixa"
