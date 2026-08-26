@@ -228,58 +228,62 @@ export default function Manutencao() {
   if (error) return <ErrorMessage message={`Erro ao carregar manutenções: ${error}`} />;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
-        <div className="flex items-center">
-          <Wrench className="h-8 w-8 text-blue-600 mr-3" />
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-[#0f1422] border border-slate-800/80 rounded-2xl p-4 sm:p-6 shadow-xl">
+        <div className="flex items-center space-x-3.5">
+          <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-inner">
+            <Wrench className="h-6 w-6" />
+          </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Manutenção de Veículos</h1>
-            <p className="text-gray-600 mt-1 text-sm md:text-base">Gerencie os gastos de manutenção da sua frota</p>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">Manutenção de Veículos</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Gerencie todos os gastos e revisões da sua frota</p>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowResumo(!showResumo)}
-            className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="bg-slate-900 border border-slate-700/80 hover:bg-slate-800 text-slate-200 px-3.5 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 text-xs font-bold"
           >
-            <FileText className="h-4 w-4" />
-            <span className="font-medium">{showResumo ? 'Ocultar' : 'Ver'} Resumo</span>
+            <FileText className="h-4 w-4 text-amber-400" />
+            <span>{showResumo ? 'Ocultar' : 'Ver'} Resumo</span>
           </button>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-95 text-xs"
           >
-            <Plus className="h-4 w-4" />
-            <span className="font-medium">Nova Manutenção</span>
+            <Plus className="h-4 w-4 stroke-[3]" />
+            <span>Nova Manutenção</span>
           </button>
         </div>
       </div>
 
       {/* Resumo por Veículo */}
       {showResumo && Object.keys(resumoMap).length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Car className="h-5 w-5" />
-            Resumo de Gastos por Veículo
+        <div className="bg-[#0f1422] border border-slate-800/80 rounded-2xl shadow-xl p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-black text-white mb-4 flex items-center gap-2">
+            <Car className="h-5 w-5 text-amber-400" />
+            <span>Resumo de Gastos por Veículo</span>
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {Object.values(resumoMap).map((resumo) => (
-              <div key={resumo.veiculo?.id || Math.random()} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">
+              <div key={resumo.veiculo?.id || Math.random()} className="bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 transition-all shadow-md">
+                <div className="flex items-center justify-between mb-2.5">
+                  <h3 className="font-bold text-white text-sm truncate pr-2">
                     {resumo.veiculo?.marca || 'Veículo'} {resumo.veiculo?.modelo || ''}
                   </h3>
-                  <span className="text-sm text-gray-500">{resumo.veiculo?.placa || '-'}</span>
+                  <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex-shrink-0">
+                    {resumo.veiculo?.placa || '-'}
+                  </span>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Gasto:</span>
-                    <span className="font-semibold text-green-600">{formatCurrency(resumo.total || 0)}</span>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Total Gasto:</span>
+                    <span className="font-black text-emerald-400 font-mono text-sm">{formatCurrency(resumo.total || 0)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Manutenções:</span>
-                    <span className="font-semibold">{resumo.quantidade || 0}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Manutenções:</span>
+                    <span className="font-bold text-slate-200">{resumo.quantidade || 0}</span>
                   </div>
                 </div>
               </div>
@@ -288,24 +292,25 @@ export default function Manutencao() {
         </div>
       )}
 
-      {/* Formulário */}
+      {/* Formulário Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 md:p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg md:text-xl font-semibold text-gray-900">
-                  {editingId ? 'Editar Manutenção' : 'Nova Manutenção'}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-[#0f1422] border border-slate-700/80 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex justify-between items-center pb-4 mb-5 border-b border-slate-800">
+                <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                  <Wrench className="h-5 w-5 text-amber-400" />
+                  <span>{editingId ? 'Editar Manutenção' : 'Nova Manutenção'}</span>
                 </h2>
                 <button
                   onClick={resetForm}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                  className="text-slate-400 hover:text-white p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 transition-colors"
                 >
-                  <X className="h-5 w-5 md:h-6 md:w-6" />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Veículo */}
                 <div>
                   <VehicleSelectModal
@@ -320,8 +325,8 @@ export default function Manutencao() {
 
                 {/* Data */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="inline h-4 w-4 mr-1" />
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    <Calendar className="inline h-3.5 w-3.5 mr-1 text-amber-400" />
                     Data da Manutenção *
                   </label>
                   <input
@@ -330,25 +335,25 @@ export default function Manutencao() {
                     value={formData.data_manutencao}
                     onChange={(e) => setFormData({ ...formData, data_manutencao: e.target.value })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs sm:text-sm font-medium"
                   />
                 </div>
 
                 {/* Tipo de Manutenção */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Wrench className="inline h-4 w-4 mr-1" />
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    <Wrench className="inline h-3.5 w-3.5 mr-1 text-amber-400" />
                     Tipo de Manutenção *
                   </label>
                   <select
                     value={formData.tipo_manutencao}
                     onChange={(e) => setFormData({ ...formData, tipo_manutencao: e.target.value })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white focus:outline-none focus:border-amber-500 text-xs sm:text-sm font-medium"
                   >
-                    <option value="">Selecione o tipo</option>
+                    <option value="" className="bg-slate-900 text-slate-400">Selecione o tipo</option>
                     {tiposManutencao.map((tipo) => (
-                      <option key={tipo} value={tipo}>
+                      <option key={tipo} value={tipo} className="bg-slate-900 text-white">
                         {tipo}
                       </option>
                     ))}
@@ -358,8 +363,8 @@ export default function Manutencao() {
                 {/* Campo personalizado para "Outros" */}
                 {formData.tipo_manutencao === 'Outros' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Wrench className="inline h-4 w-4 mr-1" />
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                      <Wrench className="inline h-3.5 w-3.5 mr-1 text-amber-400" />
                       Especifique o tipo de manutenção *
                     </label>
                     <input
@@ -368,15 +373,15 @@ export default function Manutencao() {
                       onChange={(e) => setTipoPersonalizado(e.target.value)}
                       placeholder="Digite o tipo de manutenção..."
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs sm:text-sm font-medium"
                     />
                   </div>
                 )}
 
                 {/* Valor */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <DollarSign className="inline h-4 w-4 mr-1" />
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    <DollarSign className="inline h-3.5 w-3.5 mr-1 text-emerald-400" />
                     Valor (R$) *
                   </label>
                   <input
@@ -387,14 +392,14 @@ export default function Manutencao() {
                     onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                     required
                     placeholder="0,00"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs sm:text-sm font-black font-mono"
                   />
                 </div>
 
                 {/* Descrição */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <FileText className="inline h-4 w-4 mr-1" />
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    <FileText className="inline h-3.5 w-3.5 mr-1 text-slate-400" />
                     Observações
                   </label>
                   <textarea
@@ -402,26 +407,26 @@ export default function Manutencao() {
                     onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                     rows={3}
                     placeholder="Observações adicionais sobre a manutenção..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm md:text-base resize-none"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs sm:text-sm font-medium resize-none"
                   />
                 </div>
 
                 {/* Botões */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-6">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-blue-400 disabled:to-blue-500 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none font-medium"
-                  >
-                    <Save className="h-4 w-4" />
-                    {submitting ? 'Salvando...' : 'Salvar'}
-                  </button>
+                <div className="flex gap-2.5 pt-3">
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+                    className="flex-1 py-2.5 px-4 border border-slate-700 text-slate-300 bg-slate-900/80 hover:bg-slate-800 rounded-xl font-bold text-xs transition-all"
                   >
                     Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black text-xs font-black rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{submitting ? 'Salvando...' : 'Salvar'}</span>
                   </button>
                 </div>
               </form>
@@ -431,10 +436,13 @@ export default function Manutencao() {
       )}
 
       {/* Lista de Manutenções */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-4 md:px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Histórico de Manutenções ({listaManutencoes.length})
+      <div className="bg-[#0f1422] border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+          <h2 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+            <span>Histórico de Manutenções</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-mono font-bold border border-amber-500/30">
+              {listaManutencoes.length}
+            </span>
           </h2>
         </div>
 
@@ -442,89 +450,89 @@ export default function Manutencao() {
           <>
             {/* Layout para Desktop */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-slate-800">
+                <thead className="bg-slate-900/80">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Data
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Veículo
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Tipo
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Valor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Observações
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-right text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-800/60 bg-transparent">
                   {listaManutencoes.map((manutencao) => (
-                    <tr key={manutencao.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <tr key={manutencao.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-slate-200">
                         <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                            <Calendar className="h-4 w-4 text-white" />
+                          <div className="p-1.5 bg-blue-500/15 border border-blue-500/30 text-blue-400 rounded-lg">
+                            <Calendar className="h-3.5 w-3.5" />
                           </div>
-                          <span>{formatarData(manutencao.data_manutencao)}</span>
+                          <span className="font-semibold">{formatarData(manutencao.data_manutencao)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg">
-                            <Car className="h-4 w-4 text-white" />
+                      <td className="px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-slate-200">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg">
+                            <Car className="h-3.5 w-3.5" />
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-medium">
+                          <div className="min-w-0">
+                            <div className="font-bold text-white">
                               {manutencao.veiculos?.marca || 'Veículo'} {manutencao.veiculos?.modelo || ''}
                             </div>
-                            <div className="text-gray-500 text-xs">{manutencao.veiculos?.placa || '-'}</div>
+                            <div className="font-mono text-[11px] text-amber-400/90 font-bold">{manutencao.veiculos?.placa || '-'}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs sm:text-sm">
                         <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
-                            <Wrench className="h-4 w-4 text-white" />
+                          <div className="p-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-lg">
+                            <Wrench className="h-3.5 w-3.5" />
                           </div>
-                          <span>{manutencao.tipo_manutencao}</span>
+                          <span className="font-semibold text-slate-200">{manutencao.tipo_manutencao}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-mono">
                         <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg">
-                            <DollarSign className="h-4 w-4 text-white" />
+                          <div className="p-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg">
+                            <DollarSign className="h-3.5 w-3.5" />
                           </div>
-                          <span className="font-semibold text-green-600">
+                          <span className="font-black text-emerald-400 text-sm">
                             {formatCurrency(manutencao.valor)}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      <td className="px-6 py-4 text-xs text-slate-400 max-w-xs truncate">
                         {manutencao.descricao || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-medium">
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleEdit(manutencao)}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
+                            className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                             title="Editar"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(manutencao.id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
+                            className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                             title="Excluir"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>
@@ -534,72 +542,74 @@ export default function Manutencao() {
               </table>
             </div>
 
-            {/* Layout para Mobile */}
-            <div className="md:hidden">
+            {/* Layout para Mobile (Cards Escuros) */}
+            <div className="md:hidden divide-y divide-slate-800/80">
               {listaManutencoes.map((manutencao) => (
-                <div key={manutencao.id} className="border-b border-gray-200 p-4 hover:bg-gray-50">
-                  <div className="flex justify-between items-start mb-3">
+                <div key={manutencao.id} className="p-4 hover:bg-slate-800/20 transition-all space-y-3">
+                  <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                        <Calendar className="h-4 w-4 text-white" />
+                      <div className="p-1.5 bg-blue-500/15 border border-blue-500/30 text-blue-400 rounded-lg">
+                        <Calendar className="h-3.5 w-3.5" />
                       </div>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-xs sm:text-sm font-black text-white">
                         {formatarData(manutencao.data_manutencao)}
                       </span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       <button
                         onClick={() => handleEdit(manutencao)}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
+                        className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                         title="Editar"
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Edit2 className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(manutencao.id)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
+                        className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         title="Excluir"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg">
-                        <Car className="h-4 w-4 text-white" />
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2.5 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/60">
+                      <div className="p-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg flex-shrink-0">
+                        <Car className="h-3.5 w-3.5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-gray-900">
+                        <div className="font-bold text-white text-xs sm:text-sm truncate">
                           {manutencao.veiculos?.marca || 'Veículo'} {manutencao.veiculos?.modelo || ''}
                         </div>
-                        <div className="text-gray-500 text-xs">{manutencao.veiculos?.placa || '-'}</div>
+                        <div className="font-mono text-[11px] text-amber-400/90 font-bold mt-0.5">
+                          {manutencao.veiculos?.placa || '-'}
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
-                        <Wrench className="h-4 w-4 text-white" />
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="p-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-lg">
+                          <Wrench className="h-3 w-3" />
+                        </div>
+                        <span className="font-semibold text-slate-300">{manutencao.tipo_manutencao}</span>
                       </div>
-                      <span className="text-sm text-gray-900">{manutencao.tipo_manutencao}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg">
-                        <DollarSign className="h-4 w-4 text-white" />
+                      
+                      <div className="flex items-center gap-1.5">
+                        <div className="p-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg">
+                          <DollarSign className="h-3 w-3" />
+                        </div>
+                        <span className="font-black text-emerald-400 font-mono text-sm">
+                          {formatCurrency(manutencao.valor)}
+                        </span>
                       </div>
-                      <span className="font-semibold text-green-600">
-                        {formatCurrency(manutencao.valor)}
-                      </span>
                     </div>
                     
                     {manutencao.descricao && (
-                      <div className="flex items-start gap-2">
-                        <div className="p-1.5 bg-gradient-to-r from-gray-500 to-gray-600 rounded-lg">
-                          <FileText className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="text-sm text-gray-600">{manutencao.descricao}</span>
+                      <div className="flex items-start gap-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/70 text-slate-400 text-[11px] leading-relaxed">
+                        <FileText className="h-3.5 w-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
+                        <span>{manutencao.descricao}</span>
                       </div>
                     )}
                   </div>
@@ -608,16 +618,18 @@ export default function Manutencao() {
             </div>
           </>
         ) : (
-          <div className="text-center py-12">
-            <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma manutenção registrada</h3>
-            <p className="text-gray-500 mb-4">Comece registrando a primeira manutenção da sua frota.</p>
+          <div className="text-center py-12 px-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-3 shadow-inner">
+              <Wrench className="h-7 w-7" />
+            </div>
+            <h3 className="text-sm sm:text-base font-bold text-white mb-1">Nenhuma manutenção registrada</h3>
+            <p className="text-xs text-slate-400 mb-4 max-w-sm mx-auto">Comece registrando os serviços ou despesas da sua frota.</p>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black px-4 py-2.5 rounded-xl inline-flex items-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-95 text-xs"
             >
-              <Plus className="h-4 w-4" />
-              Registrar Primeira Manutenção
+              <Plus className="h-4 w-4 stroke-[3]" />
+              <span>Registrar Primeira Manutenção</span>
             </button>
           </div>
         )}
