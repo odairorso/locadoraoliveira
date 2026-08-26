@@ -315,11 +315,139 @@ async function executeSupabaseQuery(url: string): Promise<any> {
   return [];
 }
 
+// Mapeamento do checklist do formulário para as colunas reais da tabela vistorias.
+// Aceita tanto chaves normalizadas (ex.: 'chaveRoda', 'chave_de_roda') quanto os
+// rótulos exibidos no formulário (ex.: 'Chave de Roda', 'Som/Sistema de áudio').
+const VISTORIA_CHECKLIST_MAP: Record<string, string> = {
+  // rótulos do formulário (VistoriaForm)
+  'Calota': 'item_calota',
+  'Pneus (estado geral)': 'item_pneu',
+  'Pneu': 'item_pneu',
+  'Antena': 'item_antena',
+  'Bateria': 'item_bateria',
+  'Estepe': 'item_estepe',
+  'Macaco': 'item_macaco',
+  'Chave de Roda': 'item_chave_roda',
+  'Triângulo': 'item_triangulo',
+  'Triangulo': 'item_triangulo',
+  'Extintor': 'item_extintor',
+  'Tapetes': 'item_tapetes',
+  'Som/Sistema de áudio': 'item_som',
+  'Som': 'item_som',
+  'Documentos do veículo': 'item_documentos',
+  'Documentos': 'item_documentos',
+  'Veículo higienizado': 'item_higienizacao',
+  'Veiculo higienizado': 'item_higienizacao',
+  // chaves normalizadas usadas por outras telas
+  'calota': 'item_calota',
+  'pneu': 'item_pneu',
+  'pneus': 'item_pneu',
+  'antena': 'item_antena',
+  'bateria': 'item_bateria',
+  'estepe': 'item_estepe',
+  'macaco': 'item_macaco',
+  'chaveRoda': 'item_chave_roda',
+  'chave_de_roda': 'item_chave_roda',
+  'triangulo': 'item_triangulo',
+  'extintor': 'item_extintor',
+  'tapetes': 'item_tapetes',
+  'som': 'item_som',
+  'som_sistema_de_audio': 'item_som',
+  'documentos': 'item_documentos',
+  'documentos_do_veiculo': 'item_documentos',
+  'higienizacao': 'item_higienizacao',
+  'veiculo_higienizado': 'item_higienizacao',
+};
+
+// Converte o payload camelCase do formulário de vistoria para as colunas
+// snake_case reais da tabela (mesmo mapeamento do antigo handler vistorias.mjs).
+function mapVistoriaPayloadToDb(vars: any, isUpdate = false) {
+  const db: Record<string, any> = {};
+
+  if (vars.clienteId !== undefined) db.cliente_id = parseInt(vars.clienteId, 10) || null;
+  if (vars.veiculoId !== undefined) db.veiculo_id = parseInt(vars.veiculoId, 10) || null;
+  if (vars.tipoVistoria !== undefined) db.tipo_vistoria = vars.tipoVistoria;
+  if (!isUpdate) db.data_vistoria = new Date().toISOString();
+  if (vars.quilometragem !== undefined) db.quilometragem = vars.quilometragem ?? null;
+  if (vars.combustivel !== undefined) db.nivel_combustivel = vars.combustivel ?? null;
+  if (vars.condutor !== undefined) db.nome_condutor = vars.condutor ?? '';
+  if (vars.rgCondutor !== undefined) db.rg_condutor = vars.rgCondutor ?? null;
+  if (vars.placa !== undefined) db.placa = vars.placa ?? null;
+  if (vars.modelo !== undefined) db.modelo = vars.modelo ?? null;
+  if (vars.cor !== undefined) db.cor = vars.cor ?? null;
+  if (vars.observacoes !== undefined) db.observacoes = vars.observacoes ?? null;
+  if (vars.avariasJson !== undefined) db.avarias = typeof vars.avariasJson === 'string' ? vars.avariasJson : JSON.stringify(vars.avariasJson ?? null);
+  if (vars.assinaturaClienteUrl !== undefined) db.assinatura_cliente = vars.assinaturaClienteUrl ?? null;
+  if (vars.assinaturaVistoriadorUrl !== undefined) db.assinatura_vistoriador = vars.assinaturaVistoriadorUrl ?? null;
+  if (vars.nomeVistoriador !== undefined) db.nome_vistoriador = vars.nomeVistoriador ?? null;
+  if (vars.locacaoId !== undefined) db.locacao_id = parseInt(vars.locacaoId, 10) || null;
+  if (vars.fotos !== undefined) {
+    const fotos = Array.isArray(vars.fotos) ? vars.fotos.map((f: any) => f?.preview || f) : [];
+    db.fotos = JSON.stringify(fotos);
+  }
+
+  if (vars.checklist && typeof vars.checklist === 'object') {
+    Object.entries(VISTORIA_CHECKLIST_MAP).forEach(([frontKey, dbCol]) => {
+      const value = vars.checklist[frontKey];
+      if (value !== undefined && db[dbCol] === undefined) {
+        db[dbCol] = Boolean(value);
+      }
+    });
+  }
+
+  return db;
+}
+
+// Converte colunas item_* do banco de volta para o objeto checklist do formulário.
+export function mapVistoriaDbToChecklist(row: any): Record<string, boolean> {
+  const checklist: Record<string, boolean> = {};
+  const reverse: Record<string, string> = {
+    item_calota: 'Calota',
+    item_pneu: 'Pneus (estado geral)',
+    item_antena: 'Antena',
+    item_bateria: 'Bateria',
+    item_estepe: 'Estepe',
+    item_macaco: 'Macaco',
+    item_chave_roda: 'Chave de Roda',
+    item_triangulo: 'Triângulo',
+    item_extintor: 'Extintor',
+    item_tapetes: 'Tapetes',
+    item_som: 'Som/Sistema de áudio',
+    item_documentos: 'Documentos do veículo',
+    item_higienizacao: 'Veículo higienizado',
+  };
+  Object.entries(reverse).forEach(([dbCol, label]) => {
+    if (row && typeof row[dbCol] === 'boolean') {
+      checklist[label] = row[dbCol];
+    }
+  });
+  return checklist;
+}
+
 // Cache de dados no localStorage para exibir imediatamente ao navegar
 const CACHE_PREFIX = 'oliveira_cache_';
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
 
+// Endpoints com PII/dados sensíveis NUNCA são cacheados no localStorage
+// (o cache é compartilhado entre usuários do mesmo aparelho e permanece
+// após logout). Apenas dados públicos/de apresentação são cacheáveis.
+const SENSITIVE_CACHE_PATTERNS = [
+  '/api/clientes',
+  '/api/locacoes',
+  '/api/movimentacoes_financeiras',
+  '/api/vistorias',
+  '/api/manutencoes',
+  '/api/solicitacoes_reserva',
+  '/api/relatorios',
+];
+
+function isSensitiveUrl(url: string): boolean {
+  const clean = url.split('?')[0];
+  return SENSITIVE_CACHE_PATTERNS.some((p) => clean.includes(p));
+}
+
 function getCachedData<T>(url: string): T | null {
+  if (isSensitiveUrl(url)) return null;
   try {
     const key = CACHE_PREFIX + btoa(url).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
     const raw = localStorage.getItem(key);
@@ -344,6 +472,7 @@ function getCachedData<T>(url: string): T | null {
 function setCachedData<T>(url: string, data: T): void {
   try {
     if (!data) return;
+    if (isSensitiveUrl(url)) return; // nunca cachear PII/dados sensíveis
     // Não salvar estatísticas zeradas
     if (url.includes('/api/dashboard') && typeof data === 'object') {
       const d = data as any;
@@ -663,6 +792,28 @@ export function useMutation<TData, TVariables = any>() {
           }
 
           const { data, error } = await supabase.from('locacoes').delete().eq('id', id);
+          if (error) throw error;
+          return data as any;
+        }
+      }
+
+      // Mutação para Vistorias (o branch abaixo conserta o no-op silencioso:
+      // antes, '/api/vistorias' caía no `return null` e nada era gravado)
+      if (cleanUrl.includes('/api/vistorias')) {
+        if (method === 'POST') {
+          const payload = mapVistoriaPayloadToDb(variables);
+          const { data, error } = await supabase.from('vistorias').insert([payload]).select().single();
+          if (error) throw error;
+          return data as any;
+        } else if (method === 'PUT') {
+          const id = (variables as any)?.id || url.split('/').pop();
+          const payload = mapVistoriaPayloadToDb(variables, true);
+          const { data, error } = await supabase.from('vistorias').update(payload).eq('id', id).select().single();
+          if (error) throw error;
+          return data as any;
+        } else if (method === 'DELETE') {
+          const id = (variables as any)?.id || url.split('/').pop();
+          const { data, error } = await supabase.from('vistorias').delete().eq('id', id);
           if (error) throw error;
           return data as any;
         }

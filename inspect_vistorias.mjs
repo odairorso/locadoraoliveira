@@ -9,7 +9,7 @@ const supabase = createClient(url, anonKey);
 async function inspectVistorias() {
   await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
 
   const { data, error } = await supabase.from('vistorias').select('*').limit(1);

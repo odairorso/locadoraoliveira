@@ -32,7 +32,7 @@ async function runCompleteAudit() {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: 'odair.orso78@gmail.com',
-      password: 'Oliveira@2026'
+      password: process.env.TEST_ADMIN_PASSWORD || ''
     });
     if (error || !data.session) throw new Error(error?.message || 'Sem sessão');
     logPass('Autenticação Dono/Admin (odair.orso78@gmail.com)', `ID: ${data.user.id}`);
@@ -82,7 +82,7 @@ async function runCompleteAudit() {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: 'ricardo.oliveiraveiculos@gmail.com',
-      password: 'Oliveira@2026'
+      password: process.env.TEST_ADMIN_PASSWORD || ''
     });
     if (error || !data.session) throw new Error(error?.message || 'Sem sessão');
     logPass('Autenticação Funcionário (ricardo.oliveiraveiculos@gmail.com)', `ID: ${data.user.id}`);
@@ -95,7 +95,7 @@ async function runCompleteAudit() {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: 'lanjaturcibinda@gmail.com',
-      password: '123456'
+      password: process.env.TEST_CLIENT_PASSWORD || ''
     });
     if (error || !data.session) throw new Error(error?.message || 'Sem sessão');
     logPass('Autenticação Cliente (lanjaturcibinda@gmail.com)', `ID: ${data.user.id}`);

@@ -15,25 +15,41 @@ import manutencoesIdHandler from '../src/api-handlers/manutencoes-id.mjs';
 import vistoriasIdHandler from '../src/api-handlers/vistorias-id.mjs';
 
 export default async function handler(request, response) {
-  // Set CORS headers com restrição de origens autorizadas
-  const origin = request?.headers?.origin || request?.headers?.Origin;
-  const isAllowedOrigin = !origin || 
-    origin.startsWith('http://localhost') || 
-    origin.startsWith('http://127.0.0.1') || 
-    origin.endsWith('.vercel.app') || 
-    origin.includes('oliveiraaluguelcarros.com.br') ||
-    origin.startsWith('capacitor://') || 
-    origin.startsWith('https://localhost');
+  // CORS centralizado com allowlist de origens autorizadas.
+  // Nunca combinar Access-Control-Allow-Origin '*' com Allow-Credentials true.
+  const ALLOWED_HOSTS = new Set([
+    'oliveiraaluguelcarros.com.br',
+    'www.oliveiraaluguelcarros.com.br',
+    'locadora-oliveira.vercel.app',
+  ]);
 
-  if (isAllowedOrigin && origin) {
-    response.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (!origin) {
+  const origin = request?.headers?.origin || request?.headers?.Origin;
+
+  let isAllowedOrigin = false;
+  if (!origin) {
+    // Requisições sem Origin (curl, cron, etc.) são permitidas sem credenciais
     response.setHeader('Access-Control-Allow-Origin', '*');
+  } else {
+    let host = null;
+    try { host = new URL(origin).hostname; } catch { host = null; }
+
+    const isDevLocal =
+      origin.startsWith('http://localhost') ||
+      origin.startsWith('http://127.0.0.1') ||
+      origin.startsWith('https://localhost');
+
+    const isCapacitor = origin === 'capacitor://localhost';
+
+    isAllowedOrigin = isDevLocal || isCapacitor || (host !== null && ALLOWED_HOSTS.has(host));
+
+    if (isAllowedOrigin) {
+      response.setHeader('Access-Control-Allow-Origin', origin);
+      response.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
   }
 
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info');
-  response.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (request.method === 'OPTIONS') {
     response.status(200).end();
@@ -118,8 +134,7 @@ export default async function handler(request, response) {
     console.error('Consolidated API Router Error:', error);
     return response.status(500).json({
       success: false,
-      error: 'Internal server error',
-      details: error.message
+      error: 'Internal server error'
     });
   }
 }

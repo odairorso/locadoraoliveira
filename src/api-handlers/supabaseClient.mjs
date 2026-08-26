@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
+// ATENÇÃO: este helper NÃO usa mais SUPABASE_SERVICE_ROLE_KEY.
+// Service role ignora o RLS — nunca deve ser usada em handler público.
+// A segurança é garantida pelo RLS do Supabase (papel anon/authenticated)
+// com o JWT do usuário repassado no header Authorization.
 export function getSupabaseClient(request) {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://uvqyxpwlgltnskjdbwzt.supabase.co';
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2cXl4cHdsZ2x0bnNramRid3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTI4OTksImV4cCI6MjA2OTk4ODg5OX0.2T78AVlCA7EQzuhhQFGTx4J8PQr9BhXO6H-b-Sdrvl0';
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   const authHeader = request?.headers?.authorization || request?.headers?.Authorization;
 

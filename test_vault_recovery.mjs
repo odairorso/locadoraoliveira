@@ -10,7 +10,7 @@ async function testBulletproofSession() {
   console.log('=== 1. Testando login inicial ===');
   const { data: s1, error: e1 } = await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
   console.log('Login 1:', !!s1?.session, e1?.message);
 
@@ -20,7 +20,7 @@ async function testBulletproofSession() {
   console.log('Sessao apos signOut (esperado null):', sNull?.session);
 
   console.log('=== 3. Auto-reconexao com credenciais do Vault ===');
-  const vault = { email: 'odair.orso78@gmail.com', pass: 'Oliveira@2026' };
+  const vault = { email: 'odair.orso78@gmail.com', pass: process.env.TEST_ADMIN_PASSWORD || '' };
   const { data: sRecover, error: eRecover } = await supabase.auth.signInWithPassword({
     email: vault.email,
     password: vault.pass

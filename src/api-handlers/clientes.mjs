@@ -35,7 +35,17 @@ async function detectColumns(supabase) {
 }
 
 function normalizePayloadForSchema(body, { docColumn, tipoField }) {
-  const payload = { ...body };
+  // Whitelist de campos (evita mass assignment: id, created_at etc. nunca
+  // devem vir do corpo da requisição)
+  const ALLOWED_FIELDS = new Set([
+    'nome', 'celular', 'email', 'endereco', 'bairro', 'cidade', 'estado', 'cep',
+    'cpf_cnpj', 'cpf', 'documento', 'cnpj', 'tipo_pessoa', 'tipo_documento', 'user_id',
+  ]);
+
+  const payload = {};
+  Object.keys(body || {}).forEach((key) => {
+    if (ALLOWED_FIELDS.has(key)) payload[key] = body[key];
+  });
 
   // Normalizar documento para apenas dígitos
   const rawDoc = (payload.cpf_cnpj || '').toString();
@@ -89,9 +99,6 @@ function mapRowToFrontend(row, { docColumn, tipoField }) {
 
 export default async function handler(request, response) {
   // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (request.method === 'OPTIONS') {
     response.status(200).end();
@@ -224,6 +231,6 @@ export default async function handler(request, response) {
 
   } catch (error) {
     console.error("Erro na função clientes:", error);
-    return response.status(500).json({ success: false, error: "Erro interno do servidor.", details: error.message });
+    return response.status(500).json({ success: false, error: "Erro interno do servidor." });
   }
 }

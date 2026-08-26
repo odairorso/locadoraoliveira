@@ -2,9 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(request, response) {
   // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (request.method === 'OPTIONS') {
     response.status(200).end();
@@ -64,6 +62,6 @@ export default async function handler(request, response) {
 
   } catch (error) {
     console.error("Erro na função receita-por-veiculo:", error);
-    return response.status(500).json({ success: false, error: "Erro interno do servidor.", details: error.message });
+    return response.status(500).json({ success: false, error: "Erro interno do servidor." });
   }
 }

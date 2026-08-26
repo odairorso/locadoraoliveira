@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search } from 'lucide-react'; // Added Search icon for input
-import { useApi, useMutation } from '@/react-app/hooks/useApi'; // Import API hooks
+import { useApi, useMutation, mapVistoriaDbToChecklist } from '@/react-app/hooks/useApi'; // Import API hooks
+import { supabase } from '@/react-app/supabase';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'; // Import useNavigate, useSearchParams and useParams
 import CarDamageMap from '../components/CarDamageMap';
 import PhotoCapture from '../components/PhotoCapture';
@@ -77,15 +78,16 @@ const VistoriaForm: React.FC = () => {
   const debouncedClientSearch = useRef(debounce(async (term: string) => {
     if (term.length > 2) {
       try {
-        const response = await fetch(`/api/clientes?search=${encodeURIComponent(term)}`);
-        const result = await response.json();
-        if (result.success && result.data) {
-          setClientSearchResults(result.data);
-          setShowClientSuggestions(true);
-        } else {
-          setClientSearchResults([]);
-          setShowClientSuggestions(false);
-        }
+        // Consulta direta ao Supabase (respeita RLS e funciona no app Android,
+        // ao contrário do antigo fetch('/api/clientes') que rodava como anon)
+        const { data, error } = await supabase
+          .from('clientes')
+          .select('id, nome, telefone')
+          .or(`nome.ilike.%${term}%,documento.ilike.%${term}%,celular.ilike.%${term}%,email.ilike.%${term}%`)
+          .limit(20);
+        if (error) throw error;
+        setClientSearchResults(data || []);
+        setShowClientSuggestions(true);
       } catch (error) {
         console.error('Erro ao buscar clientes:', error);
         setClientSearchResults([]);
@@ -167,47 +169,52 @@ const VistoriaForm: React.FC = () => {
 
   const carregarDadosLocacao = async (locacaoId: string) => {
     try {
-      const response = await fetch(`/api/locacoes/${locacaoId}`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        const locacao = result.data;
+      const { data: locacao, error } = await supabase
+        .from('locacoes')
+        .select('*, clientes(nome, telefone), veiculos(marca, modelo, placa)')
+        .eq('id', parseInt(locacaoId, 10))
+        .maybeSingle();
+      if (error) throw error;
+      if (!locacao) {
+        console.error('Locação não encontrada:', locacaoId);
+        return;
+      }
 
-        setFormData(prev => ({
-          ...prev,
-          cliente: locacao.cliente_nome,
-          clienteId: locacao.cliente_id,
-          placa: locacao.veiculo_placa,
-          veiculoId: locacao.veiculo_id,
-          modelo: locacao.veiculo_modelo,
-          condutor: locacao.cliente_nome,
-          telefone: locacao.cliente_telefone,
-        }));
-        setClientSearchTerm(locacao.cliente_nome);
-        setVehicleSearchTerm(`${locacao.veiculo_modelo} - ${locacao.veiculo_placa}`);
+      setFormData(prev => ({
+        ...prev,
+        cliente: locacao.clientes?.nome || '',
+        clienteId: locacao.cliente_id,
+        placa: locacao.veiculos?.placa || '',
+        veiculoId: locacao.veiculo_id,
+        modelo: locacao.veiculos ? `${locacao.veiculos.marca || ''} ${locacao.veiculos.modelo || ''}`.trim() : '',
+        condutor: locacao.clientes?.nome || '',
+        telefone: locacao.clientes?.telefone || '',
+      }));
+      setClientSearchTerm(locacao.clientes?.nome || '');
+      setVehicleSearchTerm(`${locacao.veiculos?.marca || ''} ${locacao.veiculos?.modelo || ''} - ${locacao.veiculos?.placa || ''}`.trim());
 
-        const tipo = searchParams.get('tipo');
+      const tipo = searchParams.get('tipo');
 
-        if (tipo === 'saida') {
-          try {
-            const vistoriasResponse = await fetch(`/api/vistorias?veiculo_id=${locacao.veiculo_id}&tipo=entrada`);
-            const vistoriasResult = await vistoriasResponse.json();
+      if (tipo === 'saida') {
+        try {
+          const { data: vistorias } = await supabase
+            .from('vistorias')
+            .select('*')
+            .eq('veiculo_id', locacao.veiculo_id)
+            .eq('tipo_vistoria', 'entrada')
+            .order('created_at', { ascending: false });
 
-            if (vistoriasResult.success && vistoriasResult.data?.vistorias?.length > 0) {
-              const vistoriaEntrada = vistoriasResult.data.vistorias.find((v: any) => v.locacao_id === parseInt(locacaoId));
-              if (vistoriaEntrada) {
-                setFormData(prev => ({
-                  ...prev,
-                  quilometragem: vistoriaEntrada.quilometragem || '',
-                  combustivel: vistoriaEntrada.combustivel || 'vazio',
-                }));
-              }
-            }
-          } catch (error) {
-            console.error('Erro ao buscar vistoria de entrada:', error);
+          const vistoriaEntrada = (vistorias || []).find((v: any) => v.locacao_id === parseInt(locacaoId, 10));
+          if (vistoriaEntrada) {
+            setFormData(prev => ({
+              ...prev,
+              quilometragem: vistoriaEntrada.quilometragem || '',
+              combustivel: vistoriaEntrada.nivel_combustivel || 'vazio',
+            }));
           }
+        } catch (error) {
+          console.error('Erro ao buscar vistoria de entrada:', error);
         }
-      } else {
-        console.error('Erro ao carregar dados da locação:', result.error);
       }
     } catch (error) {
       console.error('Erro ao carregar dados da locação:', error);
@@ -217,15 +224,19 @@ const VistoriaForm: React.FC = () => {
   const carregarVeiculosLocados = async () => {
     setLoadingVeiculosLocados(true);
     try {
-      const response = await fetch('/api/locacoes?status=ativa');
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        setVeiculosLocados(result.data);
-        setShowVeiculosLocados(true);
-      } else {
-        console.error('Erro ao carregar veículos locados:', result.error);
-      }
+      const { data, error } = await supabase
+        .from('locacoes')
+        .select('*, clientes(nome, telefone), veiculos(marca, modelo, placa)')
+        .eq('status', 'ativa');
+      if (error) throw error;
+      setVeiculosLocados((data || []).map((l: any) => ({
+        ...l,
+        cliente_nome: l.clientes?.nome || 'Cliente não informado',
+        cliente_telefone: l.clientes?.telefone || '',
+        placa: l.veiculos?.placa || '',
+        modelo: l.veiculos ? `${l.veiculos.marca || ''} ${l.veiculos.modelo || ''}`.trim() : '',
+      })));
+      setShowVeiculosLocados(true);
     } catch (error) {
       console.error('Erro ao carregar veículos locados:', error);
     } finally {
@@ -235,23 +246,25 @@ const VistoriaForm: React.FC = () => {
 
   const carregarDadosVistoriaEntrada = async (entradaId: string) => {
     try {
-      const response = await fetch(`/api/vistorias/${entradaId}`);
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const vistoriaEntrada = result.data;
-        setFormData(prev => ({
-          ...prev,
-          cliente: vistoriaEntrada.cliente_nome || '',
-          clienteId: vistoriaEntrada.cliente_id,
-          placa: vistoriaEntrada.placa,
-          veiculoId: vistoriaEntrada.veiculo_id,
-          modelo: vistoriaEntrada.modelo,
-          telefone: vistoriaEntrada.telefone || '',
-        }));
-      } else {
-        console.error('Erro na resposta da API de vistoria de entrada:', result);
+      const { data: vistoriaEntrada, error } = await supabase
+        .from('vistorias')
+        .select('*, clientes(nome, telefone), veiculos(marca, modelo, placa)')
+        .eq('id', parseInt(entradaId, 10))
+        .maybeSingle();
+      if (error) throw error;
+      if (!vistoriaEntrada) {
+        console.error('Vistoria de entrada não encontrada:', entradaId);
+        return;
       }
+      setFormData(prev => ({
+        ...prev,
+        cliente: vistoriaEntrada.clientes?.nome || '',
+        clienteId: vistoriaEntrada.cliente_id,
+        placa: vistoriaEntrada.placa,
+        veiculoId: vistoriaEntrada.veiculo_id,
+        modelo: vistoriaEntrada.modelo,
+        telefone: vistoriaEntrada.clientes?.telefone || '',
+      }));
     } catch (error) {
       console.error('Erro ao carregar dados da vistoria de entrada:', error);
     }
@@ -259,17 +272,23 @@ const VistoriaForm: React.FC = () => {
 
   const carregarVistoriaSaidaParaComparacao = async (locacaoId: string) => {
     try {
-      const response = await fetch(`/api/vistorias?locacao_id=${locacaoId}&tipo=saida`);
-      const result = await response.json();
+      const { data: vistorias, error } = await supabase
+        .from('vistorias')
+        .select('*')
+        .eq('locacao_id', parseInt(locacaoId, 10))
+        .eq('tipo_vistoria', 'saida')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error) throw error;
 
-      if (result.success && result.data && result.data.length > 0) {
-        const vistoriaSaida = result.data[0];
+      if (vistorias && vistorias.length > 0) {
+        const vistoriaSaida = vistorias[0];
         setFormData(prev => ({
           ...prev,
           quilometragem: vistoriaSaida.quilometragem?.toString() || prev.quilometragem,
           combustivel: vistoriaSaida.nivel_combustivel || prev.combustivel,
-          checklist: vistoriaSaida.checklist || prev.checklist,
-          avarias: vistoriaSaida.avarias || prev.avarias,
+          checklist: mapVistoriaDbToChecklist(vistoriaSaida),
+          avarias: typeof vistoriaSaida.avarias === 'string' ? JSON.parse(vistoriaSaida.avarias) : (vistoriaSaida.avarias || []),
         }));
       }
     } catch (error) {
@@ -284,43 +303,52 @@ const VistoriaForm: React.FC = () => {
     if (isEditing && id) {
       const carregarVistoria = async () => {
         try {
-          const response = await fetch(`/api/vistorias/${id}`);
-          const result = await response.json();
+          const { data: vistoria, error } = await supabase
+            .from('vistorias')
+            .select('*, clientes(nome, telefone), veiculos(marca, modelo, placa, cor)')
+            .eq('id', parseInt(id, 10))
+            .maybeSingle();
+          if (error) throw error;
+          if (!vistoria) {
+            console.error('Vistoria não encontrada:', id);
+            return;
+          }
 
-          if (result.success && result.data) {
-            const vistoria = result.data;
-            const clienteNome = vistoria.clientes?.nome || '';
-            const veiculoPlaca = vistoria.veiculos?.placa || '';
-            const veiculoModelo = vistoria.veiculos?.modelo || '';
+          const fotosSalvas = typeof vistoria.fotos === 'string'
+            ? JSON.parse(vistoria.fotos || '[]')
+            : (Array.isArray(vistoria.fotos) ? vistoria.fotos : []);
 
-            setFormData({
-              cliente: clienteNome,
-              clienteId: vistoria.cliente_id,
-              placa: veiculoPlaca,
-              veiculoId: vistoria.veiculo_id,
-              modelo: veiculoModelo,
-              cor: vistoria.veiculos?.cor || '',
-              quilometragem: vistoria.quilometragem?.toString() || '',
-              condutor: vistoria.nome_condutor || '',
-              telefone: vistoria.clientes?.telefone || '',
-              dataHora: new Date(vistoria.created_at).toLocaleString('pt-BR'),
-              tipoVistoria: vistoria.tipo_vistoria,
-              combustivel: vistoria.nivel_combustivel || 'vazio',
-              observacoes: vistoria.observacoes || '',
-              checklist: vistoria.checklist || {},
-              avarias: vistoria.avarias || [],
-              fotos: vistoria.fotos || [],
-              nomeVistoriador: vistoria.nome_vistoriador || ''
-            });
+          setFormData({
+            cliente: vistoria.clientes?.nome || '',
+            clienteId: vistoria.cliente_id,
+            placa: vistoria.veiculos?.placa || '',
+            veiculoId: vistoria.veiculo_id,
+            modelo: vistoria.veiculos ? `${vistoria.veiculos.marca || ''} ${vistoria.veiculos.modelo || ''}`.trim() : '',
+            cor: vistoria.veiculos?.cor || '',
+            quilometragem: vistoria.quilometragem?.toString() || '',
+            condutor: vistoria.nome_condutor || '',
+            telefone: vistoria.clientes?.telefone || '',
+            dataHora: new Date(vistoria.created_at).toLocaleString('pt-BR'),
+            tipoVistoria: vistoria.tipo_vistoria,
+            combustivel: vistoria.nivel_combustivel || 'vazio',
+            observacoes: vistoria.observacoes || '',
+            checklist: mapVistoriaDbToChecklist(vistoria),
+            avarias: typeof vistoria.avarias === 'string' ? JSON.parse(vistoria.avarias || '[]') : (vistoria.avarias || []),
+            fotos: fotosSalvas,
+            nomeVistoriador: vistoria.nome_vistoriador || ''
+          });
 
-            // Atualiza os campos de busca para exibir os dados carregados
-            setClientSearchTerm(clienteNome);
-            setVehicleSearchTerm(`${veiculoModelo} - ${veiculoPlaca}`);
+          // Estados separados (avarias/fotos) recebem os dados carregados
+          setAvarias(typeof vistoria.avarias === 'string' ? JSON.parse(vistoria.avarias || '[]') : (vistoria.avarias || []));
+          setPhotos(fotosSalvas.map((f: string, i: number) => ({ id: String(i), file: null as any, preview: f })));
 
-            // Se for vistoria de entrada, carregar dados da vistoria de saída para comparação
-            if (vistoria.tipo_vistoria === 'entrada' && vistoria.locacao_id) {
-              carregarVistoriaSaidaParaComparacao(vistoria.locacao_id);
-            }
+          // Atualiza os campos de busca para exibir os dados carregados
+          setClientSearchTerm(vistoria.clientes?.nome || '');
+          setVehicleSearchTerm(`${vistoria.veiculos?.marca || ''} ${vistoria.veiculos?.modelo || ''} - ${vistoria.veiculos?.placa || ''}`.trim());
+
+          // Se for vistoria de entrada, carregar dados da vistoria de saída para comparação
+          if (vistoria.tipo_vistoria === 'entrada' && vistoria.locacao_id) {
+            carregarVistoriaSaidaParaComparacao(vistoria.locacao_id);
           }
         } catch (error) {
           console.error('Erro ao carregar vistoria:', error);
@@ -344,15 +372,15 @@ const VistoriaForm: React.FC = () => {
   const debouncedVehicleSearch = useRef(debounce(async (term: string) => {
     if (term.length > 2) {
       try {
-        const response = await fetch(`/api/veiculos?search=${encodeURIComponent(term)}`);
-        const result = await response.json();
-        if (result.success && result.data) {
-          setVehicleSearchResults(result.data);
-          setShowVehicleSuggestions(true);
-        } else {
-          setVehicleSearchResults([]);
-          setShowVehicleSuggestions(false);
-        }
+        // Consulta direta ao Supabase (respeita RLS e funciona no app Android)
+        const { data, error } = await supabase
+          .from('veiculos')
+          .select('id, placa, modelo, cor, marca, quilometragem_atual')
+          .or(`modelo.ilike.%${term}%,marca.ilike.%${term}%,placa.ilike.%${term}%`)
+          .limit(20);
+        if (error) throw error;
+        setVehicleSearchResults(data || []);
+        setShowVehicleSuggestions(true);
       } catch (error) {
         console.error('Erro ao buscar veículos:', error);
         setVehicleSearchResults([]);
@@ -395,7 +423,7 @@ const VistoriaForm: React.FC = () => {
     setShowVehicleSuggestions(false);
   };
 
-  const { mutate, loading: savingVistoria, error: saveError } = useMutation<any>();
+  const { mutate, loading: savingVistoria } = useMutation<any>();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -419,14 +447,11 @@ const VistoriaForm: React.FC = () => {
       return;
     }
 
-    const checklistData: Record<string, boolean> = {};
-    Object.keys(formData.checklist).forEach(key => {
-      const dbKey = key.toLowerCase()
-        .replace(/\s*\([^)]*\)\s*/g, '')
-        .replace(/[\s/]/g, '_')
-        .replace(/_$/, '');
-      checklistData[dbKey] = formData.checklist[key];
-    });
+    // O mapper em useApi (mapVistoriaPayloadToDb) converte os rótulos do
+    // checklist (ex.: 'Calota', 'Pneus (estado geral)') para as colunas
+    // item_* do banco. Não normalizar aqui (o código antigo gerava chaves
+    // como 'pneus_estado_geral' que nunca casavam com o schema).
+    const checklistData = formData.checklist;
 
     const payload = {
       clienteId: formData.clienteId,
@@ -440,12 +465,12 @@ const VistoriaForm: React.FC = () => {
       placa: formData.placa,
       modelo: formData.modelo,
       cor: formData.cor,
-      nomeVistoriador: formData.nomeVistoriador || 'Sistema', // Include nome do vistoriador
+      nomeVistoriador: formData.nomeVistoriador || 'Sistema',
       checklist: checklistData,
-      avariasJson: avarias, // Use actual avarias state
+      avariasJson: avarias,
       assinaturaClienteUrl: '',
       assinaturaVistoriadorUrl: '',
-      fotos: photos, // Include photos in payload
+      fotos: photos,
     };
 
     const url = isEditing
@@ -453,13 +478,16 @@ const VistoriaForm: React.FC = () => {
       : '/api/vistorias';
     const method = isEditing ? 'PUT' : 'POST';
 
-    const result = await mutate(url, payload, method);
-
-    if (result) {
-      alert(isEditing ? 'Vistoria atualizada com sucesso!' : 'Vistoria salva com sucesso!');
-      navigate('/checklist'); // Navigate back to dashboard
-    } else if (saveError) {
-      alert(`Erro ao ${isEditing ? 'atualizar' : 'salvar'} vistoria: ${saveError}`);
+    try {
+      const result = await mutate(url, payload, method);
+      if (result) {
+        alert(isEditing ? 'Vistoria atualizada com sucesso!' : 'Vistoria salva com sucesso!');
+        navigate('/checklist');
+      } else {
+        alert('Não foi possível salvar a vistoria. Tente novamente.');
+      }
+    } catch (err: any) {
+      alert(`Erro ao ${isEditing ? 'atualizar' : 'salvar'} vistoria: ${err?.message || 'erro desconhecido'}`);
     }
   };
 

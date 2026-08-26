@@ -9,7 +9,7 @@ const supabase = createClient(url, anonKey);
 async function inspectTables() {
   await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
 
   console.log('=== Inspecionando 1 registro da tabela clientes ===');

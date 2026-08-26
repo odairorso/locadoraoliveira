@@ -51,7 +51,7 @@ export default async function handler(request, response) {
 
       if (updateError) {
         console.error('Erro ao atualizar locação:', updateError);
-        return response.status(500).json({ success: false, error: 'Falha ao atualizar a locação no banco de dados.', details: updateError.message });
+        return response.status(500).json({ success: false, error: 'Falha ao atualizar a locação no banco de dados.' });
       }
 
       // 3.1. Se o valor_total foi atualizado, atualizar também a movimentação financeira correspondente
@@ -220,6 +220,6 @@ export default async function handler(request, response) {
 
   } catch (error) {
     console.error("Erro na função locações [id]:", error);
-    return response.status(500).json({ success: false, error: "Erro interno do servidor.", details: error.message });
+    return response.status(500).json({ success: false, error: "Erro interno do servidor." });
   }
 }

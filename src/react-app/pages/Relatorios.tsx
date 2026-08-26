@@ -14,6 +14,13 @@ import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import { supabase } from '@/react-app/supabase';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 
+// Parseia datas 'yyyy-mm-dd' como horário LOCAL (meia-noite local), evitando
+// que sejam interpretadas como UTC e desloquem o dia/mês em fusos negativos.
+function parseDateLocal(d: string | null | undefined): Date {
+  if (!d) return new Date();
+  return new Date(String(d).slice(0, 10) + 'T00:00:00');
+}
+
 interface RelatorioFinanceiro {
   mes: string;
   receitas: number;
@@ -285,7 +292,7 @@ export default function Relatorios() {
 
     // Agrupar movimentações financeiras por mês
     const dadosAgrupados = (movimentacoes || []).reduce((acc: any, mov: any) => {
-      const mes = new Date(mov.data_movimentacao).toLocaleDateString('pt-BR', {
+      const mes = parseDateLocal(mov.data_movimentacao).toLocaleDateString('pt-BR', {
         year: 'numeric',
         month: '2-digit'
       });
@@ -305,7 +312,7 @@ export default function Relatorios() {
 
     // Adicionar manutenções como despesas
     (manutencoes || []).forEach((manutencao: any) => {
-      const mes = new Date(manutencao.data_manutencao).toLocaleDateString('pt-BR', {
+      const mes = parseDateLocal(manutencao.data_manutencao).toLocaleDateString('pt-BR', {
         year: 'numeric',
         month: '2-digit'
       });
@@ -319,8 +326,8 @@ export default function Relatorios() {
 
     // Calcular locações ativas por mês
     (locacoes || []).forEach((locacao: any) => {
-      const dataInicioLocacao = new Date(locacao.data_locacao);
-      const dataFimLocacao = locacao.data_entrega ? new Date(locacao.data_entrega) : new Date();
+      const dataInicioLocacao = parseDateLocal(locacao.data_locacao);
+      const dataFimLocacao = locacao.data_entrega ? parseDateLocal(locacao.data_entrega) : new Date();
 
       // Para cada mês no período do relatório, verificar se a locação estava ativa
       const dataInicioRelatorio = new Date(dataInicio);
@@ -516,15 +523,15 @@ export default function Relatorios() {
     // Processar dados das locações
     const locacoes = data.map((locacao: any) => {
       const diasLocacao = Math.ceil(
-        (new Date(locacao.data_entrega).getTime() - new Date(locacao.data_locacao).getTime()) / (1000 * 60 * 60 * 24)
+        (parseDateLocal(locacao.data_entrega).getTime() - parseDateLocal(locacao.data_locacao).getTime()) / (1000 * 60 * 60 * 24)
       );
 
       return {
         id: locacao.id,
         cliente: locacao.clientes?.nome || 'Cliente não encontrado',
         veiculo: `${locacao.veiculos?.marca} ${locacao.veiculos?.modelo} (${locacao.veiculos?.placa})`,
-        data_locacao: new Date(locacao.data_locacao).toLocaleDateString('pt-BR'),
-        data_entrega: new Date(locacao.data_entrega).toLocaleDateString('pt-BR'),
+        data_locacao: parseDateLocal(locacao.data_locacao).toLocaleDateString('pt-BR'),
+        data_entrega: parseDateLocal(locacao.data_entrega).toLocaleDateString('pt-BR'),
         valor_total: parseFloat(locacao.valor_total),
         status: locacao.status,
         dias_locacao: diasLocacao,

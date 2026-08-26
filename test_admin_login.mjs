@@ -11,7 +11,7 @@ async function testAdminLogin() {
   const t0 = Date.now();
   const { data, error } = await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
   console.log('Tempo:', Date.now() - t0, 'ms');
   console.log('User:', data?.user?.id, data?.user?.email);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PlusCircle, Search, Car, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatarData } from '@/react-app/utils/formatters';
+import { supabase } from '@/react-app/supabase';
 
 const getVistoriaUrl = (vistoria: any) =>
   vistoria.locacao_id
@@ -23,24 +24,25 @@ const ChecklistDashboard = () => {
   const carregarVistorias = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/vistorias');
-      const result = await response.json();
-      
-      if (result.success && result.data.vistorias) {
-        const todasVistorias = result.data.vistorias;
-        
-        // Separa as vistorias em pendentes de saída (lado esquerdo) e pendentes de entrada (lado direito)
-        const pendentesSaida = todasVistorias.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => 
-          v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'saida');
-        const pendentesEntrada = todasVistorias.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => 
-          v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'entrada');
-        const realizadas = todasVistorias.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => v.nome_vistoriador !== 'Sistema');
+      const { data: todasVistorias, error } = await supabase
+        .from('vistorias')
+        .select('*, clientes(nome), veiculos(marca, modelo, placa)')
+        .order('created_at', { ascending: false });
 
-        // Separar corretamente as vistorias pendentes
-        setVistoriasPendentes(pendentesSaida); // Lado esquerdo: vistorias de saída pendentes
-        setVistoriasEntradaPendentes(pendentesEntrada); // Lado direito: vistorias de entrada pendentes
-        setVistoriasRealizadas(realizadas);
-      }
+      if (error) throw error;
+
+      const todas = todasVistorias || [];
+      // Separa as vistorias em pendentes de saída (lado esquerdo) e pendentes de entrada (lado direito)
+      const pendentesSaida = todas.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) =>
+        v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'saida');
+      const pendentesEntrada = todas.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) =>
+        v.nome_vistoriador === 'Sistema' && v.tipo_vistoria === 'entrada');
+      const realizadas = todas.filter((v: { nome_vistoriador: string, tipo_vistoria: string }) => v.nome_vistoriador !== 'Sistema');
+
+      // Separar corretamente as vistorias pendentes
+      setVistoriasPendentes(pendentesSaida); // Lado esquerdo: vistorias de saída pendentes
+      setVistoriasEntradaPendentes(pendentesEntrada); // Lado direito: vistorias de entrada pendentes
+      setVistoriasRealizadas(realizadas);
     } catch (error) {
       console.error('Erro ao carregar vistorias:', error);
     } finally {

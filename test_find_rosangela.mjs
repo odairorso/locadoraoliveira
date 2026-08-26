@@ -11,7 +11,7 @@ const supabase = createClient(url, anonKey);
 async function findRosangela() {
   const { data: authData } = await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
 
   const authClient = createClient(url, anonKey, {

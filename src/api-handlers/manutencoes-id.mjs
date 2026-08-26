@@ -23,7 +23,7 @@ async function getManutencao(req, res, id) {
 
   if (error) {
     console.error('Erro ao buscar manutenção:', error);
-    return res.status(400).json({ success: false, error: error.message });
+    return res.status(400).json({ success: false, error: 'Erro ao processar a solicitação' });
   }
 
   if (!data) {
@@ -90,7 +90,7 @@ async function updateManutencao(req, res, id) {
 
   if (error) {
     console.error('Erro ao atualizar manutenção:', error);
-    return res.status(400).json({ success: false, error: error.message });
+    return res.status(400).json({ success: false, error: 'Erro ao processar a solicitação' });
   }
 
   if (!data) {
@@ -115,7 +115,7 @@ async function deleteManutencao(req, res, id) {
 
   if (error) {
     console.error('Erro ao deletar manutenção:', error);
-    return res.status(400).json({ success: false, error: error.message });
+    return res.status(400).json({ success: false, error: 'Erro ao processar a solicitação' });
   }
 
   if (!data) {
@@ -152,8 +152,7 @@ export default async function handler(req, res) {
     console.error(`Erro na API de manutenções para ID ${id}:`, error);
     res.status(500).json({ 
       success: false, 
-      error: 'Erro interno do servidor',
-      details: error.message 
+      error: 'Erro interno do servidor' 
     });
   }
 }

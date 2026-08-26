@@ -1,18 +1,43 @@
 import { createClient } from '@supabase/supabase-js';
 
-export default async function handler(request, response) {
-  // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+// Campos permitidos em criação/edição de veículos (evita mass assignment)
+const ALLOWED_FIELDS = [
+  'marca',
+  'modelo',
+  'ano',
+  'placa',
+  'renavam',
+  'cor',
+  'foto_principal',
+  'tipo_operacao',
+  'status',
+  'valor_diaria',
+  'valor_veiculo',
+];
 
+function whitelist(payload) {
+  const clean = {};
+  ALLOWED_FIELDS.forEach((field) => {
+    if (payload && payload[field] !== undefined) {
+      clean[field] = payload[field];
+    }
+  });
+  return clean;
+}
+
+// Sanitiza entrada usada em filtros PostgREST (.or/ilike): apenas letras, números e espaços
+function sanitizeTerm(value) {
+  return String(value || '').replace(/[^a-zA-Z0-9À-ÿ\s.-]/g, '');
+}
+
+export default async function handler(request, response) {
   if (request.method === 'OPTIONS') {
     response.status(200).end();
     return;
   }
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return response.status(500).json({ success: false, error: 'Missing Supabase URL or Anon Key' });
@@ -23,18 +48,14 @@ export default async function handler(request, response) {
   try {
     const { method } = request;
     const { search, status } = request.query;
-    
-    const id = request.query.id; // Try to get ID from query parameters
-    console.log("Backend received request.params:", request.params);
-    console.log("Backend received request.query:", request.query);
-    console.log("Backend extracted ID from query:", id);
-    
-    console.log('URL:', request.url, 'Método:', method, 'ID extraído:', id);
+
+    const id = request.query.id;
 
     if (method === 'GET') {
       let query = supabase.from('veiculos').select('*');
       if (search) {
-        query = query.or(`modelo.ilike.%${search}%,marca.ilike.%${search}%,placa.ilike.%${search}%`);
+        const term = sanitizeTerm(search);
+        query = query.or(`modelo.ilike.%${term}%,marca.ilike.%${term}%,placa.ilike.%${term}%`);
       }
       if (status) {
         query = query.eq('status', status);
@@ -46,76 +67,55 @@ export default async function handler(request, response) {
 
     if (method === 'POST') {
       const { placa, renavam } = request.body;
-      const { data: existing, error: existingError } = await supabase.from('veiculos').select('id').or(`placa.eq.${placa},renavam.eq.${renavam}`).single();
+      const placaClean = sanitizeTerm(placa);
+      const renavamClean = sanitizeTerm(renavam);
+      const { data: existing, error: existingError } = await supabase.from('veiculos').select('id').or(`placa.eq.${placaClean},renavam.eq.${renavamClean}`).single();
       if (existingError && existingError.code !== 'PGRST116') throw existingError;
       if (existing) {
-        return response.status(400).json({ success: false, error: "Placa ou Renavam já cadastrados" });
+        return response.status(400).json({ success: false, error: 'Placa ou Renavam já cadastrados' });
       }
-      const { data: newVeiculo, error } = await supabase.from('veiculos').insert([request.body]).select().single();
+      const { data: newVeiculo, error } = await supabase.from('veiculos').insert([whitelist(request.body)]).select().single();
       if (error) throw error;
-      return response.status(200).json({ success: true, data: newVeiculo });
+      return response.status(201).json({ success: true, data: newVeiculo });
     }
 
     if (method === 'PUT') {
-      console.log('Recebida requisição PUT para veículos');
-      console.log('Corpo da requisição:', JSON.stringify(request.body));
-      console.log('URL completa:', request.url);
-      console.log('ID da URL ou query:', id);
-      
-      // Derive vehicleId from multiple sources: query param, request body, or URL path
       const urlObj = new URL(request.url, 'http://localhost');
       const pathParts = urlObj.pathname.split('/').filter(p => p);
       const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
       const vehicleId = id || request.body?.id || lastPathPart;
-      
-      console.log('ID final para atualização (derivado):', vehicleId);
-      
+
       if (!vehicleId) {
-        console.error('ID não fornecido para atualização');
         return response.status(400).json({ success: false, error: 'ID do veículo não fornecido' });
       }
-      
-      console.log('Atualizando veículo ID:', vehicleId);
-      console.log('Dados recebidos:', JSON.stringify(request.body));
-      
-      // Verificar se o veículo existe antes de atualizar
+
       const { data: existingVehicle, error: checkError } = await supabase
         .from('veiculos')
         .select('id')
         .eq('id', vehicleId)
         .single();
-        
+
       if (checkError) {
-        console.error('Erro ao verificar veículo:', checkError);
         return response.status(404).json({ success: false, error: 'Veículo não encontrado' });
       }
-      
-      console.log('Veículo encontrado, prosseguindo com atualização');
-      
-      // Remover o ID do corpo da requisição para evitar conflitos
-      const updateData = { ...request.body };
-      delete updateData.id;
-      
-      console.log('Dados para atualização:', JSON.stringify(updateData));
-      
+
+      const updateData = whitelist(request.body);
+
       const { data: updatedVeiculo, error } = await supabase
         .from('veiculos')
         .update(updateData)
         .eq('id', vehicleId)
         .select()
         .single();
-        
+
       if (error) {
-        console.error('Erro ao atualizar veículo:', error);
-        return response.status(500).json({ success: false, error: 'Erro ao atualizar veículo', details: error.message });
+        return response.status(500).json({ success: false, error: 'Erro ao atualizar veículo' });
       }
-      
-      console.log('Veículo atualizado com sucesso:', updatedVeiculo);
+
       return response.status(200).json({ success: true, data: updatedVeiculo });
     }
 
     if (method === 'DELETE') {
-      // Safer derivation
       const urlObj = new URL(request.url, 'http://localhost');
       const pathParts = urlObj.pathname.split('/').filter(p => p);
       const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
@@ -126,7 +126,7 @@ export default async function handler(request, response) {
       const { data: activeRentals, error: rentalError } = await supabase.from('locacoes').select('id').eq('veiculo_id', finalDeleteId).eq('status', 'ativa');
       if (rentalError) throw rentalError;
       if (activeRentals && activeRentals.length > 0) {
-        return response.status(400).json({ success: false, error: "Não é possível excluir um veículo que está sendo usado em locações ativas" });
+        return response.status(400).json({ success: false, error: 'Não é possível excluir um veículo que está sendo usado em locações ativas' });
       }
       const { error } = await supabase.from('veiculos').delete().eq('id', finalDeleteId);
       if (error) throw error;
@@ -137,7 +137,7 @@ export default async function handler(request, response) {
     return response.status(405).json({ success: false, error: `Method ${method} Not Allowed` });
 
   } catch (error) {
-    console.error("Erro na função veículos:", error);
-    return response.status(500).json({ success: false, error: "Erro interno do servidor.", details: error.message });
+    console.error('Erro na função veículos:', error);
+    return response.status(500).json({ success: false, error: 'Erro interno do servidor.' });
   }
 }

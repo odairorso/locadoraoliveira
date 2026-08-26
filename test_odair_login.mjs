@@ -11,7 +11,7 @@ async function test() {
   console.log('--- TEST 1: Logging in as odair.orso78@gmail.com ---');
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
   console.log('Auth result:', { user: authData?.user?.email, error: authError });
 

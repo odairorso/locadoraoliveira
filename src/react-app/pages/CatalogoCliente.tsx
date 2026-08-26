@@ -11,17 +11,18 @@ import { useNetworkReconnect } from '@/react-app/hooks/useNetworkReconnect';
 import type { Veiculo, SolicitacaoReserva, ConfiguracaoEmpresa } from '@/shared/types';
 
 export default function CatalogoClientePage() {
-  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  // O catálogo expõe apenas campos públicos do veículo (sem renavam/campos internos)
+  const [veiculos, setVeiculos] = useState<Partial<Veiculo>[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('todos');
-  const [selectedVeiculo, setSelectedVeiculo] = useState<Veiculo | null>(null);
+  const [selectedVeiculo, setSelectedVeiculo] = useState<Partial<Veiculo> | null>(null);
   
   // Modais
   const [showReservaModal, setShowReservaModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCadastroClienteModal, setShowCadastroClienteModal] = useState(false);
-  const [veiculoToShare, setVeiculoToShare] = useState<Veiculo | null>(null);
+  const [veiculoToShare, setVeiculoToShare] = useState<Partial<Veiculo> | null>(null);
 
   // Cadastro de Cliente Direto
   const [cadastroForm, setCadastroForm] = useState({
@@ -82,12 +83,17 @@ export default function CatalogoClientePage() {
     const params = new URLSearchParams(window.location.search);
     const veiculoId = params.get('veiculo');
     if (veiculoId) {
-      supabase.from('veiculos').select('*').eq('id', veiculoId).single().then(({ data }) => {
-        if (data) {
-          setSelectedVeiculo(data);
-          setShowReservaModal(true);
-        }
-      });
+      supabase
+        .from('veiculos')
+        .select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, quilometragem_atual, observacoes')
+        .eq('id', veiculoId)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setSelectedVeiculo(data);
+            setShowReservaModal(true);
+          }
+        });
     }
   }, []);
 
@@ -109,7 +115,8 @@ export default function CatalogoClientePage() {
     try {
       const { data, error } = await supabase
         .from('veiculos')
-        .select('*')
+        // Colunas públicas do catálogo: SEM renavam (documento do veículo)
+        .select('id, marca, modelo, ano, placa, cor, valor_diaria, valor_veiculo, tipo_operacao, status, foto_principal, fotos, quilometragem_atual, observacoes')
         .order('valor_diaria', { ascending: true });
 
       if (data && !error) {
@@ -137,25 +144,28 @@ export default function CatalogoClientePage() {
   }, [veiculos, searchTerm, categoriaFiltro]);
 
   const calcularTotalReserva = () => {
-    if (!selectedVeiculo || !reservaForm.data_inicio || !reservaForm.data_fim) return { dias: 1, total: 0 };
-    const inicio = new Date(reservaForm.data_inicio);
-    const fim = new Date(reservaForm.data_fim);
-    const diffTime = Math.abs(fim.getTime() - inicio.getTime());
+    if (!selectedVeiculo || !reservaForm.data_inicio || !reservaForm.data_fim) return { dias: 1, total: 0, valido: false };
+    // '+T00:00:00' evita que 'yyyy-mm-dd' seja interpretado como UTC meia-noite
+    const inicio = new Date(reservaForm.data_inicio + 'T00:00:00');
+    const fim = new Date(reservaForm.data_fim + 'T00:00:00');
+    if (fim < inicio) return { dias: 0, total: 0, valido: false };
+    const diffTime = fim.getTime() - inicio.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
     const diaria = selectedVeiculo.valor_diaria || 0;
     return {
       dias: diffDays,
-      total: diffDays * diaria
+      total: diffDays * diaria,
+      valido: true
     };
   };
 
-  const handleOpenReserva = (veiculo: Veiculo) => {
+  const handleOpenReserva = (veiculo: Partial<Veiculo>) => {
     setSelectedVeiculo(veiculo);
     setShowReservaModal(true);
     setReservaSucesso(false);
   };
 
-  const handleOpenShare = (veiculo: Veiculo, e: React.MouseEvent) => {
+  const handleOpenShare = (veiculo: Partial<Veiculo>, e: React.MouseEvent) => {
     e.stopPropagation();
     setVeiculoToShare(veiculo);
     setShowShareModal(true);
@@ -187,11 +197,10 @@ export default function CatalogoClientePage() {
       if (!error) {
         setCadastroSucesso(true);
       } else {
-        alert('Cadastro realizado com sucesso!');
-        setCadastroSucesso(true);
+        alert('Não foi possível cadastrar: ' + (error.message || 'erro desconhecido'));
       }
-    } catch {
-      setCadastroSucesso(true);
+    } catch (err: any) {
+      alert('Não foi possível cadastrar: ' + (err?.message || 'erro desconhecido'));
     } finally {
       setCadastrando(false);
     }
@@ -201,8 +210,13 @@ export default function CatalogoClientePage() {
     e.preventDefault();
     if (!selectedVeiculo) return;
 
+    const { dias, total, valido } = calcularTotalReserva();
+    if (!valido) {
+      alert('A data final deve ser maior ou igual à data inicial.');
+      return;
+    }
+
     setEnviandoReserva(true);
-    const { dias, total } = calcularTotalReserva();
 
     try {
       // 1. Cadastra cliente se não existir
@@ -262,11 +276,11 @@ export default function CatalogoClientePage() {
     }
   };
 
-  const getVehiclePhoto = (veiculo: Veiculo) => {
+  const getVehiclePhoto = (veiculo: Partial<Veiculo>) => {
     if (veiculo.foto_principal) return veiculo.foto_principal;
     if (veiculo.fotos && veiculo.fotos.length > 0) return veiculo.fotos[0];
     
-    const m = veiculo.modelo.toLowerCase();
+    const m = (veiculo.modelo || '').toLowerCase();
     if (m.includes('onix')) return 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80';
     if (m.includes('polo')) return 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=800&q=80';
     if (m.includes('gol')) return 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80';

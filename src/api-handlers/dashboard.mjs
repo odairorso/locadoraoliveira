@@ -3,9 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 // Vercel-compatible handler
 export default async function handler(request, response) {
   // Set CORS headers for all responses
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
@@ -42,8 +39,7 @@ export default async function handler(request, response) {
     console.error("Erro no dashboard:", error);
     response.status(500).json({
       success: false,
-      error: "Erro interno do servidor ao carregar o dashboard.",
-      details: error.message
+      error: "Erro interno do servidor ao carregar o dashboard."
     });
   }
 }

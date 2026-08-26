@@ -6,7 +6,8 @@ import type { Veiculo } from '@/shared/types';
 interface ShareVehicleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  veiculo?: Veiculo;
+  // Aceita os campos públicos do catálogo (nem sempre a linha completa do veículo)
+  veiculo?: Partial<Veiculo>;
   linkPlayStore?: string;
 }
 

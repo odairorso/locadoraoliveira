@@ -10,7 +10,7 @@ async function testSessionExpiration() {
   console.log('=== Testando login e verificando expires_at ===');
   const { data, error } = await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
 
   const session = data.session;

@@ -7,6 +7,7 @@ import ClientSelectModal from '@/react-app/components/ClientSelectModal';
 import VehicleSelectModal from '@/react-app/components/VehicleSelectModal';
 import { supabase } from '@/react-app/supabase';
 import { useNetworkReconnect } from '@/react-app/hooks/useNetworkReconnect';
+import { getTodayLocalString } from '@/react-app/utils/formatters';
 import type { Locacao, LocacaoCreate, Cliente, Veiculo } from '@/shared/types';
 
 export default function LocacoesPage() {
@@ -38,7 +39,7 @@ export default function LocacoesPage() {
   const filteredLocacoes = useMemo(() => {
     if (!locacoes) return [];
 
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = getTodayLocalString();
 
     return locacoes.filter(locacao => {
       // 1. Filtrar por Vencidas (Locações ativas onde data_entrega já expirou)

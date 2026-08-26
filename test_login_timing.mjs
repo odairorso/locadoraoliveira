@@ -12,7 +12,7 @@ async function test() {
   const t0 = Date.now();
   const res1 = await supabase.auth.signInWithPassword({
     email: 'ricardo.oliveiraveiculos@gmai',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
   console.log('Result @gmai in', Date.now() - t0, 'ms:', res1);
 
@@ -20,7 +20,7 @@ async function test() {
   const t1 = Date.now();
   const res2 = await supabase.auth.signInWithPassword({
     email: 'ricardo.oliveiraveiculos@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
   console.log('Result @gmail.com in', Date.now() - t1, 'ms:', res2.data ? 'SUCCESS' : res2.error);
 }

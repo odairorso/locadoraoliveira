@@ -69,7 +69,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<any | null>(() => initialSession?.user || null);
   const [perfil, setPerfil] = useState<Perfil | null>(() => initialSession?.perfil || null);
   const [currentRole, setCurrentRole] = useState<UserRole | 'visitante'>(() => initialSession?.role || 'visitante');
-  const [loading, setLoading] = useState(!initialSession?.user);
+  // loading começa true SEMPRE: enquanto o initSession não valida a sessão no
+  // Supabase, não confiamos em nenhum role vindo do localStorage (evita que uma
+  // 'oliveira_auth_session' forjada abra a UI de admin antes da validação).
+  const [loading, setLoading] = useState(true);
 
   const fetchProfileForUser = async (authUser: any) => {
     if (!authUser || !authUser.email) return;
@@ -131,13 +134,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(session.user);
           await fetchProfileForUser(session.user);
         } else {
-          const stored = getStoredSession();
-          if (!stored?.user) {
-            setUser(null);
-            setPerfil(null);
-            setCurrentRole('visitante');
-            saveSessionToStorage(null, null, 'visitante');
-          }
+          // Sem sessão válida no Supabase: descarta QUALQUER sessão local.
+          // Isso impede que uma 'oliveira_auth_session' forjada no localStorage
+          // (ex.: role: 'admin') abra a UI de gestão sem login real.
+          localStorage.removeItem(LOCAL_SESSION_KEY);
+          setUser(null);
+          setPerfil(null);
+          setCurrentRole('visitante');
+          saveSessionToStorage(null, null, 'visitante');
         }
       } catch (err) {
         console.warn('Erro ao inicializar sessão:', err);

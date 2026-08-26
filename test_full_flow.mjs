@@ -12,7 +12,7 @@ async function testFullFlow() {
   const t0 = Date.now();
   const { data: auth, error: authErr } = await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
   console.log(`Auth took ${Date.now() - t0}ms. Session active:`, !!auth?.session);
 

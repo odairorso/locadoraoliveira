@@ -88,7 +88,7 @@ async function updateVistoria(req, res, id) {
 
   if (error) {
     console.error("Erro ao atualizar vistoria:", error);
-    return res.status(400).json({ success: false, error: error.message });
+    return res.status(400).json({ success: false, error: 'Erro ao processar a solicitação' });
   }
 
   // Se é uma vistoria de saída sendo finalizada (nome_vistoriador não é "Sistema")
@@ -172,7 +172,7 @@ async function deleteVistoria(req, res, id) {
 
   if (error) {
     console.error("Erro ao deletar vistoria:", error);
-    return res.status(400).json({ success: false, error: error.message });
+    return res.status(400).json({ success: false, error: 'Erro ao processar a solicitação' });
   }
 
   return res.status(200).json({ success: true, message: 'Vistoria excluída com sucesso' });
@@ -180,9 +180,7 @@ async function deleteVistoria(req, res, id) {
 
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -211,8 +209,7 @@ export default async function handler(req, res) {
     console.error(`Erro na API de vistorias para ID ${id}:`, error);
     res.status(500).json({
       success: false,
-      error: 'Erro interno do servidor',
-      details: error.message
+      error: 'Erro interno do servidor'
     });
   }
 }

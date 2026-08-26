@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { formatarData } from '@/react-app/utils/formatters';
+import { supabase } from '@/react-app/supabase';
 
 interface VistoriaDetalhes {
   id: number;
@@ -50,15 +51,14 @@ const VistoriaDetalhes: React.FC = () => {
 
   const carregarVistoria = async () => {
     try {
-      const response = await fetch(`/api/vistorias/${id}`);
-      const result = await response.json();
+      const { data, error } = await supabase
+        .from('vistorias')
+        .select('*, clientes(nome), veiculos(marca, modelo, placa)')
+        .eq('id', parseInt(id || '0', 10))
+        .maybeSingle();
 
-      if (result.success && result.data) {
-        setVistoria(result.data);
-      } else {
-        console.error('Vistoria não encontrada:', result.error);
-        setVistoria(null);
-      }
+      if (error) throw error;
+      setVistoria(data || null);
     } catch (error) {
       console.error('Erro ao carregar vistoria:', error);
       setVistoria(null);
@@ -69,17 +69,9 @@ const VistoriaDetalhes: React.FC = () => {
 
   const excluirVistoria = async () => {
     try {
-      const response = await fetch(`/api/vistorias/${id}`, {
-        method: 'DELETE',
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        navigate('/checklist');
-      } else {
-        alert('Erro ao excluir vistoria: ' + result.error);
-      }
+      const { error } = await supabase.from('vistorias').delete().eq('id', parseInt(id || '0', 10));
+      if (error) throw error;
+      navigate('/checklist');
     } catch (error) {
       console.error('Erro ao excluir vistoria:', error);
       alert('Erro ao excluir vistoria');

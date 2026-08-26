@@ -4,6 +4,7 @@ import { useApi } from '@/react-app/hooks/useApi';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import ErrorMessage from '@/react-app/components/ErrorMessage';
 import VehicleSelectModal from '@/react-app/components/VehicleSelectModal';
+import { supabase } from '@/react-app/supabase';
 import { formatCurrency } from '@/react-app/utils/formatters';
 import type { Veiculo } from '@/shared/types';
 
@@ -176,34 +177,29 @@ export default function Manutencao() {
     setSubmitting(true);
 
     try {
-      const url = editingId ? `/api/manutencoes/${editingId}` : '/api/manutencoes';
-      const method = editingId ? 'PUT' : 'POST';
-
       // A data deve ser formatada para o formato ISO (yyyy-mm-dd)
       const dataManutencao = formatarDataInput(formData.data_manutencao);
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          veiculo_id: parseInt(formData.veiculo_id),
-          data_manutencao: dataManutencao,
-          tipo_manutencao: formData.tipo_manutencao === 'Outros' ? tipoPersonalizado : formData.tipo_manutencao,
-          valor: parseFloat(formData.valor),
-          descricao: formData.descricao || null
-        }),
-      });
+      const payload = {
+        veiculo_id: parseInt(formData.veiculo_id),
+        data_manutencao: dataManutencao,
+        tipo_manutencao: formData.tipo_manutencao === 'Outros' ? tipoPersonalizado : formData.tipo_manutencao,
+        valor: parseFloat(formData.valor),
+        descricao: formData.descricao || null
+      };
 
-      const result = await response.json();
-
-      if (result.success) {
-        resetForm();
-        refetch();
+      // Consulta direta ao Supabase (respeita RLS e funciona no app Android,
+      // ao contrário do antigo fetch('/api/manutencoes') que rodava como anon)
+      if (editingId) {
+        const { error } = await supabase.from('manutencoes').update(payload).eq('id', editingId);
+        if (error) throw error;
       } else {
-        alert('Erro: ' + result.error);
+        const { error } = await supabase.from('manutencoes').insert([payload]);
+        if (error) throw error;
       }
+
+      resetForm();
+      refetch();
     } catch (error) {
       console.error('Erro ao salvar manutenção:', error);
       alert('Erro ao salvar manutenção');
@@ -219,17 +215,9 @@ export default function Manutencao() {
     }
 
     try {
-      const response = await fetch(`/api/manutencoes/${id}`, {
-        method: 'DELETE',
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        refetch();
-      } else {
-        alert('Erro: ' + result.error);
-      }
+      const { error } = await supabase.from('manutencoes').delete().eq('id', id);
+      if (error) throw error;
+      refetch();
     } catch (error) {
       console.error('Erro ao deletar manutenção:', error);
       alert('Erro ao deletar manutenção');

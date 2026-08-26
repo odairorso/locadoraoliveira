@@ -24,7 +24,7 @@ async function inspectRLS() {
   console.log('\n--- Fazendo Login Admin ---');
   const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({
     email: 'odair.orso78@gmail.com',
-    password: 'Oliveira@2026'
+    password: process.env.TEST_ADMIN_PASSWORD || ''
   });
   console.log('Login Admin Sucesso:', !!loginData?.session, 'Error:', loginErr?.message);
 

@@ -2,9 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(request, response) {
   // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (request.method === 'OPTIONS') {
     response.status(200).end();
@@ -352,8 +349,7 @@ export default async function handler(request, response) {
     console.error("Erro na função vistorias:", error);
     return response.status(500).json({
       success: false,
-      error: "Erro interno do servidor.",
-      details: error.message
+      error: "Erro interno do servidor."
     });
   }
 }

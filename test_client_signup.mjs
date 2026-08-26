@@ -11,7 +11,7 @@ async function testClientLogin() {
   console.log('--- TEST: Trying signUp for lanjaturcibinda@gmail.com with 123456 ---');
   const res = await supabase.auth.signUp({
     email: 'lanjaturcibinda@gmail.com',
-    password: '123456',
+    password: process.env.TEST_CLIENT_PASSWORD || '',
     options: {
       data: {
         name: 'Rosângela Turci Binda',
@@ -25,7 +25,7 @@ async function testClientLogin() {
   console.log('\n--- TEST: Trying signInWithPassword for lanjaturcibinda@gmail.com with 123456 ---');
   const loginRes = await supabase.auth.signInWithPassword({
     email: 'lanjaturcibinda@gmail.com',
-    password: '123456'
+    password: process.env.TEST_CLIENT_PASSWORD || ''
   });
 
   console.log('SignIn result:', loginRes);
