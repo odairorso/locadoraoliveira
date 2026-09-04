@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Search, Car, X, Check, ChevronRight } from 'lucide-react';
 import type { Veiculo } from '@/shared/types';
 import { formatCurrency } from '@/react-app/utils/formatters';
+import { matchesSearch } from '@/react-app/utils/search';
 
 interface VehicleSelectModalProps {
   selectedVehicleId: number;
@@ -28,16 +29,10 @@ export default function VehicleSelectModal({
 
   const filteredVeiculos = useMemo(() => {
     if (!searchTerm.trim()) return veiculos;
-    const term = searchTerm.toLowerCase().trim();
 
-    return veiculos.filter((v) => {
-      const modeloMatch = v.modelo ? v.modelo.toLowerCase().includes(term) : false;
-      const marcaMatch = v.marca ? v.marca.toLowerCase().includes(term) : false;
-      const placaMatch = v.placa ? v.placa.toLowerCase().replace(/[^a-zA-Z0-9]/g, '').includes(term.replace(/[^a-zA-Z0-9]/g, '')) : false;
-      const corMatch = v.cor ? v.cor.toLowerCase().includes(term) : false;
-
-      return modeloMatch || marcaMatch || placaMatch || corMatch;
-    });
+    return veiculos.filter((v) =>
+      matchesSearch(searchTerm, [v.marca, v.modelo, v.placa, v.cor, v.ano]),
+    );
   }, [veiculos, searchTerm]);
 
   return (

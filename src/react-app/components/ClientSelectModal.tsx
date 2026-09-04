@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Search, User, X, Check, Phone, FileText, ChevronRight } from 'lucide-react';
 import type { Cliente } from '@/shared/types';
 import { formatCPF, formatCNPJ, formatPhone } from '@/react-app/utils/formatters';
+import { matchesSearch } from '@/react-app/utils/search';
 
 interface ClientSelectModalProps {
   selectedClientId: number;
@@ -28,19 +29,15 @@ export default function ClientSelectModal({
 
   const filteredClientes = useMemo(() => {
     if (!searchTerm.trim()) return clientes;
-    const term = searchTerm.toLowerCase().trim();
-    const cleanTerm = term.replace(/\D/g, '');
 
-    return clientes.filter((c) => {
-      const nomeMatch = c.nome ? c.nome.toLowerCase().includes(term) : false;
-      const docRaw = (c.cpf_cnpj || (c as any).documento || '').replace(/\D/g, '');
-      const docMatch = docRaw.includes(cleanTerm);
-      const telRaw = (c.celular || (c as any).telefone || '').replace(/\D/g, '');
-      const telMatch = telRaw.includes(cleanTerm);
-      const emailMatch = c.email ? c.email.toLowerCase().includes(term) : false;
-
-      return nomeMatch || docMatch || telMatch || emailMatch;
-    });
+    return clientes.filter((c) =>
+      matchesSearch(searchTerm, [
+        c.nome,
+        c.cpf_cnpj || (c as any).documento,
+        c.celular || (c as any).telefone,
+        c.email,
+      ]),
+    );
   }, [clientes, searchTerm]);
 
   const formatDoc = (doc?: string) => {
