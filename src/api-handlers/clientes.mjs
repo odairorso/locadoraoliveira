@@ -89,11 +89,9 @@ function mapRowToFrontend(row, { docColumn, tipoField }) {
   } else if (docColumn === 'cpf') {
     mapped.cpf_cnpj = row.cpf;
   }
-  // Expor tipo_pessoa padronizado
-  if (!row.tipo_pessoa && tipoField === 'tipo_documento') {
-    const t = (row.tipo_documento || '').toString().toLowerCase();
-    mapped.tipo_pessoa = t === 'cnpj' ? 'pj' : 'pf';
-  }
+  const rawDoc = (mapped.cpf_cnpj || row.documento || row.cpf || '').toString().replace(/\D/g, '');
+  const t = (row.tipo_documento || '').toString().toLowerCase();
+  mapped.tipo_pessoa = row.tipo_pessoa || (t === 'cnpj' || rawDoc.length > 11 ? 'pj' : 'pf');
   return mapped;
 }
 

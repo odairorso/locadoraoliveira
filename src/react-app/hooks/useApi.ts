@@ -236,11 +236,20 @@ async function executeSupabaseQuery(url: string): Promise<any> {
       console.warn('Erro ao buscar clientes:', error);
       throw new Error(error.message);
     }
-    const mapped = (data || []).map((c: any) => ({
-      ...c,
-      cpf_cnpj: c.cpf_cnpj || c.documento || '',
-      tipo_pessoa: c.tipo_pessoa || (c.tipo_documento === 'CNPJ' ? 'pj' : 'pf')
-    }));
+    const mapped = (data || []).map((c: any) => {
+      const docRaw = c.cpf_cnpj || c.documento || c.cpf || '';
+      const docDigits = (docRaw || '').toString().replace(/\D/g, '');
+      const isPJ = (c.tipo_documento || '').toString().toLowerCase() === 'cnpj' || 
+                   (c.tipo_pessoa || '').toString().toLowerCase() === 'pj' || 
+                   docDigits.length > 11;
+      return {
+        ...c,
+        cpf_cnpj: docRaw,
+        documento: docRaw,
+        tipo_pessoa: isPJ ? 'pj' : 'pf',
+        tipo_documento: isPJ ? 'cnpj' : 'cpf'
+      };
+    });
     return mapped;
   }
 
@@ -589,25 +598,40 @@ export function useMutation<TData, TVariables = any>() {
 
       // Mutação para Clientes
       if (cleanUrl.includes('/api/clientes')) {
-        const clientPayload = {
-          ...(variables as any),
-          documento: (variables as any)?.cpf_cnpj || (variables as any)?.documento || '',
-          tipo_documento: (variables as any)?.tipo_pessoa === 'pj' ? 'CNPJ' : 'CPF'
+        const vars = variables as any;
+        const docRaw = (vars?.cpf_cnpj || vars?.documento || vars?.cpf || '').toString();
+        const docDigits = docRaw.replace(/\D/g, '');
+        const isPJ = vars?.tipo_pessoa === 'pj' || 
+                     (vars?.tipo_documento || '').toString().toLowerCase() === 'cnpj' || 
+                     docDigits.length > 11;
+
+        const tipoDoc = isPJ ? 'cnpj' : 'cpf';
+        const tipoPess = isPJ ? 'pj' : 'pf';
+
+        const clientPayload: any = {
+          nome: vars.nome || '',
+          celular: vars.celular || '',
+          email: vars.email || '',
+          endereco: vars.endereco || '',
+          bairro: vars.bairro || '',
+          cidade: vars.cidade || 'Naviraí',
+          estado: vars.estado || 'MS',
+          cep: vars.cep || '',
+          documento: docRaw,
+          tipo_documento: tipoDoc
         };
-        delete clientPayload.cpf_cnpj;
-        delete clientPayload.tipo_pessoa;
 
         if (method === 'POST') {
           const { data, error } = await supabase.from('clientes').insert([clientPayload]).select().single();
           if (error) throw error;
-          return { ...data, cpf_cnpj: data.documento } as any;
+          return { ...data, cpf_cnpj: data.documento, tipo_pessoa: tipoPess } as any;
         } else if (method === 'PUT') {
-          const id = (variables as any)?.id || url.split('/').pop();
+          const id = vars?.id || url.split('/').pop();
           const { data, error } = await supabase.from('clientes').update(clientPayload).eq('id', id).select().single();
           if (error) throw error;
-          return { ...data, cpf_cnpj: data.documento } as any;
+          return { ...data, cpf_cnpj: data.documento, tipo_pessoa: tipoPess } as any;
         } else if (method === 'DELETE') {
-          const id = (variables as any)?.id || url.split('/').pop();
+          const id = vars?.id || url.split('/').pop();
           const { data, error } = await supabase.from('clientes').delete().eq('id', id);
           if (error) throw error;
           return data as any;
